@@ -74,17 +74,17 @@ const S = {
   }),
 }
 
-export default function Onboarding({ onCommit }) {
-  const [unit, setUnit] = useState('imperial')
+export default function Onboarding({ onCommit, initialProfile = null }) {
+  const [unit, setUnit] = useState(initialProfile?.unit || 'imperial')
   const [form, setForm] = useState({
-    weightLbs: '',
-    heightFt: '',
-    heightIn: '',
-    heightCm: '',
-    age: '',
-    sex: '',
-    goalWeightLbs: '',
-    targetWeeks: '12',
+    weightLbs:     initialProfile?.weightLbs     ?? '',
+    heightFt:      initialProfile?.heightFt      ?? '',
+    heightIn:      initialProfile?.heightIn      ?? '',
+    heightCm:      initialProfile?.heightCm      ?? '',
+    age:           initialProfile?.age           ?? '',
+    sex:           initialProfile?.sex           ?? '',
+    goalWeightLbs: initialProfile?.goalWeightLbs ?? '',
+    targetWeeks:   initialProfile?.targetWeeks   ?? '12',
   })
   const [errors, setErrors] = useState({})
 

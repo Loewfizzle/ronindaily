@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import BottomSheet from './BottomSheet'
+import SettingsSheet from './SettingsSheet'
 import { calculatePlan } from '../utils/calculate'
 
 function formatDate(d) {
@@ -21,8 +22,9 @@ function loadPlan() {
   }
 }
 
-export default function Dashboard({ onReset }) {
+export default function Dashboard({ onReset, onAdjustGoal }) {
   const [sheet, setSheet] = useState(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const plan = loadPlan()
 
   if (!plan) {
@@ -74,9 +76,32 @@ export default function Dashboard({ onReset }) {
         <span style={{ fontSize: '0.58rem', letterSpacing: '0.3em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
           Ronin Daily
         </span>
-        <span className="font-jp" style={{ fontSize: '1rem', color: 'var(--red)', lineHeight: 1 }}>
-          侍
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Settings"
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              color: 'var(--text-3)',
+              display: 'flex',
+              alignItems: 'center',
+              lineHeight: 1,
+            }}
+          >
+            <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+              <line x1="0" y1="1.5" x2="14" y2="1.5" stroke="currentColor" strokeWidth="1"/>
+              <circle cx="5" cy="1.5" r="1.75" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
+              <line x1="0" y1="8.5" x2="14" y2="8.5" stroke="currentColor" strokeWidth="1"/>
+              <circle cx="9" cy="8.5" r="1.75" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
+            </svg>
+          </button>
+          <span className="font-jp" style={{ fontSize: '1rem', color: 'var(--red)', lineHeight: 1 }}>
+            侍
+          </span>
+        </div>
       </div>
 
       {/* Date + heading */}
@@ -227,6 +252,13 @@ export default function Dashboard({ onReset }) {
       <BottomSheet open={sheet === 'progress'} onClose={() => setSheet(null)} title="Progress">
         <ProgressDetail plan={plan} />
       </BottomSheet>
+
+      <SettingsSheet
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onAdjustGoal={onAdjustGoal}
+        onReset={onReset}
+      />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard'
 
 export default function App() {
   const [screen, setScreen] = useState(null)
+  const [initialProfile, setInitialProfile] = useState(null)
 
   useEffect(() => {
     const committed = localStorage.getItem('ronin_committed')
@@ -14,13 +15,23 @@ export default function App() {
     localStorage.setItem('ronin_committed', 'true')
     localStorage.setItem('ronin_profile', JSON.stringify(data))
     localStorage.setItem('ronin_start', new Date().toISOString())
+    setInitialProfile(null)
     setScreen('dashboard')
+  }
+
+  const handleAdjustGoal = () => {
+    const stored = localStorage.getItem('ronin_profile')
+    setInitialProfile(stored ? JSON.parse(stored) : null)
+    localStorage.removeItem('ronin_committed')
+    localStorage.removeItem('ronin_start')
+    setScreen('onboarding')
   }
 
   const handleReset = () => {
     localStorage.removeItem('ronin_committed')
     localStorage.removeItem('ronin_profile')
     localStorage.removeItem('ronin_start')
+    setInitialProfile(null)
     setScreen('onboarding')
   }
 
@@ -28,8 +39,12 @@ export default function App() {
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100svh' }}>
-      {screen === 'onboarding' && <Onboarding onCommit={handleCommit} />}
-      {screen === 'dashboard' && <Dashboard onReset={handleReset} />}
+      {screen === 'onboarding' && (
+        <Onboarding onCommit={handleCommit} initialProfile={initialProfile} />
+      )}
+      {screen === 'dashboard' && (
+        <Dashboard onReset={handleReset} onAdjustGoal={handleAdjustGoal} />
+      )}
     </div>
   )
 }
