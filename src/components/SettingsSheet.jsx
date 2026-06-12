@@ -27,13 +27,10 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset }) 
   const handleConfirm = () => {
     const action = confirming
     setConfirming(null)
-    if (action === 'adjust') {
-      onClose()
-      onAdjustGoal()
-    } else if (action === 'reset') {
-      // onReset navigates away and unmounts Dashboard — no need to call onClose
-      onReset()
-    }
+    // Both actions call setScreen('onboarding') in App, which unmounts Dashboard
+    // and SettingsSheet — no need to call onClose() first
+    if (action === 'adjust') onAdjustGoal()
+    else if (action === 'reset') onReset()
   }
 
   return (
