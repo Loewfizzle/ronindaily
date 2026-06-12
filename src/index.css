@@ -7,8 +7,8 @@
   --border: #1c1c1c;
   --border-mid: #282828;
   --text: #ddd8cf;
-  --text-2: #857f79;
-  --text-3: #4a4642;
+  --text-2: #a09a94;
+  --text-3: #6b6560;
   --red: #8b1c1c;
   --red-bright: #b02828;
   --gold: #c9a84c;
@@ -29,6 +29,7 @@ body,
 
 body {
   margin: 0;
+  font-size: 17px;
   background-color: var(--bg);
   color: var(--text);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;

@@ -63,53 +63,80 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
         margin: '0 auto',
       }}
     >
-      {/* Nav */}
+      {/* Header */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '1rem 1.5rem',
-          borderBottom: '1px solid var(--border)',
+          padding: '1.25rem 1.5rem',
+          borderBottom: '1px solid var(--border-mid)',
         }}
       >
-        <span style={{ fontSize: '0.58rem', letterSpacing: '0.3em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
-          Ronin Daily
-        </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-          <button
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Settings"
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              color: 'var(--text-3)',
-              display: 'flex',
-              alignItems: 'center',
-              lineHeight: 1,
-            }}
-          >
-            <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-              <line x1="0" y1="1.5" x2="14" y2="1.5" stroke="currentColor" strokeWidth="1"/>
-              <circle cx="5" cy="1.5" r="1.75" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
-              <line x1="0" y1="8.5" x2="14" y2="8.5" stroke="currentColor" strokeWidth="1"/>
-              <circle cx="9" cy="8.5" r="1.75" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
-            </svg>
-          </button>
-          <span className="font-jp" style={{ fontSize: '1rem', color: 'var(--red)', lineHeight: 1 }}>
+        {/* Wordmark */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span className="font-jp" style={{ fontSize: '1.4rem', color: 'var(--red)', lineHeight: 1 }}>
             侍
           </span>
+          <div>
+            <div
+              style={{
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                letterSpacing: '0.22em',
+                color: 'var(--text)',
+                textTransform: 'uppercase',
+                lineHeight: 1.1,
+              }}
+            >
+              RONIN
+            </div>
+            <div
+              style={{
+                fontSize: '0.55rem',
+                fontWeight: 300,
+                letterSpacing: '0.52em',
+                color: 'var(--text-2)',
+                textTransform: 'uppercase',
+                lineHeight: 1.2,
+                marginTop: '0.15rem',
+              }}
+            >
+              DAILY
+            </div>
+          </div>
         </div>
+
+        {/* Settings */}
+        <button
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Settings"
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '0.25rem',
+            cursor: 'pointer',
+            color: 'var(--text-3)',
+            display: 'flex',
+            alignItems: 'center',
+            lineHeight: 1,
+          }}
+        >
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+            <line x1="0" y1="2" x2="16" y2="2" stroke="currentColor" strokeWidth="1"/>
+            <circle cx="6" cy="2" r="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
+            <line x1="0" y1="10" x2="16" y2="10" stroke="currentColor" strokeWidth="1"/>
+            <circle cx="10" cy="10" r="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
+          </svg>
+        </button>
       </div>
 
       {/* Date + heading */}
       <div style={{ padding: '1.4rem 1.5rem 0.75rem' }}>
-        <div style={{ fontSize: '0.6rem', letterSpacing: '0.14em', color: 'var(--text-2)', marginBottom: '0.2rem' }}>
+        <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: 'var(--text-2)', marginBottom: '0.2rem' }}>
           {formatDate(date)} — DAY {dayNumber}
         </div>
-        <div style={{ fontSize: '0.5rem', letterSpacing: '0.32em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+        <div style={{ fontSize: '0.65rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
           Mission Briefing
         </div>
       </div>
@@ -117,11 +144,11 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
       {/* Progress blade */}
       <div style={{ padding: '0.5rem 1.5rem 1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
-          <span style={{ fontSize: '0.58rem', color: 'var(--text-2)' }}>{startWeight} lbs</span>
-          <span style={{ fontSize: '0.58rem', color: 'var(--text)' }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-2)' }}>{startWeight} lbs</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text)' }}>
             {poundsToLose} lbs · {daysLeft} days
           </span>
-          <span style={{ fontSize: '0.58rem', color: 'var(--text-2)' }}>{goalWeight} lbs</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-2)' }}>{goalWeight} lbs</span>
         </div>
         <div className="blade-wrap">
           <div className="blade-fill" style={{ width: `${progressPct}%` }} />
@@ -142,7 +169,7 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
         >
           <div
             style={{
-              fontSize: '0.58rem',
+              fontSize: '0.65rem',
               letterSpacing: '0.18em',
               color: 'var(--red-bright)',
               textTransform: 'uppercase',
@@ -235,7 +262,7 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
             <div key={i} className={`pip${i < streak ? '' : ' empty'}`} />
           ))}
         </div>
-        <span style={{ fontSize: '0.52rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: '0.65rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
           Week {weekNumber}
         </span>
       </div>
@@ -266,7 +293,7 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
 function BlockHeader({ label }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.7rem' }}>
-      <span style={{ fontSize: '0.58rem', letterSpacing: '0.26em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
+      <span style={{ fontSize: '0.68rem', letterSpacing: '0.26em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
         {label}
       </span>
       <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>›</span>
@@ -277,12 +304,12 @@ function BlockHeader({ label }) {
 function Stat({ label, value, unit }) {
   return (
     <div>
-      <div style={{ fontSize: '0.52rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.15rem' }}>
+      <div style={{ fontSize: '0.65rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.15rem' }}>
         {label}
       </div>
       <div style={{ fontSize: '1.45rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>
         {value}
-        {unit && <span style={{ fontSize: '0.68rem', color: 'var(--text-2)', marginLeft: '0.2rem' }}>{unit}</span>}
+        {unit && <span style={{ fontSize: '0.72rem', color: 'var(--text-2)', marginLeft: '0.2rem' }}>{unit}</span>}
       </div>
     </div>
   )
@@ -324,19 +351,19 @@ function FoodDetail({ data }) {
               borderBottom: '1px solid var(--border)',
             }}
           >
-            <span style={{ fontSize: '0.62rem', letterSpacing: '0.18em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
+            <span style={{ fontSize: '0.7rem', letterSpacing: '0.18em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
               {meal.name}
             </span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem' }}>
               <span style={{ fontSize: '1.1rem', fontWeight: 300, color: 'var(--text)' }}>{meal.cal}</span>
-              <span style={{ fontSize: '0.58rem', color: 'var(--text-3)' }}>cal</span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-3)' }}>cal</span>
             </div>
           </div>
         ))}
       </div>
 
       <div className="note-box" style={{ marginTop: '1.25rem' }}>
-        <p style={{ fontSize: '0.63rem', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
           Log every meal honestly. Deviation means recalculation next week.
         </p>
       </div>
@@ -362,7 +389,7 @@ function MovementDetail({ movement, cal }) {
             cal burn
           </span>
         </div>
-        <div style={{ fontSize: '0.63rem', color: 'var(--text-2)' }}>Required. Not optional.</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-2)' }}>Required. Not optional.</div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -383,7 +410,7 @@ function MovementDetail({ movement, cal }) {
       </div>
 
       <div className="note-box" style={{ marginTop: '1.5rem' }}>
-        <p style={{ fontSize: '0.63rem', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
           This is the minimum. Go beyond if you have the will.
         </p>
       </div>
@@ -416,7 +443,7 @@ function ProgressDetail({ plan }) {
       >
         {stats.map((s, i) => (
           <div key={i} style={{ background: 'var(--surface)', padding: '0.9rem 1rem' }}>
-            <div style={{ fontSize: '0.52rem', letterSpacing: '0.14em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+            <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
               {s.label}
             </div>
             <div style={{ fontSize: '0.95rem', fontWeight: 400, color: 'var(--text)' }}>
@@ -427,7 +454,7 @@ function ProgressDetail({ plan }) {
       </div>
 
       <div className="note-box">
-        <p style={{ fontSize: '0.63rem', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
           Check in weekly. Weight logged every 7 days. The plan adjusts to reality.
         </p>
       </div>

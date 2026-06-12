@@ -26,9 +26,14 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset }) 
 
   const handleConfirm = () => {
     const action = confirming
-    handleClose()
-    if (action === 'adjust') onAdjustGoal()
-    if (action === 'reset') onReset()
+    setConfirming(null)
+    if (action === 'adjust') {
+      onClose()
+      onAdjustGoal()
+    } else if (action === 'reset') {
+      // onReset navigates away and unmounts Dashboard — no need to call onClose
+      onReset()
+    }
   }
 
   return (
@@ -57,7 +62,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset }) 
               <div>
                 <p
                   style={{
-                    fontSize: '0.63rem',
+                    fontSize: '0.78rem',
                     color: 'var(--text-2)',
                     lineHeight: 1.65,
                     margin: '0 0 0.9rem',
@@ -74,7 +79,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset }) 
                       color: 'var(--text)',
                       border: 'none',
                       borderRadius: 0,
-                      fontSize: '0.6rem',
+                      fontSize: '0.68rem',
                       letterSpacing: '0.3em',
                       fontWeight: 600,
                       fontFamily: 'Inter, sans-serif',
@@ -90,7 +95,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset }) 
                       background: 'none',
                       border: 'none',
                       color: 'var(--text-2)',
-                      fontSize: '0.6rem',
+                      fontSize: '0.68rem',
                       letterSpacing: '0.1em',
                       cursor: 'pointer',
                       fontFamily: 'Inter, sans-serif',
@@ -110,7 +115,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset }) 
                   gap: '1rem',
                 }}
               >
-                <span style={{ fontSize: '0.63rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
                   {opt.desc}
                 </span>
                 <button
