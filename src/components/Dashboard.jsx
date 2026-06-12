@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import BottomSheet from './BottomSheet'
 import SettingsSheet from './SettingsSheet'
+import CheckinSheet from './CheckinSheet'
 import { calculatePlan } from '../utils/calculate'
 
 function formatDate(d) {
@@ -25,6 +26,7 @@ function loadPlan() {
 export default function Dashboard({ onReset, onAdjustGoal }) {
   const [sheet, setSheet] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [checkinOpen, setCheckinOpen] = useState(false)
   const plan = loadPlan()
 
   if (!plan) {
@@ -49,6 +51,9 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
   } = plan
 
   const progressPct = Math.max(1, ((startWeight - currentWeight) / (startWeight - goalWeight)) * 100)
+
+  const lastCheckin = parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10)
+  const showCheckin = dayNumber % 7 === 0 && lastCheckin !== weekNumber
 
   return (
     <div
@@ -188,6 +193,24 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
         </div>
       )}
 
+      {/* Check-in banner */}
+      {showCheckin && (
+        <div
+          onClick={() => setCheckinOpen(true)}
+          style={{
+            margin: '0 1.5rem 1rem',
+            padding: '0.9rem 1rem',
+            borderLeft: '2px solid var(--red)',
+            background: 'var(--elevated)',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>
+            Week {weekNumber} complete. Log your weight.
+          </span>
+        </div>
+      )}
+
       {/* Mission blocks */}
       <div
         style={{
@@ -279,6 +302,12 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
       <BottomSheet open={sheet === 'progress'} onClose={() => setSheet(null)} title="Progress">
         <ProgressDetail plan={plan} />
       </BottomSheet>
+
+      <CheckinSheet
+        open={checkinOpen}
+        onClose={() => setCheckinOpen(false)}
+        plan={plan}
+      />
 
       <SettingsSheet
         open={settingsOpen}

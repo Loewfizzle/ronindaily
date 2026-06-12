@@ -1,0 +1,102 @@
+import { useState } from 'react'
+import BottomSheet from './BottomSheet'
+
+export default function CheckinSheet({ open, onClose, plan }) {
+  const [weight, setWeight] = useState('')
+  const [error, setError] = useState(null)
+
+  if (!plan) return null
+
+  const profile    = JSON.parse(localStorage.getItem('ronin_profile') || '{}')
+  const unit       = profile.unit || 'imperial'
+  const unitLabel  = unit === 'metric' ? 'kg' : 'lbs'
+
+  // Original pace for comparison: (startWeight - goalWeight) / targetWeeks per week, in user's unit
+  const origStart  = parseFloat(profile.weightLbs   || '0')  // kg if metric, lbs if imperial
+  const origGoal   = parseFloat(profile.goalWeightLbs || '0')
+  const totalWeeks = parseInt(profile.targetWeeks    || '1', 10)
+  const weeklyPace = (origStart - origGoal) / totalWeeks
+  const expectedNow = origStart - weeklyPace * plan.weekNumber
+
+  // Last logged weight in user's unit
+  const lastLogged = unit === 'metric'
+    ? parseFloat((plan.currentWeight / 2.20462).toFixed(1))
+    : plan.currentWeight
+
+  const parsedW = parseFloat(weight)
+
+  const getPaceLine = (w) => {
+    const diff = w - expectedNow
+    if (diff < -0.5) return 'Ahead of pace.'
+    if (diff > 0.5)  return 'Behind pace. Adjust or accept the cost.'
+    return 'On pace. Continue.'
+  }
+
+  const paceLine = weight !== '' && !isNaN(parsedW) ? getPaceLine(parsedW) : null
+
+  const handleClose = () => {
+    setWeight('')
+    setError(null)
+    onClose()
+  }
+
+  const handleConfirm = () => {
+    if (!weight || isNaN(parsedW) || parsedW <= 0) {
+      setError('Enter a valid weight')
+      return
+    }
+    const stored = JSON.parse(localStorage.getItem('ronin_profile') || '{}')
+    stored.currentWeightLbs = String(parsedW)
+    localStorage.setItem('ronin_profile', JSON.stringify(stored))
+    localStorage.setItem('ronin_last_checkin', String(plan.weekNumber))
+    setWeight('')
+    setError(null)
+    onClose()
+  }
+
+  return (
+    <BottomSheet open={open} onClose={handleClose} title="Check-In">
+      <div>
+        {/* Weight input */}
+        <div style={{ marginBottom: '1.5rem' }}>
+          <div className="field-label">Current Weight</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem' }}>
+            <input
+              className="input-bare"
+              type="number"
+              inputMode="decimal"
+              placeholder="0"
+              value={weight}
+              onChange={(e) => { setWeight(e.target.value); setError(null) }}
+              style={{ width: '6rem' }}
+            />
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-2)', paddingBottom: '0.45rem', flexShrink: 0 }}>
+              {unitLabel}
+            </span>
+          </div>
+          {error && <div className="field-error">{error}</div>}
+          {paceLine && (
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', margin: '0.75rem 0 0', lineHeight: 1.5 }}>
+              {paceLine}
+            </p>
+          )}
+        </div>
+
+        {/* Last logged weight reference */}
+        <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '0.65rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+            Last logged
+          </div>
+          <div style={{ fontSize: '1.2rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>
+            {lastLogged} {unitLabel}
+          </div>
+        </div>
+
+        {/* Confirm */}
+        <button className="commit-btn" onClick={handleConfirm}>
+          Confirm
+        </button>
+      </div>
+    </BottomSheet>
+  )
+}

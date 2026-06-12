@@ -1,5 +1,5 @@
 const CAL_PER_LB = 3500
-const ACTIVITY_FACTOR = 1.2   // sedentary baseline
+const ACTIVITY_FACTOR = 1.2
 const FOOD_SPLIT = 0.70
 const EXERCISE_SPLIT = 0.30
 const WALK_CAL_PER_MILE = 100
@@ -30,52 +30,77 @@ export function calculatePlan(profile, startDate = new Date()) {
   const unit = profile.unit
   const targetWeeks = parseInt(profile.targetWeeks, 10)
 
-  // Normalise to lbs + metric for math.
-  // The form always uses the field name "weightLbs"/"goalWeightLbs" regardless of unit;
-  // when unit === 'metric' those fields actually hold kg values.
-  let weightLbs, goalWeightLbs, weightKg, heightCm
+  // Normalise original (committed) weights.
+  // Field naming quirk: weightLbs/goalWeightLbs hold kg values when unit === 'metric'.
+  let startWeightLbs, goalWeightLbs, startWeightKg, heightCm
   if (unit === 'imperial') {
-    weightLbs    = parseFloat(profile.weightLbs)
-    goalWeightLbs = parseFloat(profile.goalWeightLbs)
-    weightKg     = lbsToKg(weightLbs)
-    heightCm     = ftInToCm(profile.heightFt, profile.heightIn)
+    startWeightLbs = parseFloat(profile.weightLbs)
+    goalWeightLbs  = parseFloat(profile.goalWeightLbs)
+    startWeightKg  = lbsToKg(startWeightLbs)
+    heightCm       = ftInToCm(profile.heightFt, profile.heightIn)
   } else {
-    weightKg      = parseFloat(profile.weightLbs)
-    const goalKg  = parseFloat(profile.goalWeightLbs)
-    weightLbs     = weightKg * 2.20462
-    goalWeightLbs = goalKg  * 2.20462
-    heightCm      = parseFloat(profile.heightCm)
+    startWeightKg  = parseFloat(profile.weightLbs)
+    const goalKg   = parseFloat(profile.goalWeightLbs)
+    startWeightLbs = startWeightKg * 2.20462
+    goalWeightLbs  = goalKg * 2.20462
+    heightCm       = parseFloat(profile.heightCm)
   }
 
-  const poundsToLose = weightLbs - goalWeightLbs
+  // Current weight — updated by weekly check-ins, stored under the same unit as weightLbs.
+  // Falls back to original start weight when no check-in has occurred.
+  let currentWeightLbs, currentWeightKg
+  if (profile.currentWeightLbs != null) {
+    const raw = parseFloat(profile.currentWeightLbs)
+    if (unit === 'imperial') {
+      currentWeightLbs = raw
+      currentWeightKg  = lbsToKg(raw)
+    } else {
+      currentWeightKg  = raw
+      currentWeightLbs = raw * 2.20462
+    }
+  } else {
+    currentWeightLbs = startWeightLbs
+    currentWeightKg  = startWeightKg
+  }
 
-  // BMR → TDEE
-  const bmr  = mifflinBmr(weightKg, heightCm, age, sex)
+  // Timeline — computed before deficit so daysLeft is available for post-check-in recalc.
+  const today             = new Date()
+  const originalTotalDays = targetWeeks * 7
+  const targetDate        = addDays(startDate, originalTotalDays)
+  const dayNumber         = Math.max(1, daysBetween(startDate, today) + 1)
+  const daysLeft          = Math.max(0, daysBetween(today, targetDate))
+  const weekNumber        = Math.ceil(dayNumber / 7)
+
+  // Deficit: use remaining days after first check-in so the plan adapts to real weight.
+  // Before any check-in, use the original full-timeline target to keep numbers stable.
+  const poundsToLose       = Math.max(0, currentWeightLbs - goalWeightLbs)
+  const totalCalDeficit    = poundsToLose * CAL_PER_LB
+  const hasCheckedIn       = profile.currentWeightLbs != null
+  const deficitDays        = hasCheckedIn ? Math.max(1, daysLeft) : originalTotalDays
+  const requiredDailyDeficit = deficitDays > 0 ? totalCalDeficit / deficitDays : 0
+
+  // BMR → TDEE uses current weight so the math stays accurate as the user loses weight.
+  const bmr  = mifflinBmr(currentWeightKg, heightCm, age, sex)
   const tdee = Math.round(bmr * ACTIVITY_FACTOR)
 
-  // Required vs safe daily deficit
-  const totalCalDeficit     = poundsToLose * CAL_PER_LB
-  const targetDays          = targetWeeks * 7
-  const requiredDailyDeficit = totalCalDeficit / targetDays
-  const maxSafeDeficit       = tdee - MIN_CAL[sex]
+  const maxSafeDeficit = tdee - MIN_CAL[sex]
 
-  let dailyDeficit, unsustainable, realisticEndDate, totalDays
+  let dailyDeficit, unsustainable, realisticEndDate
 
   if (requiredDailyDeficit > maxSafeDeficit) {
-    unsustainable  = true
-    dailyDeficit   = Math.max(0, Math.round(maxSafeDeficit))
-    totalDays      = dailyDeficit > 0 ? Math.ceil(totalCalDeficit / dailyDeficit) : 9999
-    realisticEndDate = addDays(startDate, totalDays)
+    unsustainable = true
+    dailyDeficit  = Math.max(0, Math.round(maxSafeDeficit))
+    const realisticDays = dailyDeficit > 0 ? Math.ceil(totalCalDeficit / dailyDeficit) : 9999
+    realisticEndDate = addDays(today, realisticDays)
   } else {
     unsustainable    = false
     dailyDeficit     = Math.round(requiredDailyDeficit)
-    totalDays        = targetDays
     realisticEndDate = null
   }
 
   // Food / exercise split
-  const foodDeficit  = Math.round(dailyDeficit * FOOD_SPLIT)
-  const exerciseBurn = Math.round(dailyDeficit * EXERCISE_SPLIT)
+  const foodDeficit   = Math.round(dailyDeficit * FOOD_SPLIT)
+  const exerciseBurn  = Math.round(dailyDeficit * EXERCISE_SPLIT)
   const calorieTarget = Math.max(MIN_CAL[sex], tdee - foodDeficit)
 
   // Meal breakdown (fixed proportions)
@@ -93,9 +118,9 @@ export function calculatePlan(profile, startDate = new Date()) {
   // Movement prescription
   const movement = []
   if (exerciseBurn >= 50) {
-    const walkCal   = Math.round(exerciseBurn * 0.60)
-    const resistCal = exerciseBurn - walkCal
-    const walkMiles = parseFloat((walkCal / WALK_CAL_PER_MILE).toFixed(1))
+    const walkCal    = Math.round(exerciseBurn * 0.60)
+    const resistCal  = exerciseBurn - walkCal
+    const walkMiles  = parseFloat((walkCal / WALK_CAL_PER_MILE).toFixed(1))
     const resistMins = Math.max(5, Math.round(resistCal / RESIST_CAL_PER_MIN / 5) * 5)
     if (walkMiles > 0) movement.push(`Walk ${walkMiles} miles.`)
     if (resistMins > 0) movement.push(`${resistMins} min resistance training.`)
@@ -103,29 +128,24 @@ export function calculatePlan(profile, startDate = new Date()) {
     movement.push('30 min walking.')
   }
 
-  // Day / timeline math
-  const today      = new Date()
-  const targetDate = addDays(startDate, totalDays)
-  const dayNumber  = Math.max(1, daysBetween(startDate, today) + 1)
-  const daysLeft   = Math.max(0, daysBetween(today, targetDate))
-  const weekNumber = Math.ceil(dayNumber / 7)
+  // Pace needed to hit goal from current weight over remaining time
   const pacePerWeek = daysLeft > 0
-    ? parseFloat(((goalWeightLbs < weightLbs ? weightLbs - goalWeightLbs : 0) / daysLeft * 7).toFixed(1))
+    ? parseFloat(((poundsToLose / daysLeft) * 7).toFixed(1))
     : 0
 
   return {
     unsustainable,
     realisticEndDate,
 
-    startWeight:   Math.round(weightLbs),
-    currentWeight: Math.round(weightLbs),
+    startWeight:   Math.round(startWeightLbs),
+    currentWeight: Math.round(currentWeightLbs),
     goalWeight:    Math.round(goalWeightLbs),
     poundsToLose:  Math.round(poundsToLose),
 
     date: today,
     startDate: new Date(startDate),
     targetDate,
-    totalDays,
+    totalDays: originalTotalDays,
     dayNumber,
     daysLeft,
     weekNumber,
