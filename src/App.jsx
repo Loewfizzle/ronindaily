@@ -13,12 +13,14 @@ export default function App() {
   const handleCommit = (data) => {
     localStorage.setItem('ronin_committed', 'true')
     localStorage.setItem('ronin_profile', JSON.stringify(data))
+    localStorage.setItem('ronin_start', new Date().toISOString())
     setScreen('dashboard')
   }
 
   const handleReset = () => {
     localStorage.removeItem('ronin_committed')
     localStorage.removeItem('ronin_profile')
+    localStorage.removeItem('ronin_start')
     setScreen('onboarding')
   }
 
