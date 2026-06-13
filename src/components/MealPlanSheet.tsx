@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import BottomSheet from './BottomSheet'
+import GroceryListSheet from './GroceryListSheet'
 import type { UnitSystem } from '../types'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -100,6 +101,7 @@ export default function MealPlanSheet({ open, onClose, calorieTarget, unit }: Me
   const [openDay, setOpenDay] = useState<number | null>(1)
   const [error, setError] = useState<string | null>(null)
   const [regenDays, setRegenDays] = useState<Set<number>>(new Set())
+  const [groceryOpen, setGroceryOpen] = useState(false)
 
   // Preferences form state
   const [budget, setBudget] = useState<'budget' | 'standard' | 'flexible'>('standard')
@@ -443,8 +445,35 @@ export default function MealPlanSheet({ open, onClose, calorieTarget, unit }: Me
               Actual portions may vary. Hit your daily calorie number — that is what matters.
             </p>
           </div>
+
+          <div style={{ marginTop: '1.25rem', paddingBottom: '0.5rem' }}>
+            <button
+              onClick={() => setGroceryOpen(true)}
+              style={{
+                width: '100%',
+                padding: '0.85rem 1rem',
+                background: 'transparent',
+                border: '1px solid var(--border-mid)',
+                color: 'var(--text-2)',
+                fontSize: '0.7rem',
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                fontFamily: 'Inter, sans-serif',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s ease, color 0.15s ease',
+              }}
+            >
+              Grocery List
+            </button>
+          </div>
         </div>
       )}
+
+      <GroceryListSheet
+        open={groceryOpen}
+        onClose={() => setGroceryOpen(false)}
+        mealPlan={mealPlan}
+      />
 
     </BottomSheet>
   )
