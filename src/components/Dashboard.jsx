@@ -4,6 +4,7 @@ import SettingsSheet from './SettingsSheet'
 import CheckinSheet from './CheckinSheet'
 import { calculatePlan } from '../utils/calculate'
 import { supabase } from '../lib/supabase'
+import ShareSheet from './ShareSheet'
 
 function formatDate(d) {
   const day   = d.getDate()
@@ -45,6 +46,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
   const [checkinOpen, setCheckinOpen] = useState(false)
   const [streak, setStreak] = useState(() => parseInt(localStorage.getItem('ronin_streak') || '1', 10))
   const [loggedDays, setLoggedDays] = useState(new Set())
+  const [shareOpen, setShareOpen] = useState(false)
   const plan = loadPlan()
 
   useEffect(() => {
@@ -363,9 +365,31 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
             return <div key={i} className={`pip${loggedDays.has(ds) ? '' : ' empty'}`} />
           })}
         </div>
-        <span style={{ fontSize: '0.65rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
-          Week {weekNumber}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '0.65rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+            Week {weekNumber}
+          </span>
+          <button
+            onClick={() => setShareOpen(true)}
+            aria-label="Share"
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '0.25rem',
+              cursor: 'pointer',
+              color: 'var(--text-3)',
+              display: 'flex',
+              alignItems: 'center',
+              lineHeight: 1,
+            }}
+          >
+            <svg width="11" height="13" viewBox="0 0 11 13" fill="none">
+              <line x1="5.5" y1="9" x2="5.5" y2="1" stroke="currentColor" strokeWidth="1"/>
+              <polyline points="2.5,4 5.5,1 8.5,4" stroke="currentColor" strokeWidth="1" fill="none"/>
+              <polyline points="1,7 1,12 10,12 10,7" stroke="currentColor" strokeWidth="1" fill="none"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Bottom sheets */}
@@ -380,6 +404,13 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
       <BottomSheet open={sheet === 'progress'} onClose={() => setSheet(null)} title="Progress">
         <ProgressDetail plan={plan} />
       </BottomSheet>
+
+      <ShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        streak={streak}
+        plan={plan}
+      />
 
       <CheckinSheet
         open={checkinOpen}
