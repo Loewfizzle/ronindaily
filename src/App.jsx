@@ -106,9 +106,9 @@ function profileToLocal(data) {
   if (data.unit === 'metric') {
     profile.heightCm = String(data.height_cm)
   } else {
-    const totalIn = data.height_cm / 2.54
+    const totalIn = Math.round(data.height_cm / 2.54)
     profile.heightFt = String(Math.floor(totalIn / 12))
-    profile.heightIn = String(Math.round(totalIn % 12))
+    profile.heightIn = String(totalIn % 12)
   }
   return profile
 }
@@ -139,6 +139,7 @@ function clearLocal() {
   localStorage.removeItem('ronin_profile')
   localStorage.removeItem('ronin_start')
   localStorage.removeItem('ronin_last_checkin')
+  localStorage.removeItem('ronin_streak')
 }
 
 export default function App() {
@@ -190,7 +191,8 @@ export default function App() {
       const profile = profileToLocal(data)
       localStorage.setItem('ronin_profile', JSON.stringify(profile))
       localStorage.setItem('ronin_committed', 'true')
-      localStorage.setItem('ronin_start', new Date(data.start_date).toISOString())
+      const [sy, sm, sd] = data.start_date.split('-').map(Number)
+      localStorage.setItem('ronin_start', new Date(sy, sm - 1, sd).toISOString())
 
       const { data: checkins } = await supabase
         .from('checkins')
@@ -240,6 +242,7 @@ export default function App() {
   const handleReset = async () => {
     if (user) {
       try {
+        await supabase.from('daily_logs').delete().eq('user_id', user.id)
         await supabase.from('checkins').delete().eq('user_id', user.id)
         await supabase.from('profiles').delete().eq('id', user.id)
       } catch { /* offline */ }

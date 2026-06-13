@@ -40,6 +40,10 @@ function paceDisplay(pace, unit) {
   return `${pace} lbs/wk`
 }
 
+function localDateStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
   const [sheet, setSheet] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -55,7 +59,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        const today = new Date().toISOString().split('T')[0]
+        const today = localDateStr()
 
         await supabase.from('daily_logs').upsert(
           { user_id: user.id, logged_date: today },
@@ -73,11 +77,11 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
 
         const dateSet = new Set(logs.map(r => r.logged_date))
 
-        // Count consecutive days back from today
+        // Count consecutive days back from today (using local dates)
         let count = 0
         const cur = new Date()
         while (true) {
-          const ds = cur.toISOString().split('T')[0]
+          const ds = localDateStr(cur)
           if (dateSet.has(ds)) {
             count++
             cur.setDate(cur.getDate() - 1)
@@ -86,12 +90,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
           }
         }
 
-        // Which of the last 7 days have entries
+        // Which of the last 7 days have entries (local dates)
         const last7 = new Set()
         for (let i = 0; i < 7; i++) {
           const d = new Date()
           d.setDate(d.getDate() - i)
-          const ds = d.toISOString().split('T')[0]
+          const ds = localDateStr(d)
           if (dateSet.has(ds)) last7.add(ds)
         }
 
@@ -361,7 +365,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
           {Array.from({ length: 7 }).map((_, i) => {
             const d = new Date()
             d.setDate(d.getDate() - (6 - i))
-            const ds = d.toISOString().split('T')[0]
+            const ds = localDateStr(d)
             return <div key={i} className={`pip${loggedDays.has(ds) ? '' : ' empty'}`} />
           })}
         </div>
