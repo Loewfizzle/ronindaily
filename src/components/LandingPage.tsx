@@ -49,6 +49,7 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
         paddingBottom: 'max(3rem, env(safe-area-inset-bottom))',
         opacity: visible ? 1 : 0,
         transition: 'opacity 0.8s ease',
+        pointerEvents: visible ? 'auto' : 'none',
       }}
     >
       <div
