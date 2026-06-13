@@ -9,7 +9,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+      // includeAssets removed — globPatterns already precaches *.{ico,png,svg,woff2}
+      // Having both caused every icon to appear twice in the SW precache manifest
       manifest: {
         name: 'Ronin Daily',
         short_name: 'Ronin',
@@ -35,10 +36,12 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Precache only static assets with stable filenames.
-        // HTML and JS/CSS bundles are intentionally excluded — they are
-        // served network-first below so every deploy is immediately visible.
-        globPatterns: ['**/*.{ico,png,svg,woff2}'],
+        // Precache static assets with stable filenames.
+        // PNGs are excluded from the glob — pwa-192/512 are added automatically
+        // via manifest.icons, so globbing *.png would create duplicate entries.
+        // apple-touch-icon.png is listed explicitly so it is still precached.
+        // HTML and JS/CSS are excluded and served network-first (see below).
+        globPatterns: ['**/*.{ico,svg,woff2}', 'apple-touch-icon.png'],
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
