@@ -23,8 +23,8 @@ export default function BottomSheet({ open, onClose, title, children }: BottomSh
       }}
     >
       <div className="sheet-panel">
-        {/* Drag handle */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '0.7rem 0 0' }}>
+        {/* Drag handle — hidden on desktop where sheets render as centered modals */}
+        <div className="sheet-handle" style={{ display: 'flex', justifyContent: 'center', padding: '0.7rem 0 0' }}>
           <div style={{ width: '2.25rem', height: '2px', background: 'var(--border-mid)', borderRadius: '1px' }} />
         </div>
 

@@ -128,122 +128,126 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
 
   return (
     <div style={S.page}>
-      <div style={S.logo}>
-        <div className="font-jp" style={S.kanji}>侍</div>
-        <div style={S.wordmark}>Ronin Daily</div>
-      </div>
-
-      <div style={S.divider}>
-        <p style={S.tagline}>
-          There are no shortcuts. You know this.<br />
-          Provide your data. The mission follows.
-        </p>
-      </div>
-
-      <div style={S.fields}>
-        {/* Unit system */}
-        <div>
-          <div className="field-label">Units</div>
-          <div style={{ display: 'flex', gap: '1px' }}>
-            {(['imperial', 'metric'] as UnitSystem[]).map((u) => (
-              <button key={u} className={'toggle-btn' + (unit === u ? ' active' : '')} onClick={() => setUnit(u)}>
-                {u}
-              </button>
-            ))}
-          </div>
+      {/* Center the content block on desktop */}
+      <div className="onboarding-inner">
+        <div style={S.logo}>
+          <div className="font-jp onboarding-kanji" style={S.kanji}>侍</div>
+          <div style={S.wordmark}>Ronin Daily</div>
         </div>
 
-        {/* Current weight */}
-        <div>
-          <div className="field-label">Current Weight</div>
-          <div style={S.fieldRow}>
-            <input
-              className="input-bare"
-              type="number"
-              inputMode="decimal"
-              placeholder="0"
-              value={form.weightLbs}
-              onChange={(e) => set('weightLbs', e.target.value)}
-              style={{ width: '5rem' }}
-            />
-            <span style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
-          </div>
-          {errors.weightLbs && <div className="field-error">{errors.weightLbs}</div>}
+        <div style={S.divider}>
+          <p style={S.tagline}>
+            There are no shortcuts. You know this.<br />
+            Provide your data. The mission follows.
+          </p>
         </div>
 
-        {/* Height */}
-        <div>
-          <div className="field-label">Height</div>
-          {unit === 'imperial' ? (
-            <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-end' }}>
-              <div style={S.fieldRow}>
-                <input className="input-bare" type="number" inputMode="numeric" placeholder="5"
-                  value={form.heightFt} onChange={(e) => set('heightFt', e.target.value)} style={{ width: '3rem' }} />
-                <span style={S.unitLabel}>ft</span>
-              </div>
-              <div style={S.fieldRow}>
-                <input className="input-bare" type="number" inputMode="numeric" placeholder="10"
-                  value={form.heightIn} onChange={(e) => set('heightIn', e.target.value)} style={{ width: '3rem' }} />
-                <span style={S.unitLabel}>in</span>
-              </div>
+        <div style={S.fields}>
+          {/* Unit system */}
+          <div>
+            <div className="field-label">Units</div>
+            <div style={{ display: 'flex', gap: '1px' }}>
+              {(['imperial', 'metric'] as UnitSystem[]).map((u) => (
+                <button key={u} className={'toggle-btn' + (unit === u ? ' active' : '')} onClick={() => setUnit(u)}>
+                  {u}
+                </button>
+              ))}
             </div>
-          ) : (
+          </div>
+
+          {/* Current weight + Goal weight — side by side on desktop */}
+          <div className="onboarding-weight-pair">
+            <div>
+              <div className="field-label">Current Weight</div>
+              <div style={S.fieldRow}>
+                <input
+                  className="input-bare"
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={form.weightLbs}
+                  onChange={(e) => set('weightLbs', e.target.value)}
+                  style={{ width: '5rem' }}
+                />
+                <span style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
+              </div>
+              {errors.weightLbs && <div className="field-error">{errors.weightLbs}</div>}
+            </div>
+
+            <div>
+              <div className="field-label">Goal Weight</div>
+              <div style={S.fieldRow}>
+                <input className="input-bare" type="number" inputMode="decimal" placeholder="0"
+                  value={form.goalWeightLbs} onChange={(e) => set('goalWeightLbs', e.target.value)} style={{ width: '5rem' }} />
+                <span style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
+              </div>
+              {errors.goalWeightLbs && <div className="field-error">{errors.goalWeightLbs}</div>}
+            </div>
+          </div>
+
+          {/* Height */}
+          <div>
+            <div className="field-label">Height</div>
+            {unit === 'imperial' ? (
+              <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-end' }}>
+                <div style={S.fieldRow}>
+                  <input className="input-bare" type="number" inputMode="numeric" placeholder="5"
+                    value={form.heightFt} onChange={(e) => set('heightFt', e.target.value)} style={{ width: '3rem' }} />
+                  <span style={S.unitLabel}>ft</span>
+                </div>
+                <div style={S.fieldRow}>
+                  <input className="input-bare" type="number" inputMode="numeric" placeholder="10"
+                    value={form.heightIn} onChange={(e) => set('heightIn', e.target.value)} style={{ width: '3rem' }} />
+                  <span style={S.unitLabel}>in</span>
+                </div>
+              </div>
+            ) : (
+              <div style={S.fieldRow}>
+                <input className="input-bare" type="number" inputMode="decimal" placeholder="178"
+                  value={form.heightCm} onChange={(e) => set('heightCm', e.target.value)} style={{ width: '5rem' }} />
+                <span style={S.unitLabel}>cm</span>
+              </div>
+            )}
+            {(errors.heightFt || errors.heightCm) && <div className="field-error">Required</div>}
+          </div>
+
+          {/* Age */}
+          <div>
+            <div className="field-label">Age</div>
             <div style={S.fieldRow}>
-              <input className="input-bare" type="number" inputMode="decimal" placeholder="178"
-                value={form.heightCm} onChange={(e) => set('heightCm', e.target.value)} style={{ width: '5rem' }} />
-              <span style={S.unitLabel}>cm</span>
+              <input className="input-bare" type="number" inputMode="numeric" placeholder="35"
+                value={form.age} onChange={(e) => set('age', e.target.value)} style={{ width: '4rem' }} />
+              <span style={S.unitLabel}>years</span>
             </div>
-          )}
-          {(errors.heightFt || errors.heightCm) && <div className="field-error">Required</div>}
-        </div>
-
-        {/* Age */}
-        <div>
-          <div className="field-label">Age</div>
-          <div style={S.fieldRow}>
-            <input className="input-bare" type="number" inputMode="numeric" placeholder="35"
-              value={form.age} onChange={(e) => set('age', e.target.value)} style={{ width: '4rem' }} />
-            <span style={S.unitLabel}>years</span>
+            {errors.age && <div className="field-error">{errors.age}</div>}
           </div>
-          {errors.age && <div className="field-error">{errors.age}</div>}
-        </div>
 
-        {/* Sex */}
-        <div>
-          <div className="field-label">Sex</div>
-          <div style={S.sexRow}>
-            {(['M', 'F'] as Sex[]).map((s) => (
-              <button key={s} style={S.sexBtn(form.sex === s)} onClick={() => set('sex', s)}>{s}</button>
-            ))}
+          {/* Sex */}
+          <div>
+            <div className="field-label">Sex</div>
+            <div style={S.sexRow}>
+              {(['M', 'F'] as Sex[]).map((s) => (
+                <button key={s} style={S.sexBtn(form.sex === s)} onClick={() => set('sex', s)}>{s}</button>
+              ))}
+            </div>
+            {errors.sex && <div className="field-error">{errors.sex}</div>}
           </div>
-          {errors.sex && <div className="field-error">{errors.sex}</div>}
-        </div>
 
-        {/* Goal weight */}
-        <div>
-          <div className="field-label">Goal Weight</div>
-          <div style={S.fieldRow}>
-            <input className="input-bare" type="number" inputMode="decimal" placeholder="0"
-              value={form.goalWeightLbs} onChange={(e) => set('goalWeightLbs', e.target.value)} style={{ width: '5rem' }} />
-            <span style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
+          {/* Timeline */}
+          <div>
+            <div className="field-label">Timeline</div>
+            <div style={S.fieldRow}>
+              <input className="input-bare" type="number" inputMode="numeric" placeholder="12"
+                value={form.targetWeeks} onChange={(e) => set('targetWeeks', e.target.value)} style={{ width: '4rem' }} />
+              <span style={S.unitLabel}>weeks</span>
+            </div>
+            {errors.targetWeeks && <div className="field-error">{errors.targetWeeks}</div>}
           </div>
-          {errors.goalWeightLbs && <div className="field-error">{errors.goalWeightLbs}</div>}
-        </div>
 
-        {/* Timeline */}
-        <div>
-          <div className="field-label">Timeline</div>
-          <div style={S.fieldRow}>
-            <input className="input-bare" type="number" inputMode="numeric" placeholder="12"
-              value={form.targetWeeks} onChange={(e) => set('targetWeeks', e.target.value)} style={{ width: '4rem' }} />
-            <span style={S.unitLabel}>weeks</span>
+          {/* Commit */}
+          <div style={{ paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
+            <button className="commit-btn" onClick={handleCommit}>Commit</button>
           </div>
-          {errors.targetWeeks && <div className="field-error">{errors.targetWeeks}</div>}
-        </div>
-
-        {/* Commit */}
-        <div style={{ paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
-          <button className="commit-btn" onClick={handleCommit}>Commit</button>
         </div>
       </div>
     </div>

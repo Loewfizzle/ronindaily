@@ -52,13 +52,54 @@ interface DashboardProps {
   connectionWarning: string | null
 }
 
+// Renders the streak pip row + week indicator + share button.
+// Used in both the mobile footer and the desktop left-column footer.
+function FooterContent({
+  loggedDays,
+  weekNumber,
+  onShare,
+}: {
+  loggedDays: Set<string>
+  weekNumber: number
+  onShare: () => void
+}) {
+  return (
+    <>
+      <div style={{ display: 'flex', gap: '3px' }}>
+        {Array.from({ length: 7 }).map((_, i) => {
+          const d = new Date()
+          d.setDate(d.getDate() - (6 - i))
+          const ds = localDateStr(d)
+          return <div key={i} className={`pip${loggedDays.has(ds) ? '' : ' empty'}`} />
+        })}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <span style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+          Week {weekNumber}
+        </span>
+        <button
+          onClick={onShare}
+          aria-label="Share"
+          style={{ background: 'none', border: 'none', padding: '0.25rem', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', lineHeight: 1 }}
+        >
+          <svg width="11" height="13" viewBox="0 0 11 13" fill="none">
+            <line x1="5.5" y1="9" x2="5.5" y2="1" stroke="currentColor" strokeWidth="1"/>
+            <polyline points="2.5,4 5.5,1 8.5,4" stroke="currentColor" strokeWidth="1" fill="none"/>
+            <polyline points="1,7 1,12 10,12 10,7" stroke="currentColor" strokeWidth="1" fill="none"/>
+          </svg>
+        </button>
+      </div>
+    </>
+  )
+}
+
 export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connectionWarning }: DashboardProps) {
-  const [sheet, setSheet]           = useState<'food' | 'movement' | 'progress' | null>(null)
+  const [sheet, setSheet]               = useState<'food' | 'movement' | 'progress' | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [checkinOpen, setCheckinOpen]   = useState(false)
   const [shareOpen, setShareOpen]       = useState(false)
-  const [streak, setStreak]         = useState<number>(() => parseInt(localStorage.getItem('ronin_streak') || '1', 10))
-  const [loggedDays, setLoggedDays] = useState<Set<string>>(new Set())
+  const [streak, setStreak]             = useState<number>(() => parseInt(localStorage.getItem('ronin_streak') || '1', 10))
+  const [loggedDays, setLoggedDays]     = useState<Set<string>>(new Set())
   const plan = loadPlan()
 
   useEffect(() => {
@@ -85,7 +126,6 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
         const dateSet = new Set<string>(logs.map(r => r.logged_date))
 
-        // Count consecutive days back from today (using local dates)
         let count = 0
         const cur = new Date()
         while (true) {
@@ -93,7 +133,6 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           if (dateSet.has(ds)) { count++; cur.setDate(cur.getDate() - 1) } else break
         }
 
-        // Which of the last 7 days have entries (local dates)
         const last7 = new Set<string>()
         for (let i = 0; i < 7; i++) {
           const d = new Date()
@@ -134,147 +173,155 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   } = plan
 
   const progressPct = Math.min(100, Math.max(1, ((startWeight - currentWeight) / (startWeight - goalWeight)) * 100))
-  const lastCheckin = parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10)
-  const showCheckin = dayNumber % 7 === 0 && lastCheckin !== weekNumber
+  const lastCheckin  = parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10)
+  const showCheckin  = dayNumber % 7 === 0 && lastCheckin !== weekNumber
+
+  const footerProps = { loggedDays, weekNumber, onShare: () => setShareOpen(true) }
 
   return (
-    <div style={{
-      minHeight: '100svh',
-      background: 'var(--bg)',
-      paddingTop: 'env(safe-area-inset-top)',
-      paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
-      display: 'flex',
-      flexDirection: 'column',
-      maxWidth: '480px',
-      margin: '0 auto',
-    }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.6rem 1.5rem', borderBottom: '1px solid var(--border-mid)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-          <span className="font-jp" style={{ fontSize: '2.2rem', color: 'var(--red)', lineHeight: 1 }}>侍</span>
-          <div>
-            <div style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '0.22em', color: 'var(--text)', textTransform: 'uppercase', lineHeight: 1.1 }}>RONIN</div>
-            <div style={{ fontSize: '0.7rem', fontWeight: 300, letterSpacing: '0.6em', color: 'var(--text-2)', textTransform: 'uppercase', lineHeight: 1.2, marginTop: '0.2rem' }}>DAILY</div>
+    <div className="dash-root">
+
+      {/* ── LEFT COLUMN ─────────────────────────────────────────────── */}
+      <div className="dash-left">
+
+        {/* Header: branding + settings */}
+        <div className="dash-header">
+          <div className="dash-brand">
+            <span className="font-jp dash-kanji">侍</span>
+            <div>
+              <div className="dash-ronin">RONIN</div>
+              <div className="dash-daily">DAILY</div>
+            </div>
           </div>
-        </div>
-        <button onClick={() => setSettingsOpen(true)} aria-label="Settings" style={{ background: 'none', border: 'none', padding: '0.25rem', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', lineHeight: 1 }}>
-          <svg width="20" height="15" viewBox="0 0 16 12" fill="none">
-            <line x1="0" y1="2" x2="16" y2="2" stroke="currentColor" strokeWidth="1"/>
-            <circle cx="6" cy="2" r="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
-            <line x1="0" y1="10" x2="16" y2="10" stroke="currentColor" strokeWidth="1"/>
-            <circle cx="10" cy="10" r="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
-          </svg>
-        </button>
-      </div>
-
-      {/* Connection warning */}
-      {connectionWarning && (
-        <div style={{ padding: '0.6rem 1.5rem 0', fontSize: '0.7rem', color: 'var(--red-bright)', letterSpacing: '0.04em' }}>
-          {connectionWarning}
-        </div>
-      )}
-
-      {/* Date + heading */}
-      <div style={{ padding: '1.4rem 1.5rem 0.75rem' }}>
-        <div style={{ fontSize: '0.78rem', letterSpacing: '0.12em', color: 'var(--text-2)', marginBottom: '0.2rem' }}>
-          {formatDate(date)} — DAY {dayNumber}
-        </div>
-        <div style={{ fontSize: '0.72rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
-          Mission Briefing
-        </div>
-      </div>
-
-      {/* Progress blade */}
-      <div style={{ padding: '0.5rem 1.5rem 1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>{wtDisplay(startWeight, unit)}</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{wtDisplay(poundsToLose, unit)} · {daysLeft} days</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>{wtDisplay(goalWeight, unit)}</span>
-        </div>
-        <div className="blade-wrap">
-          <div className="blade-fill" style={{ width: `${progressPct}%` }} />
-          <div className="blade-dot start" />
-          <div className="blade-dot end" />
-        </div>
-      </div>
-
-      {/* Unsustainable warning */}
-      {unsustainable && realisticEndDate && (
-        <div style={{ margin: '0 1.5rem 1rem', padding: '0.9rem 1rem', borderLeft: '2px solid var(--red-bright)', background: 'var(--elevated)' }}>
-          <div style={{ fontSize: '0.72rem', letterSpacing: '0.18em', color: 'var(--red-bright)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-            Timeline Not Realistic
-          </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text)', lineHeight: 1.65, margin: 0 }}>
-            Your timeline is not realistic. Adjusted completion:{' '}
-            <span style={{ color: 'var(--text)', fontWeight: 500 }}>{formatDate(realisticEndDate)}</span>.
-            Commit to the math or change the goal.
-          </p>
-        </div>
-      )}
-
-      {/* Check-in banner */}
-      {showCheckin && (
-        <div onClick={() => setCheckinOpen(true)} style={{ margin: '0 1.5rem 1rem', padding: '0.9rem 1rem', borderLeft: '2px solid var(--red)', background: 'var(--elevated)', cursor: 'pointer' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>Week {weekNumber} complete. Log your weight.</span>
-        </div>
-      )}
-
-      {/* Mission blocks */}
-      <div style={{ padding: '0 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <div className="mission-block" onClick={() => setSheet('food')}>
-          <BlockHeader label="Food" />
-          <div style={{ fontSize: '2.2rem', fontWeight: 300, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--text)', marginBottom: '0.3rem' }}>
-            {calorieTarget.toLocaleString()}
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-2)', fontWeight: 400, marginLeft: '0.35rem' }}>cal</span>
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>
-            Deficit: {(maintenance - calorieTarget).toLocaleString()} cal below maintenance.
-          </div>
-        </div>
-
-        <div className="mission-block" onClick={() => setSheet('movement')}>
-          <BlockHeader label="Movement" />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '0.3rem' }}>
-            {movement.map((m, i) => (
-              <div key={i} style={{ fontSize: '1.05rem', color: 'var(--text)', fontWeight: 400 }}>{m}</div>
-            ))}
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>{movementCal} cal burn required.</div>
-        </div>
-
-        <div className="mission-block" onClick={() => setSheet('progress')}>
-          <BlockHeader label="Progress" />
-          <div style={{ display: 'flex', gap: '2rem' }}>
-            <Stat label="Remaining" value={wtVal(poundsToLose, unit)} unit={unit === 'metric' ? 'kg' : 'lbs'} />
-            <Stat label="Days Left" value={String(daysLeft)} />
-            <Stat label="Streak"    value={String(streak)} />
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div style={{ padding: '1rem 1.5rem 0', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '3px' }}>
-          {Array.from({ length: 7 }).map((_, i) => {
-            const d = new Date()
-            d.setDate(d.getDate() - (6 - i))
-            const ds = localDateStr(d)
-            return <div key={i} className={`pip${loggedDays.has(ds) ? '' : ' empty'}`} />
-          })}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase' }}>Week {weekNumber}</span>
-          <button onClick={() => setShareOpen(true)} aria-label="Share" style={{ background: 'none', border: 'none', padding: '0.25rem', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', lineHeight: 1 }}>
-            <svg width="11" height="13" viewBox="0 0 11 13" fill="none">
-              <line x1="5.5" y1="9" x2="5.5" y2="1" stroke="currentColor" strokeWidth="1"/>
-              <polyline points="2.5,4 5.5,1 8.5,4" stroke="currentColor" strokeWidth="1" fill="none"/>
-              <polyline points="1,7 1,12 10,12 10,7" stroke="currentColor" strokeWidth="1" fill="none"/>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Settings"
+            className="dash-settings-btn"
+          >
+            <svg width="20" height="15" viewBox="0 0 16 12" fill="none">
+              <line x1="0" y1="2" x2="16" y2="2" stroke="currentColor" strokeWidth="1"/>
+              <circle cx="6" cy="2" r="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
+              <line x1="0" y1="10" x2="16" y2="10" stroke="currentColor" strokeWidth="1"/>
+              <circle cx="10" cy="10" r="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
             </svg>
           </button>
         </div>
+
+        {/* Connection warning */}
+        {connectionWarning && (
+          <div style={{ padding: '0.6rem 1.5rem 0', fontSize: '0.7rem', color: 'var(--red-bright)', letterSpacing: '0.04em' }}>
+            {connectionWarning}
+          </div>
+        )}
+
+        {/* Date + day heading */}
+        <div style={{ padding: '1.4rem 1.5rem 0.75rem' }}>
+          <div style={{ fontSize: '0.78rem', letterSpacing: '0.12em', color: 'var(--text-2)', marginBottom: '0.2rem' }}>
+            {formatDate(date)} — DAY {dayNumber}
+          </div>
+          {/* "Mission Briefing" shows here on mobile; on desktop it moves to the right column */}
+          <div className="dash-mobile-subtitle" style={{ fontSize: '0.72rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+            Mission Briefing
+          </div>
+        </div>
+
+        {/* Progress blade */}
+        <div style={{ padding: '0.5rem 1.5rem 1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>{wtDisplay(startWeight, unit)}</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{wtDisplay(poundsToLose, unit)} · {daysLeft} days</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>{wtDisplay(goalWeight, unit)}</span>
+          </div>
+          <div className="blade-wrap">
+            <div className="blade-fill" style={{ width: `${progressPct}%` }} />
+            <div className="blade-dot start" />
+            <div className="blade-dot end" />
+          </div>
+        </div>
+
+        {/* Unsustainable warning */}
+        {unsustainable && realisticEndDate && (
+          <div style={{ margin: '0 1.5rem 1rem', padding: '0.9rem 1rem', borderLeft: '2px solid var(--red-bright)', background: 'var(--elevated)' }}>
+            <div style={{ fontSize: '0.72rem', letterSpacing: '0.18em', color: 'var(--red-bright)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+              Timeline Not Realistic
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text)', lineHeight: 1.65, margin: 0 }}>
+              Your timeline is not realistic. Adjusted completion:{' '}
+              <span style={{ color: 'var(--text)', fontWeight: 500 }}>{formatDate(realisticEndDate)}</span>.
+              Commit to the math or change the goal.
+            </p>
+          </div>
+        )}
+
+        {/* Check-in banner */}
+        {showCheckin && (
+          <div
+            onClick={() => setCheckinOpen(true)}
+            style={{ margin: '0 1.5rem 1rem', padding: '0.9rem 1rem', borderLeft: '2px solid var(--red)', background: 'var(--elevated)', cursor: 'pointer' }}
+          >
+            <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>Week {weekNumber} complete. Log your weight.</span>
+          </div>
+        )}
+
+        {/* Spacer — on desktop pushes footer to bottom of left column */}
+        <div className="dash-left-spacer" />
+
+        {/* Footer — desktop only (hidden on mobile) */}
+        <div className="dash-footer dash-footer-desktop" style={{ padding: '1rem 1.5rem 0', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <FooterContent {...footerProps} />
+        </div>
       </div>
 
-      {/* Bottom sheets */}
+      {/* ── RIGHT COLUMN ────────────────────────────────────────────── */}
+      <div className="dash-right">
+
+        {/* "Mission Briefing" heading — desktop only */}
+        <div className="dash-desktop-heading" style={{ padding: '1.4rem 1.5rem 0.75rem' }}>
+          <div style={{ fontSize: '0.72rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+            Mission Briefing
+          </div>
+        </div>
+
+        {/* Mission blocks */}
+        <div className="dash-mission-blocks" style={{ padding: '0 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div className="mission-block" onClick={() => setSheet('food')}>
+            <BlockHeader label="Food" />
+            <div style={{ fontSize: '2.2rem', fontWeight: 300, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--text)', marginBottom: '0.3rem' }}>
+              {calorieTarget.toLocaleString()}
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-2)', fontWeight: 400, marginLeft: '0.35rem' }}>cal</span>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>
+              Deficit: {(maintenance - calorieTarget).toLocaleString()} cal below maintenance.
+            </div>
+          </div>
+
+          <div className="mission-block" onClick={() => setSheet('movement')}>
+            <BlockHeader label="Movement" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '0.3rem' }}>
+              {movement.map((m, i) => (
+                <div key={i} style={{ fontSize: '1.05rem', color: 'var(--text)', fontWeight: 400 }}>{m}</div>
+              ))}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>{movementCal} cal burn required.</div>
+          </div>
+
+          <div className="mission-block" onClick={() => setSheet('progress')}>
+            <BlockHeader label="Progress" />
+            <div style={{ display: 'flex', gap: '2rem' }}>
+              <Stat label="Remaining" value={wtVal(poundsToLose, unit)} unit={unit === 'metric' ? 'kg' : 'lbs'} />
+              <Stat label="Days Left"  value={String(daysLeft)} />
+              <Stat label="Streak"     value={String(streak)} />
+            </div>
+          </div>
+        </div>
+
+        {/* Footer — mobile only (hidden on desktop) */}
+        <div className="dash-footer dash-footer-mobile" style={{ padding: '1rem 1.5rem 0', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <FooterContent {...footerProps} />
+        </div>
+      </div>
+
+      {/* ── Sheets ──────────────────────────────────────────────────── */}
       <BottomSheet open={sheet === 'food'} onClose={() => setSheet(null)} title="Food">
         <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} />
       </BottomSheet>
@@ -393,7 +440,7 @@ function MovementDetail({ movement, cal }: MovementDetailProps) {
 function ProgressDetail({ plan }: { plan: PlanResult }) {
   const { unit, startWeight, currentWeight, goalWeight, poundsToLose, daysLeft, pacePerWeek } = plan
   const stats = [
-    { label: 'Start',     value: wtDisplay(startWeight, unit)  },
+    { label: 'Start',     value: wtDisplay(startWeight, unit)   },
     { label: 'Current',   value: wtDisplay(currentWeight, unit) },
     { label: 'Goal',      value: wtDisplay(goalWeight, unit)    },
     { label: 'Remaining', value: wtDisplay(poundsToLose, unit)  },
