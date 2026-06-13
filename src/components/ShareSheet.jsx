@@ -65,11 +65,11 @@ export default function ShareSheet({ open, onClose, streak, plan }) {
             <span style={{ fontSize: '2.6rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>
               {streak}
             </span>
-            <span style={{ fontSize: '0.68rem', color: 'var(--text-2)', letterSpacing: '0.1em' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-2)', letterSpacing: '0.1em' }}>
               day streak
             </span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
             Down {lostLbs} lbs. Day {dayNumber} of {totalDays}.
           </div>
           <div
@@ -96,7 +96,7 @@ export default function ShareSheet({ open, onClose, streak, plan }) {
           >
             <div
               style={{
-                fontSize: '0.75rem',
+                fontSize: '0.82rem',
                 color: 'var(--text)',
                 letterSpacing: '0.06em',
                 marginBottom: '0.4rem',
@@ -112,7 +112,7 @@ export default function ShareSheet({ open, onClose, streak, plan }) {
                 gap: '1rem',
               }}
             >
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
                 {opt.desc}
               </span>
               <button

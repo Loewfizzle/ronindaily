@@ -51,7 +51,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
           >
             <div
               style={{
-                fontSize: '0.75rem',
+                fontSize: '0.82rem',
                 color: 'var(--text)',
                 letterSpacing: '0.06em',
                 marginBottom: '0.4rem',
@@ -64,7 +64,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
               <div>
                 <p
                   style={{
-                    fontSize: '0.78rem',
+                    fontSize: '0.85rem',
                     color: 'var(--text-2)',
                     lineHeight: 1.65,
                     margin: '0 0 0.9rem',
@@ -81,7 +81,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
                       color: 'var(--text)',
                       border: 'none',
                       borderRadius: 0,
-                      fontSize: '0.68rem',
+                      fontSize: '0.72rem',
                       letterSpacing: '0.3em',
                       fontWeight: 600,
                       fontFamily: 'Inter, sans-serif',
@@ -97,7 +97,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
                       background: 'none',
                       border: 'none',
                       color: 'var(--text-2)',
-                      fontSize: '0.68rem',
+                      fontSize: '0.72rem',
                       letterSpacing: '0.1em',
                       cursor: 'pointer',
                       fontFamily: 'Inter, sans-serif',
@@ -117,7 +117,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
                   gap: '1rem',
                 }}
               >
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
                   {opt.desc}
                 </span>
                 <button

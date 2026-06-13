@@ -29,7 +29,7 @@ body,
 
 body {
   margin: 0;
-  font-size: 17px;
+  font-size: 18px;
   background-color: var(--bg);
   color: var(--text);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -183,7 +183,7 @@ input[type='number'] {
 /* ── Toggle button pair ── */
 .toggle-btn {
   padding: 0.3rem 0.85rem;
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-family: 'Inter', sans-serif;
@@ -202,7 +202,7 @@ input[type='number'] {
 
 /* ── Field label ── */
 .field-label {
-  font-size: 0.57rem;
+  font-size: 0.63rem;
   letter-spacing: 0.22em;
   color: var(--text-2);
   text-transform: uppercase;
@@ -217,7 +217,7 @@ input[type='number'] {
   color: var(--text);
   border: none;
   border-radius: 0;
-  font-size: 0.67rem;
+  font-size: 0.72rem;
   letter-spacing: 0.44em;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
@@ -232,7 +232,7 @@ input[type='number'] {
 
 /* ── Field error ── */
 .field-error {
-  font-size: 0.58rem;
+  font-size: 0.63rem;
   color: var(--red-bright);
   margin-top: 0.25rem;
   letter-spacing: 0.04em;

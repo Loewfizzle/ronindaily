@@ -84,13 +84,13 @@ export default function CheckinSheet({ open, onClose, plan }) {
               onChange={(e) => { setWeight(e.target.value); setError(null) }}
               style={{ width: '6rem' }}
             />
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-2)', paddingBottom: '0.45rem', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-2)', paddingBottom: '0.45rem', flexShrink: 0 }}>
               {unitLabel}
             </span>
           </div>
           {error && <div className="field-error">{error}</div>}
           {paceLine && (
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', margin: '0.75rem 0 0', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', margin: '0.75rem 0 0', lineHeight: 1.5 }}>
               {paceLine}
             </p>
           )}
@@ -98,7 +98,7 @@ export default function CheckinSheet({ open, onClose, plan }) {
 
         {/* Last logged weight reference */}
         <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '0.65rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+          <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
             Last logged
           </div>
           <div style={{ fontSize: '1.2rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>
