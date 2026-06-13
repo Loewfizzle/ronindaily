@@ -241,11 +241,13 @@ export default function App() {
         return
       }
 
-      console.log('[ronin] loadProfile gen=' + gen + ' found profile start_date=' + data.start_date)
+      console.log('[ronin] loadProfile gen=' + gen + ' found profile start_date=' + data.start_date +
+        ' prepared=' + localStorage.getItem('ronin_prepared'))
       const profile = profileToLocal(data)
       localStorage.setItem('ronin_profile', JSON.stringify(profile))
       localStorage.setItem('ronin_committed', 'true')
-      localStorage.setItem('ronin_prepared', 'true')
+      // ronin_prepared is intentionally NOT set here.
+      // Only handleCommit (→ 'false') and handleBegin (→ 'true') own this flag.
       const [sy, sm, sd] = data.start_date.split('-').map(Number)
       localStorage.setItem('ronin_start', new Date(sy, sm - 1, sd).toISOString())
 
@@ -269,8 +271,10 @@ export default function App() {
       }
 
       setProfileError(false)
-      console.log('[ronin] loadProfile gen=' + gen + ' → dashboard')
-      setScreen('dashboard')
+      const dest = resolveScreen()
+      console.log('[ronin] loadProfile gen=' + gen + ' → ' + dest +
+        ' (prepared=' + localStorage.getItem('ronin_prepared') + ')')
+      setScreen(dest)
     } catch (e) {
       if (loadGen.current !== gen) return
       console.log('[ronin] loadProfile gen=' + gen + ' exception:', e)
