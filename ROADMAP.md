@@ -110,6 +110,35 @@ Simple one-screen explanation of Ronin Daily before the login screen.
 
 ---
 
+## ACHIEVEMENT BADGES
+
+Discipline-themed achievement system that rewards consistency without cheerleading. Tone is cold and earned — unlocking a rank, not receiving a trophy.
+
+**Badge list:**
+
+- 7 day streak — Initiated
+- 30 day streak — Ronin
+- 50 day streak — Disciplined
+- 100 day streak — Hardened
+- First weekly check-in completed — Accountable
+- Goal weight reached — Mission Complete
+- First meal plan generated — Prepared
+
+**Behavior:**
+
+- Badge surfaces as a brief banner notification when earned, not a permanent dashboard element
+- Each badge has a share card generated on unlock — same style as existing share sheet, shows badge name, 侍 kanji, and ronindaily.app
+- Badges stored in Supabase so they persist across devices and sessions
+- Dashboard stays minimal — no badge grid, no trophy case
+
+**Design tone:**
+
+- No emoji, no exclamation points, no congratulations language
+- Badge unlock message example: *You have earned a rank. Initiated. 7 days without failure.*
+- Share card is stark and dark, same aesthetic as the rest of the app
+
+---
+
 ## APPLE SIGN IN
 
 - Requires Apple Developer account ($99/year)
