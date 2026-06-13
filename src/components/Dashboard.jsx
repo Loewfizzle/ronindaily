@@ -38,7 +38,7 @@ function paceDisplay(pace, unit) {
   return `${pace} lbs/wk`
 }
 
-export default function Dashboard({ onReset, onAdjustGoal }) {
+export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
   const [sheet, setSheet] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [checkinOpen, setCheckinOpen] = useState(false)
@@ -330,6 +330,7 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
         onClose={() => setSettingsOpen(false)}
         onAdjustGoal={onAdjustGoal}
         onReset={onReset}
+        onSignOut={onSignOut}
       />
     </div>
   )

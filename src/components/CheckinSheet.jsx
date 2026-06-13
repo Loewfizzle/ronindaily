@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import BottomSheet from './BottomSheet'
+import { supabase } from '../lib/supabase'
 
 export default function CheckinSheet({ open, onClose, plan }) {
   const [weight, setWeight] = useState('')
@@ -40,7 +41,7 @@ export default function CheckinSheet({ open, onClose, plan }) {
     onClose()
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!weight || isNaN(parsedW) || parsedW <= 0) {
       setError('Enter a valid weight')
       return
@@ -49,6 +50,19 @@ export default function CheckinSheet({ open, onClose, plan }) {
     stored.currentWeightLbs = String(parsedW)
     localStorage.setItem('ronin_profile', JSON.stringify(stored))
     localStorage.setItem('ronin_last_checkin', String(plan.weekNumber))
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from('checkins').insert({
+          user_id: user.id,
+          week_number: plan.weekNumber,
+          weight: parsedW,
+          checked_in_at: new Date().toISOString(),
+        })
+      }
+    } catch { /* offline — localStorage cache is set */ }
+
     setWeight('')
     setError(null)
     onClose()

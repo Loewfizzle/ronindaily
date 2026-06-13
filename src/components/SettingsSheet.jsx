@@ -3,6 +3,12 @@ import BottomSheet from './BottomSheet'
 
 const OPTIONS = [
   {
+    id: 'signout',
+    label: 'Sign Out',
+    desc: 'Sign out of your account.',
+    confirm: 'You will be signed out. Your data will remain.',
+  },
+  {
     id: 'adjust',
     label: 'Adjust Goal',
     desc: 'Change your numbers. Timeline resets to day one.',
@@ -16,7 +22,7 @@ const OPTIONS = [
   },
 ]
 
-export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset }) {
+export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, onSignOut }) {
   const [confirming, setConfirming] = useState(null)
 
   const handleClose = () => {
@@ -27,9 +33,8 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset }) 
   const handleConfirm = () => {
     const action = confirming
     setConfirming(null)
-    // Both actions call setScreen('onboarding') in App, which unmounts Dashboard
-    // and SettingsSheet — no need to call onClose() first
-    if (action === 'adjust') onAdjustGoal()
+    if (action === 'signout') onSignOut()
+    else if (action === 'adjust') onAdjustGoal()
     else if (action === 'reset') onReset()
   }
 
