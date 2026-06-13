@@ -140,7 +140,7 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
             >
               <div
                 className="font-jp"
-                style={{ fontSize: '2.2rem', color: 'var(--red)', lineHeight: 1, marginBottom: '0.65rem' }}
+                style={{ fontSize: '2.2rem', color: 'var(--red)', lineHeight: 1, marginBottom: '0.65rem', animation: 'kanjiPulse 4s ease-in-out infinite' }}
               >
                 {kanji}
               </div>
