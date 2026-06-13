@@ -9,7 +9,7 @@ import BadgeDetailSheet from './BadgeDetailSheet'
 import { calculatePlan, formatMovementItem, getActivityInfo } from '../utils/calculate'
 import { checkAndAwardBadges, BADGE_KANJI } from '../utils/badges'
 import { supabase } from '../lib/supabase'
-import type { PlanResult, Meal, UnitSystem, MovementItem } from '../types'
+import type { PlanResult, Meal, UnitSystem, MovementItem, MealPlanData } from '../types'
 import type { BadgeDef } from '../utils/badges'
 
 interface EarnedBadge {
@@ -647,7 +647,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
       {/* ── Sheets ──────────────────────────────────────────────────── */}
       <BottomSheet open={sheet === 'food'} onClose={() => setSheet(null)} title="Food">
-        <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} />
+        <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} dayNumber={dayNumber} />
       </BottomSheet>
 
       <BottomSheet open={sheet === 'movement'} onClose={() => setSheet(null)} title="Movement">
@@ -849,9 +849,23 @@ function Stat({ label, value, unit }: StatProps) {
 
 interface FoodDetailProps {
   data: { target: number; maintenance: number; deficit: number; meals: Meal[] }
+  dayNumber: number
 }
 
-function FoodDetail({ data }: FoodDetailProps) {
+function FoodDetail({ data, dayNumber }: FoodDetailProps) {
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  const mealPlan = (() => {
+    try { return JSON.parse(localStorage.getItem('ronin_meal_plan') || 'null') as MealPlanData | null }
+    catch { return null }
+  })()
+
+  // Cycle through 7-day plan; fall back to first day if index out of range
+  const dayIndex = (dayNumber - 1) % 7
+  const planDay = mealPlan?.days?.[dayIndex] ?? mealPlan?.days?.[0] ?? null
+
+  const toggle = (key: string) => setExpanded(prev => prev === key ? null : key)
+
   return (
     <div>
       <div style={{ marginBottom: '1.5rem' }}>
@@ -863,17 +877,74 @@ function FoodDetail({ data }: FoodDetailProps) {
           Maintenance: {data.maintenance.toLocaleString()} cal — you are {(data.maintenance - data.target).toLocaleString()} below.
         </div>
       </div>
+
       <div style={{ borderTop: '1px solid var(--border)' }}>
-        {data.meals.map((meal, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0.9rem 0', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ fontSize: '0.78rem', letterSpacing: '0.18em', color: 'var(--text-2)', textTransform: 'uppercase' }}>{meal.name}</span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem' }}>
-              <span style={{ fontSize: '1.2rem', fontWeight: 300, color: 'var(--text)' }}>{meal.cal}</span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>cal</span>
+        {data.meals.map((meal) => {
+          const slotKey = meal.name.toLowerCase() as 'breakfast' | 'lunch' | 'dinner' | 'snacks'
+          const isOpen = expanded === slotKey
+          const items = planDay ? planDay[slotKey] : null
+
+          return (
+            <div key={slotKey} style={{ borderBottom: '1px solid var(--border)' }}>
+              {/* Row header — tappable */}
+              <button
+                onClick={() => toggle(slotKey)}
+                style={{
+                  width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.9rem 0', fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                <span style={{ fontSize: '0.78rem', letterSpacing: '0.18em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
+                  {meal.name}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem' }}>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 300, color: 'var(--text)' }}>{meal.cal}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>cal</span>
+                  </div>
+                  <span style={{
+                    fontSize: '0.85rem', color: 'var(--text-3)',
+                    display: 'inline-block',
+                    transition: 'transform 0.2s ease',
+                    transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                  }}>›</span>
+                </div>
+              </button>
+
+              {/* Expandable food items */}
+              <div style={{
+                overflow: 'hidden',
+                maxHeight: isOpen ? '600px' : '0',
+                transition: 'max-height 0.2s ease',
+              }}>
+                <div style={{ paddingBottom: '0.75rem' }}>
+                  {items && items.length > 0 ? items.map((item, j) => (
+                    <div key={j} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                      padding: '0.45rem 0',
+                    }}>
+                      <div style={{ flex: 1, paddingRight: '1rem' }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.4 }}>{item.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.1rem' }}>{item.portion}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', flexShrink: 0 }}>
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text-2)' }}>{item.calories}</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>cal</span>
+                      </div>
+                    </div>
+                  )) : (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-3)', lineHeight: 1.6, paddingTop: '0.1rem', paddingBottom: '0.25rem' }}>
+                      No meal plan generated yet. Generate one from the Meal Plan block.
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
+
       <div className="note-box" style={{ marginTop: '1.25rem' }}>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
           Log every meal honestly. Deviation means recalculation next week.
