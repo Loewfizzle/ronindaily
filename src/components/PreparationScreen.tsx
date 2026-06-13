@@ -44,13 +44,13 @@ export default function PreparationScreen({ onBegin }: PreparationScreenProps) {
       </div>
 
       {/* Status label */}
-      <div style={{ fontSize: '0.62rem', letterSpacing: '0.32em', color: 'var(--text-2)', textTransform: 'uppercase', marginBottom: '2rem' }}>
+      <div style={{ fontSize: '0.72rem', letterSpacing: '0.32em', color: 'var(--text-2)', textTransform: 'uppercase', marginBottom: '2rem' }}>
         Your Mission Is Set
       </div>
 
       {/* Goal — cold and factual */}
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <div style={{ fontSize: '0.88rem', color: 'var(--text)', lineHeight: 1.9, letterSpacing: '0.02em' }}>
+        <div style={{ fontSize: '1.05rem', color: 'var(--text)', lineHeight: 1.9, letterSpacing: '0.02em' }}>
           Lose {loseDisplay}.<br />
           {targetWeeks} weeks.&nbsp; {calorieTarget.toLocaleString()} cal/day.
         </div>
@@ -60,12 +60,12 @@ export default function PreparationScreen({ onBegin }: PreparationScreenProps) {
       <div style={{ width: '100%', maxWidth: '320px', borderTop: '1px solid var(--border)', marginBottom: '2rem' }} />
 
       {/* Brand statement */}
-      <div style={{ fontSize: '0.78rem', color: 'var(--text-2)', textAlign: 'center', maxWidth: '300px', lineHeight: 1.75, marginBottom: '1.5rem', letterSpacing: '0.02em' }}>
+      <div style={{ fontSize: '0.88rem', color: 'var(--text-2)', textAlign: 'center', maxWidth: '300px', lineHeight: 1.75, marginBottom: '1.5rem', letterSpacing: '0.02em' }}>
         A warrior prepares before battle, not during it.
       </div>
 
       {/* Instruction */}
-      <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', textAlign: 'center', maxWidth: '280px', lineHeight: 1.85, marginBottom: '2.5rem' }}>
+      <div style={{ fontSize: '0.82rem', color: 'var(--text-3)', textAlign: 'center', maxWidth: '280px', lineHeight: 1.85, marginBottom: '2.5rem' }}>
         Your mission begins when you are ready. Review your plan. Gather what you need. Return when prepared.
       </div>
 
@@ -73,10 +73,10 @@ export default function PreparationScreen({ onBegin }: PreparationScreenProps) {
       <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '400px', marginBottom: '3.5rem' }}>
         {statBlocks.map(({ label, value }) => (
           <div key={label} style={{ flex: 1, background: 'var(--elevated)', padding: '1rem 0.75rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.55rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.45rem' }}>
+            <div style={{ fontSize: '0.65rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.45rem' }}>
               {label}
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text)', letterSpacing: '0.02em' }}>
+            <div style={{ fontSize: '1rem', fontWeight: 300, color: 'var(--text)', letterSpacing: '0.01em' }}>
               {value}
             </div>
           </div>

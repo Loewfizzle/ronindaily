@@ -202,7 +202,7 @@ input[type='number'] {
 
 /* ── Field label ── */
 .field-label {
-  font-size: 0.63rem;
+  font-size: 0.72rem;
   letter-spacing: 0.22em;
   color: var(--text-2);
   text-transform: uppercase;
