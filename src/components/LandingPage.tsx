@@ -183,6 +183,38 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
 
         <Divider />
 
+        {/* Quote block */}
+        <div
+          style={{
+            width: '100%',
+            padding: '2.5rem 1.5rem',
+            borderLeft: '2px solid var(--red)',
+            textAlign: 'left',
+          }}
+        >
+          <p
+            style={{
+              fontSize: '1rem',
+              fontStyle: 'italic',
+              color: 'var(--text-2)',
+              lineHeight: 1.8,
+              margin: '0 0 0.75rem',
+            }}
+          >
+            Your body is the result of every choice you have made. Change the choices.
+          </p>
+          <div
+            style={{
+              fontSize: '0.65rem',
+              letterSpacing: '0.3em',
+              color: 'var(--text-3)',
+              textTransform: 'uppercase',
+            }}
+          >
+            Bushido
+          </div>
+        </div>
+
         {/* CTA — inline font-size overrides commit-btn class value */}
         <div style={{ width: '100%', marginTop: '2.75rem' }}>
           <button
