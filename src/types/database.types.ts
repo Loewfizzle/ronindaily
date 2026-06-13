@@ -121,6 +121,37 @@ export type Database = {
           },
         ]
       }
+      badges: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string
+          badge_id: string
+          earned_at: string
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id: string
+          badge_id: string
+          earned_at?: string
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string
+          badge_id?: string
+          earned_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'badges_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

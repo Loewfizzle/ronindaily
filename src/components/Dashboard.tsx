@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import BottomSheet from './BottomSheet'
 import SettingsSheet from './SettingsSheet'
 import CheckinSheet from './CheckinSheet'
 import ShareSheet from './ShareSheet'
 import MealPlanSheet from './MealPlanSheet'
+import BadgeBanner from './BadgeBanner'
 import { calculatePlan } from '../utils/calculate'
+import { checkAndAwardBadges } from '../utils/badges'
 import { supabase } from '../lib/supabase'
 import type { PlanResult, Meal, UnitSystem } from '../types'
+import type { BadgeDef } from '../utils/badges'
 
 function formatDate(d: Date): string {
   const day   = d.getDate()
@@ -102,7 +105,11 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [mealPlanOpen, setMealPlanOpen] = useState(false)
   const [streak, setStreak]             = useState<number>(() => parseInt(localStorage.getItem('ronin_streak') || '1', 10))
   const [loggedDays, setLoggedDays]     = useState<Set<string>>(new Set())
+  const [badgeQueue, setBadgeQueue]     = useState<BadgeDef[]>([])
+  const [activeBadge, setActiveBadge]   = useState<BadgeDef | null>(null)
   const plan = loadPlan()
+  const planRef = useRef(plan)
+  planRef.current = plan
 
   useEffect(() => {
     async function logAndCalcStreak() {
@@ -146,6 +153,28 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         setStreak(count)
         setLoggedDays(last7)
         localStorage.setItem('ronin_streak', String(count))
+
+        const currentPlan = planRef.current
+        if (currentPlan) {
+          const hasCheckedIn = parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10) > 0
+          const hasMealPlan = (() => {
+            try {
+              const m = JSON.parse(localStorage.getItem('ronin_meal_plan') || 'null') as { calorieTarget?: number } | null
+              return m?.calorieTarget === currentPlan.calorieTarget
+            } catch { return false }
+          })()
+          const newBadges = await checkAndAwardBadges({
+            userId: user.id,
+            streak: count,
+            plan: currentPlan,
+            hasCheckedIn,
+            hasMealPlan,
+          })
+          if (newBadges.length > 0) {
+            setBadgeQueue(newBadges)
+            setActiveBadge(newBadges[0])
+          }
+        }
       } catch {
         // Offline — keep localStorage streak, pips stay empty
       }
@@ -178,6 +207,14 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const progressPct = range === 0 ? 100 : Math.min(100, Math.max(1, ((startWeight - currentWeight) / range) * 100))
   const lastCheckin  = parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10)
   const showCheckin  = dayNumber % 7 === 0 && lastCheckin !== weekNumber
+
+  const handleBadgeDismiss = useCallback(() => {
+    setBadgeQueue(prev => {
+      const next = prev.slice(1)
+      setActiveBadge(next[0] ?? null)
+      return next
+    })
+  }, [])
 
   const footerProps = { loggedDays, weekNumber, onShare: () => setShareOpen(true) }
 
@@ -343,6 +380,8 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       <CheckinSheet open={checkinOpen} onClose={() => setCheckinOpen(false)} plan={plan} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} onAdjustGoal={onAdjustGoal} onReset={onReset} onSignOut={onSignOut} />
       <MealPlanSheet open={mealPlanOpen} onClose={() => setMealPlanOpen(false)} calorieTarget={calorieTarget} unit={unit} />
+
+      <BadgeBanner badge={activeBadge} onDismiss={handleBadgeDismiss} />
     </div>
   )
 }
