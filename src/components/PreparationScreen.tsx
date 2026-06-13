@@ -448,8 +448,8 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
               <GroceryListView
                 readyFooter={
                   <div style={{ marginTop: '1.5rem' }}>
-                    <button type="button" className="commit-btn" onClick={() => go(4, 'forward')}>
-                      I Have Everything. I Am Ready. →
+                    <button type="button" className="commit-btn" onClick={() => go(4, 'forward')} style={{ lineHeight: 1.65 }}>
+                      I Have Everything.<br />I Am Ready. →
                     </button>
                   </div>
                 }
@@ -499,47 +499,47 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                 {/* YOUR MISSION recap block */}
                 <div style={{ width: '100%', marginBottom: '2.25rem' }}>
                   <div style={{
-                    fontSize: '0.62rem', letterSpacing: '0.3em', color: 'var(--text-2)',
-                    textTransform: 'uppercase', marginBottom: '0.85rem',
+                    fontSize: '0.9rem', letterSpacing: '0.3em', color: 'var(--text)',
+                    textTransform: 'uppercase', marginBottom: '1.1rem',
                   }}>
                     Your Mission
                   </div>
                   <div style={{
                     border: '1px solid var(--border-mid)', background: 'var(--surface)',
-                    padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.9rem',
+                    padding: '1.75rem', display: 'flex', flexDirection: 'column',
                   }}>
                     {/* Goal */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
-                      <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', flexShrink: 0 }}>Goal</span>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--text)', textAlign: 'right', lineHeight: 1.5 }}>Lose {loseDisplay} in {targetWeeks} weeks</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: '0.8rem', letterSpacing: '0.12em', color: 'var(--text-2)', textTransform: 'uppercase', flexShrink: 0 }}>Goal</span>
+                      <span style={{ fontSize: '1rem', color: 'var(--text)', textAlign: 'right', lineHeight: 1.5 }}>Lose {loseDisplay} in {targetWeeks} weeks</span>
                     </div>
                     {/* Daily Target */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
-                      <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', flexShrink: 0 }}>Daily Target</span>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--text)', textAlign: 'right', lineHeight: 1.5 }}>{calorieTarget.toLocaleString()} calories per day</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem', paddingTop: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: '0.8rem', letterSpacing: '0.12em', color: 'var(--text-2)', textTransform: 'uppercase', flexShrink: 0 }}>Daily Target</span>
+                      <span style={{ fontSize: '1rem', color: 'var(--text)', textAlign: 'right', lineHeight: 1.5 }}>{calorieTarget.toLocaleString()} calories per day</span>
                     </div>
                     {/* Movement */}
                     {plan.movement.length > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-                        <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', flexShrink: 0, paddingTop: '0.15rem' }}>Movement</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', paddingTop: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontSize: '0.8rem', letterSpacing: '0.12em', color: 'var(--text-2)', textTransform: 'uppercase', flexShrink: 0, paddingTop: '0.15rem' }}>Movement</span>
                         <div style={{ textAlign: 'right' }}>
                           {plan.movement.map((m, i) => (
-                            <div key={i} style={{ fontSize: '0.9rem', color: 'var(--text)', lineHeight: 1.65 }}>{m.text}</div>
+                            <div key={i} style={{ fontSize: '1rem', color: 'var(--text)', lineHeight: 1.7 }}>{m.text}</div>
                           ))}
                         </div>
                       </div>
                     )}
                     {/* Meal Plan */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
-                      <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', flexShrink: 0 }}>Meal Plan</span>
-                      <span style={{ fontSize: '0.9rem', color: hasMealPlan ? 'var(--red)' : 'var(--text-3)', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem', paddingTop: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: '0.8rem', letterSpacing: '0.12em', color: 'var(--text-2)', textTransform: 'uppercase', flexShrink: 0 }}>Meal Plan</span>
+                      <span style={{ fontSize: '0.95rem', color: hasMealPlan ? 'var(--red)' : 'var(--text-3)', textAlign: 'right' }}>
                         {hasMealPlan ? 'Ready ✓' : 'Not generated'}
                       </span>
                     </div>
                     {/* Grocery List */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
-                      <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', flexShrink: 0 }}>Grocery List</span>
-                      <span style={{ fontSize: '0.9rem', color: hasGrocery ? 'var(--red)' : 'var(--text-3)', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem', paddingTop: '1rem' }}>
+                      <span style={{ fontSize: '0.8rem', letterSpacing: '0.12em', color: 'var(--text-2)', textTransform: 'uppercase', flexShrink: 0 }}>Grocery List</span>
+                      <span style={{ fontSize: '0.95rem', color: hasGrocery ? 'var(--red)' : 'var(--text-3)', textAlign: 'right' }}>
                         {hasGrocery ? 'Ready ✓' : 'Not generated'}
                       </span>
                     </div>
@@ -548,11 +548,22 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
 
                 {/* Quote */}
                 <div style={{
-                  fontSize: '1rem', fontStyle: 'italic', color: 'var(--text-2)',
-                  textAlign: 'center', lineHeight: 1.85, marginBottom: '2.5rem',
-                  maxWidth: '320px',
+                  textAlign: 'center', padding: '2.5rem 0',
+                  display: 'flex', flexDirection: 'column', gap: '0',
                 }}>
-                  Your mission begins now. There is no pause. There is no mercy. Only the work.
+                  {[
+                    'Your mission begins now.',
+                    'There is no pause. There is no mercy.',
+                    'Only the work.',
+                  ].map((line, i) => (
+                    <div key={i} style={{
+                      fontSize: '1.2rem', color: 'var(--text)',
+                      lineHeight: 2.2, letterSpacing: '0.02em',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {line}
+                    </div>
+                  ))}
                 </div>
 
                 {/* CTA */}
