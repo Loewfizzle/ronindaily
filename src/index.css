@@ -278,10 +278,10 @@ input[type='number'] {
     font-size: 0.8rem;
   }
 
-  /* Sex buttons (M / F) */
+  /* Sex buttons (M / F) — auto width so they fit in the side-by-side pair column */
   .onboarding-sex-btn {
-    width: 5rem !important;
-    padding: 0.9rem 0 !important;
+    width: auto !important;
+    padding: 0.9rem 1.5rem !important;
     font-size: 0.88rem !important;
   }
 
@@ -492,13 +492,31 @@ input[type='number'] {
   to   { opacity: 1; transform: scale(1)    translateY(0); }
 }
 
-/* ── Onboarding desktop centering + two-column weight pair ── */
+/* ── Onboarding kanji pulse ── */
+@keyframes kanjiPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
 
-/* Mobile: weight pair stacks vertically */
+.onboarding-kanji {
+  animation: kanjiPulse 4s ease-in-out infinite;
+}
+
+/* ── Onboarding layout — weight pair + sex/age pair ── */
+
+/* Both pairs are side-by-side rows on mobile */
 .onboarding-weight-pair {
   display: flex;
-  flex-direction: column;
-  gap: 1.7rem;
+  flex-direction: row;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.onboarding-sex-age-pair {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  align-items: flex-start;
 }
 
 /* Mobile: inner content unrestricted */
@@ -516,10 +534,15 @@ input[type='number'] {
     width: 100%;
   }
 
-  /* Current weight + Goal weight side by side */
+  /* Wider gap on desktop */
   .onboarding-weight-pair {
-    flex-direction: row;
     gap: 3rem;
+  }
+
+  /* Stack Sex + Age vertically on desktop */
+  .onboarding-sex-age-pair {
+    flex-direction: column;
+    gap: 1.7rem;
   }
 
   /* Larger kanji on desktop */

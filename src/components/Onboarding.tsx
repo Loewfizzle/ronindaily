@@ -282,39 +282,40 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
             {(errors.heightFt || errors.heightCm) && <div className="field-error">Required</div>}
           </div>
 
-          {/* Age */}
-          <div>
-            <div className="field-label">Age</div>
-            <div style={S.fieldRow}>
-              <input
-                ref={ageRef}
-                className="input-bare"
-                type="number"
-                inputMode="numeric"
-                placeholder="35"
-                enterKeyHint="next"
-                value={form.age}
-                onChange={(e) => {
-                  set('age', e.target.value)
-                  if (e.target.value.length >= 2) advance(goalRef)
-                }}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(goalRef) } }}
-                style={{ width: '4rem' }}
-              />
-              <span className="onboarding-unit-label" style={S.unitLabel}>years</span>
+          {/* Age + Sex — side by side on mobile */}
+          <div className="onboarding-sex-age-pair">
+            <div>
+              <div className="field-label">Age</div>
+              <div style={S.fieldRow}>
+                <input
+                  ref={ageRef}
+                  className="input-bare"
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="35"
+                  enterKeyHint="next"
+                  value={form.age}
+                  onChange={(e) => {
+                    set('age', e.target.value)
+                    if (e.target.value.length >= 2) advance(goalRef)
+                  }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(goalRef) } }}
+                  style={{ width: '4rem' }}
+                />
+                <span className="onboarding-unit-label" style={S.unitLabel}>years</span>
+              </div>
+              {errors.age && <div className="field-error">{errors.age}</div>}
             </div>
-            {errors.age && <div className="field-error">{errors.age}</div>}
-          </div>
 
-          {/* Sex */}
-          <div>
-            <div className="field-label">Sex</div>
-            <div style={S.sexRow}>
-              {(['M', 'F'] as Sex[]).map((s) => (
-                <button key={s} className="onboarding-sex-btn" style={S.sexBtn(form.sex === s)} onClick={() => set('sex', s)}>{s}</button>
-              ))}
+            <div>
+              <div className="field-label">Sex</div>
+              <div style={S.sexRow}>
+                {(['M', 'F'] as Sex[]).map((s) => (
+                  <button key={s} className="onboarding-sex-btn" style={S.sexBtn(form.sex === s)} onClick={() => set('sex', s)}>{s}</button>
+                ))}
+              </div>
+              {errors.sex && <div className="field-error">{errors.sex}</div>}
             </div>
-            {errors.sex && <div className="field-error">{errors.sex}</div>}
           </div>
 
           {/* Timeline */}
@@ -336,6 +337,11 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
               <span className="onboarding-unit-label" style={S.unitLabel}>weeks</span>
             </div>
             {errors.targetWeeks && <div className="field-error">{errors.targetWeeks}</div>}
+            {form.targetWeeks && parseInt(form.targetWeeks, 10) > 0 && (
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', marginTop: '0.35rem', letterSpacing: '0.04em' }}>
+                = {parseInt(form.targetWeeks, 10) * 7} days
+              </div>
+            )}
           </div>
 
           {/* Commit */}
