@@ -559,6 +559,38 @@ input[type='number'] {
   }
 }
 
+/* ── Koi fish watermark ───────────────────────────────────────────────────── */
+
+@keyframes koiPulse {
+  0%, 100% { opacity: 0.055 }
+  50%       { opacity: 0.10 }
+}
+
+@keyframes koiSway {
+  0%, 100% { transform: translateX(-8px) rotate(-0.8deg) }
+  50%       { transform: translateX(8px)  rotate(0.8deg) }
+}
+
+/* ── Goal reached glow ────────────────────────────────────────────────────── */
+
+@keyframes goalGlow {
+  0%, 100% {
+    text-shadow:
+      0 0  6px rgba(201,168,76,0.55),
+      0 0 18px rgba(201,168,76,0.28);
+  }
+  50% {
+    text-shadow:
+      0 0 12px rgba(201,168,76,0.95),
+      0 0 32px rgba(201,168,76,0.55),
+      0 0 56px rgba(201,168,76,0.22);
+  }
+}
+
+.goal-glow {
+  animation: goalGlow 2.5s ease-in-out infinite;
+}
+
 /* ── Achievement Badge Banner ─────────────────────────────────────────────── */
 
 .badge-overlay {

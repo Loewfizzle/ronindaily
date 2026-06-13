@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import BottomSheet from './BottomSheet'
 import SettingsSheet from './SettingsSheet'
 import CheckinSheet from './CheckinSheet'
@@ -223,6 +223,23 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const lastCheckin  = parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10)
   const showCheckin  = dayNumber % 7 === 0 && lastCheckin !== weekNumber
 
+  // Best-progress tracking — only updates on check-in days to ignore daily fluctuation
+  const savedBest = parseFloat(localStorage.getItem('ronin_best_progress') || '0')
+  const bestProgress = Math.max(progressPct, savedBest)
+  if (showCheckin && progressPct > savedBest) {
+    localStorage.setItem('ronin_best_progress', String(progressPct))
+  }
+
+  // Permanent goal-reached record — set once, never cleared (not in clearLocal)
+  if (progressPct >= 100 && !localStorage.getItem('ronin_goal_reached')) {
+    localStorage.setItem('ronin_goal_reached', JSON.stringify({
+      achievedAt: new Date().toISOString(),
+      lostLbs: startWeight - currentWeight,
+      unit,
+      totalDays,
+    }))
+  }
+
   const handleBadgeDismiss = useCallback(() => {
     setBadgeQueue(prev => {
       const next = prev.slice(1)
@@ -323,7 +340,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
         {earnedBadges.length > 0 && (
           <div className="badge-row-desktop">
-            <BadgeRow badges={earnedBadges} onSelect={setSelectedBadge} />
+            <BadgeRow badges={earnedBadges} onSelect={setSelectedBadge} progressPct={bestProgress} />
           </div>
         )}
 
@@ -380,7 +397,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
         {earnedBadges.length > 0 && (
           <div className="badge-row-mobile">
-            <BadgeRow badges={earnedBadges} onSelect={setSelectedBadge} />
+            <BadgeRow badges={earnedBadges} onSelect={setSelectedBadge} progressPct={bestProgress} />
           </div>
         )}
 
@@ -416,12 +433,56 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+const CIRCLE_STYLE: React.CSSProperties = {
+  width: '44px',
+  height: '44px',
+  flexShrink: 0,
+  background: 'var(--elevated)',
+  border: '1px solid var(--red)',
+  borderRadius: '50%',
+  position: 'relative',
+  cursor: 'pointer',
+  padding: 0,
+  overflow: 'hidden',
+}
+
+function GoalBadgeCircle({ badge, onSelect, progressPct }: {
+  badge: EarnedBadge
+  onSelect: (b: EarnedBadge) => void
+  progressPct: number
+}) {
+  const fillPct = Math.min(100, Math.max(0, progressPct))
+  const isComplete = fillPct >= 100
+  const maskVal = `linear-gradient(to top, black ${fillPct}%, transparent ${fillPct}%)`
+
+  return (
+    <button onClick={() => onSelect(badge)} style={CIRCLE_STYLE}>
+      {/* Red baseline kanji */}
+      <span className="font-jp" style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '1.1rem', color: 'var(--red)', lineHeight: 1,
+      }}>完</span>
+      {/* Gold fill from bottom, masked to progressPct */}
+      <span className={`font-jp${isComplete ? ' goal-glow' : ''}`} style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '1.1rem', color: 'var(--gold)', lineHeight: 1,
+        WebkitMaskImage: maskVal,
+        maskImage: maskVal,
+      }}>完</span>
+    </button>
+  )
+}
+
 function BadgeRow({
   badges,
   onSelect,
+  progressPct,
 }: {
   badges: EarnedBadge[]
   onSelect: (b: EarnedBadge) => void
+  progressPct: number
 }) {
   return (
     <div style={{
@@ -431,29 +492,21 @@ function BadgeRow({
       padding: '0.75rem 1.5rem',
       scrollbarWidth: 'none',
     }}>
-      {badges.map(b => (
-        <button
-          key={b.badge_id}
-          onClick={() => onSelect(b)}
-          style={{
-            width: '44px',
-            height: '44px',
-            flexShrink: 0,
-            background: 'var(--elevated)',
-            border: '1px solid var(--red)',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            padding: 0,
-          }}
-        >
-          <span className="font-jp" style={{ fontSize: '1.1rem', color: 'var(--red)', lineHeight: 1 }}>
-            {BADGE_KANJI[b.badge_id] ?? '侍'}
-          </span>
-        </button>
-      ))}
+      {badges.map(b =>
+        b.badge_id === 'goal_reached' ? (
+          <GoalBadgeCircle key={b.badge_id} badge={b} onSelect={onSelect} progressPct={progressPct} />
+        ) : (
+          <button
+            key={b.badge_id}
+            onClick={() => onSelect(b)}
+            style={{ ...CIRCLE_STYLE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <span className="font-jp" style={{ fontSize: '1.1rem', color: 'var(--red)', lineHeight: 1 }}>
+              {BADGE_KANJI[b.badge_id] ?? '侍'}
+            </span>
+          </button>
+        )
+      )}
     </div>
   )
 }
