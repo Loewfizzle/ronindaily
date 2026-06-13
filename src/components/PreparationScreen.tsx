@@ -10,104 +10,169 @@ interface PreparationScreenProps {
 function KoiFish() {
   return (
     <svg
-      viewBox="0 0 400 240"
+      viewBox="0 0 580 370"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
-      style={{ color: 'var(--red)', width: '82vw', maxWidth: '600px', display: 'block' }}
+      style={{ color: 'var(--red)', width: '92vw', maxWidth: '700px', display: 'block' }}
     >
-      {/* Body */}
-      <path fill="currentColor" d="M 42,120 C 36,104 36,86 48,76 C 60,66 76,64 96,64 C 116,58 148,50 185,48 C 218,46 254,54 280,72 C 295,84 304,96 306,108 L 306,132 C 304,144 295,156 280,168 C 254,186 218,194 185,192 C 148,190 116,182 96,176 C 76,176 60,174 48,164 C 36,154 36,136 42,120 Z" />
+      {/* Body — wide torpedo tapering to blunt head and narrow peduncle */}
+      <path fill="currentColor" d="
+        M 52,185
+        C 52,160 62,130 86,112
+        C 110,94 148,88 188,88
+        C 228,88 270,100 306,120
+        C 334,136 352,158 356,172
+        L 356,198
+        C 352,212 334,234 306,250
+        C 270,270 228,282 188,282
+        C 148,282 110,276 86,258
+        C 62,240 52,210 52,185
+        Z
+      " />
 
-      {/* Upper tail lobe */}
-      <path fill="currentColor" d="M 306,112 C 320,98 338,78 354,56 C 362,44 368,36 372,28 C 366,44 356,66 348,84 C 340,100 338,110 340,118 C 338,116 328,114 306,112 Z" />
+      {/* Upper caudal fin lobe — large dramatic upward sweep */}
+      <path fill="currentColor" d="
+        M 356,172
+        C 382,144 418,110 454,82
+        C 480,60 508,40 534,24
+        C 518,58 498,88 472,118
+        C 444,150 416,170 386,180
+        C 374,182 362,180 356,178
+        Z
+      " />
 
-      {/* Lower tail lobe */}
-      <path fill="currentColor" d="M 306,128 C 320,142 338,162 354,184 C 362,196 368,204 372,212 C 366,196 356,174 348,156 C 340,140 338,130 340,122 C 338,124 328,126 306,128 Z" />
+      {/* Lower caudal fin lobe — large dramatic downward sweep */}
+      <path fill="currentColor" d="
+        M 356,198
+        C 382,226 418,260 454,288
+        C 480,310 508,330 534,346
+        C 518,312 498,282 472,252
+        C 444,220 416,200 386,190
+        C 374,188 362,190 356,192
+        Z
+      " />
 
-      {/* Dorsal fin */}
-      <path fill="currentColor" d="M 100,64 C 112,48 132,32 162,22 C 188,14 218,16 244,28 C 264,38 280,52 288,64 C 274,58 256,54 236,56 C 212,58 186,60 162,62 C 140,64 120,64 100,64 Z" />
+      {/* Dorsal fin — tall sail rising well above body */}
+      <path fill="currentColor" d="
+        M 88,112
+        C 104,78 132,48 170,32
+        C 204,18 246,16 282,30
+        C 314,44 338,68 354,98
+        C 332,78 304,64 272,62
+        C 238,60 200,68 166,80
+        C 134,92 110,104 88,112
+        Z
+      " />
 
-      {/* Pectoral fin */}
-      <path fill="currentColor" d="M 94,120 C 102,134 116,152 122,168 C 126,176 124,182 118,182 C 110,178 96,162 88,144 C 84,134 86,124 94,120 Z" />
+      {/* Pectoral fin — large paddle-shaped fin below front of body */}
+      <path fill="currentColor" d="
+        M 110,196
+        C 122,224 128,256 124,280
+        C 120,298 110,308 98,302
+        C 82,294 70,264 68,236
+        C 64,216 72,196 88,190
+        Z
+      " />
 
-      {/* Ventral fin */}
-      <path fill="currentColor" d="M 252,188 C 258,198 260,210 254,216 C 246,220 236,214 230,204 C 226,196 228,188 234,187 C 240,186 246,187 252,188 Z" />
+      {/* Ventral / anal fin */}
+      <path fill="currentColor" d="
+        M 268,274
+        C 278,296 280,318 270,326
+        C 260,330 246,318 240,298
+        C 236,284 240,274 252,272
+        Z
+      " />
 
-      {/* Tail fin rays */}
-      <g stroke="currentColor" strokeWidth="1" fill="none" opacity="0.45">
-        <path d="M 316,108 C 332,90 350,68 368,42" />
-        <path d="M 323,110 C 338,94 356,74 372,50" />
-        <path d="M 329,113 C 342,100 358,82 372,60" />
-        <path d="M 316,132 C 332,150 350,172 368,198" />
-        <path d="M 323,130 C 338,146 356,166 372,190" />
-        <path d="M 329,127 C 342,140 358,158 372,180" />
+      {/* Upper caudal fin rays */}
+      <g stroke="currentColor" strokeWidth="1.2" fill="none" opacity="0.5">
+        <path d="M 362,168 C 386,142 416,108 452,78" />
+        <path d="M 372,164 C 394,140 422,108 456,82" />
+        <path d="M 382,164 C 402,142 426,116 456,90" />
+        <path d="M 392,166 C 410,148 428,128 452,106" />
+        <path d="M 400,170 C 414,154 428,136 446,116" />
+      </g>
+
+      {/* Lower caudal fin rays */}
+      <g stroke="currentColor" strokeWidth="1.2" fill="none" opacity="0.5">
+        <path d="M 362,202 C 386,228 416,262 452,292" />
+        <path d="M 372,206 C 394,230 422,262 456,288" />
+        <path d="M 382,206 C 402,228 426,254 456,280" />
+        <path d="M 392,204 C 410,222 428,242 452,264" />
+        <path d="M 400,200 C 414,216 428,234 446,254" />
       </g>
 
       {/* Dorsal fin rays */}
-      <g stroke="currentColor" strokeWidth="0.9" fill="none" opacity="0.35">
-        <path d="M 122,64 C 128,50 140,34 160,24" />
-        <path d="M 144,62 C 150,46 162,30 182,22" />
-        <path d="M 166,60 C 172,46 182,32 200,24" />
-        <path d="M 188,58 C 194,46 202,34 218,28" />
-        <path d="M 210,58 C 214,48 220,38 234,32" />
-        <path d="M 232,58 C 236,50 242,42 254,38" />
-        <path d="M 252,60 C 256,52 262,46 270,42" />
+      <g stroke="currentColor" strokeWidth="1" fill="none" opacity="0.4">
+        <path d="M 118,108 C 128,80 148,52 176,36" />
+        <path d="M 148,96 C 158,70 176,46 202,34" />
+        <path d="M 178,88 C 186,64 200,44 224,32" />
+        <path d="M 208,84 C 214,62 226,46 250,36" />
+        <path d="M 238,82 C 244,62 254,48 274,40" />
+        <path d="M 264,84 C 270,66 280,54 298,48" />
+        <path d="M 290,92 C 296,76 306,66 322,62" />
+        <path d="M 314,102 C 320,88 330,78 346,76" />
       </g>
 
-      {/* Scale arcs — 6 rows */}
-      <g stroke="currentColor" strokeWidth="0.9" fill="none" opacity="0.55">
-        {/* Row 1 y≈80 */}
-        <path d="M 116,80 Q 124,72 132,80" /><path d="M 132,80 Q 140,72 148,80" />
-        <path d="M 148,80 Q 156,72 164,80" /><path d="M 164,80 Q 172,72 180,80" />
-        <path d="M 180,80 Q 188,72 196,80" /><path d="M 196,80 Q 204,72 212,80" />
-        <path d="M 212,80 Q 220,72 228,80" /><path d="M 228,80 Q 236,72 244,80" />
-        <path d="M 244,80 Q 252,72 260,80" /><path d="M 260,80 Q 268,72 276,80" />
-        {/* Row 2 y≈96 offset */}
-        <path d="M 108,96 Q 116,88 124,96" /><path d="M 124,96 Q 132,88 140,96" />
-        <path d="M 140,96 Q 148,88 156,96" /><path d="M 156,96 Q 164,88 172,96" />
-        <path d="M 172,96 Q 180,88 188,96" /><path d="M 188,96 Q 196,88 204,96" />
-        <path d="M 204,96 Q 212,88 220,96" /><path d="M 220,96 Q 228,88 236,96" />
-        <path d="M 236,96 Q 244,88 252,96" /><path d="M 252,96 Q 260,88 268,96" />
-        <path d="M 268,96 Q 276,88 284,96" />
-        {/* Row 3 y≈112 */}
-        <path d="M 108,112 Q 116,104 124,112" /><path d="M 124,112 Q 132,104 140,112" />
-        <path d="M 140,112 Q 148,104 156,112" /><path d="M 156,112 Q 164,104 172,112" />
-        <path d="M 172,112 Q 180,104 188,112" /><path d="M 188,112 Q 196,104 204,112" />
-        <path d="M 204,112 Q 212,104 220,112" /><path d="M 220,112 Q 228,104 236,112" />
-        <path d="M 236,112 Q 244,104 252,112" /><path d="M 252,112 Q 260,104 268,112" />
-        <path d="M 268,112 Q 276,104 284,112" />
-        {/* Row 4 y≈128 offset */}
-        <path d="M 108,128 Q 116,120 124,128" /><path d="M 124,128 Q 132,120 140,128" />
-        <path d="M 140,128 Q 148,120 156,128" /><path d="M 156,128 Q 164,120 172,128" />
-        <path d="M 172,128 Q 180,120 188,128" /><path d="M 188,128 Q 196,120 204,128" />
-        <path d="M 204,128 Q 212,120 220,128" /><path d="M 220,128 Q 228,120 236,128" />
-        <path d="M 236,128 Q 244,120 252,128" /><path d="M 252,128 Q 260,120 268,128" />
-        <path d="M 268,128 Q 276,120 284,128" />
-        {/* Row 5 y≈144 */}
-        <path d="M 116,144 Q 124,136 132,144" /><path d="M 132,144 Q 140,136 148,144" />
-        <path d="M 148,144 Q 156,136 164,144" /><path d="M 164,144 Q 172,136 180,144" />
-        <path d="M 180,144 Q 188,136 196,144" /><path d="M 196,144 Q 204,136 212,144" />
-        <path d="M 212,144 Q 220,136 228,144" /><path d="M 228,144 Q 236,136 244,144" />
-        <path d="M 244,144 Q 252,136 260,144" /><path d="M 260,144 Q 268,136 276,144" />
-        {/* Row 6 y≈160 */}
-        <path d="M 116,160 Q 124,152 132,160" /><path d="M 132,160 Q 140,152 148,160" />
-        <path d="M 148,160 Q 156,152 164,160" /><path d="M 164,160 Q 172,152 180,160" />
-        <path d="M 180,160 Q 188,152 196,160" /><path d="M 196,160 Q 204,152 212,160" />
-        <path d="M 212,160 Q 220,152 228,160" /><path d="M 228,160 Q 236,152 244,160" />
-        <path d="M 244,160 Q 252,152 260,160" />
+      {/* Scale arcs — 7 rows, overlapping brick pattern */}
+      <g stroke="currentColor" strokeWidth="1.1" fill="none" opacity="0.7">
+        {/* Row 1 y=116 */}
+        <path d="M 118,116 Q 130,100 142,116" /><path d="M 142,116 Q 154,100 166,116" />
+        <path d="M 166,116 Q 178,100 190,116" /><path d="M 190,116 Q 202,100 214,116" />
+        <path d="M 214,116 Q 226,100 238,116" /><path d="M 238,116 Q 250,100 262,116" />
+        <path d="M 262,116 Q 274,100 286,116" /><path d="M 286,116 Q 298,100 310,116" />
+        {/* Row 2 y=140 offset */}
+        <path d="M 104,140 Q 116,124 128,140" /><path d="M 128,140 Q 140,124 152,140" />
+        <path d="M 152,140 Q 164,124 176,140" /><path d="M 176,140 Q 188,124 200,140" />
+        <path d="M 200,140 Q 212,124 224,140" /><path d="M 224,140 Q 236,124 248,140" />
+        <path d="M 248,140 Q 260,124 272,140" /><path d="M 272,140 Q 284,124 296,140" />
+        <path d="M 296,140 Q 308,124 320,140" /><path d="M 320,140 Q 332,124 344,140" />
+        {/* Row 3 y=164 */}
+        <path d="M 92,164 Q 104,148 116,164" /><path d="M 116,164 Q 128,148 140,164" />
+        <path d="M 140,164 Q 152,148 164,164" /><path d="M 164,164 Q 176,148 188,164" />
+        <path d="M 188,164 Q 200,148 212,164" /><path d="M 212,164 Q 224,148 236,164" />
+        <path d="M 236,164 Q 248,148 260,164" /><path d="M 260,164 Q 272,148 284,164" />
+        <path d="M 284,164 Q 296,148 308,164" /><path d="M 308,164 Q 320,148 332,164" />
+        <path d="M 332,164 Q 344,148 356,164" />
+        {/* Row 4 y=188 offset */}
+        <path d="M 92,188 Q 104,172 116,188" /><path d="M 116,188 Q 128,172 140,188" />
+        <path d="M 140,188 Q 152,172 164,188" /><path d="M 164,188 Q 176,172 188,188" />
+        <path d="M 188,188 Q 200,172 212,188" /><path d="M 212,188 Q 224,172 236,188" />
+        <path d="M 236,188 Q 248,172 260,188" /><path d="M 260,188 Q 272,172 284,188" />
+        <path d="M 284,188 Q 296,172 308,188" /><path d="M 308,188 Q 320,172 332,188" />
+        <path d="M 332,188 Q 344,172 356,188" />
+        {/* Row 5 y=212 */}
+        <path d="M 92,212 Q 104,196 116,212" /><path d="M 116,212 Q 128,196 140,212" />
+        <path d="M 140,212 Q 152,196 164,212" /><path d="M 164,212 Q 176,196 188,212" />
+        <path d="M 188,212 Q 200,196 212,212" /><path d="M 212,212 Q 224,196 236,212" />
+        <path d="M 236,212 Q 248,196 260,212" /><path d="M 260,212 Q 272,196 284,212" />
+        <path d="M 284,212 Q 296,196 308,212" /><path d="M 308,212 Q 320,196 332,212" />
+        <path d="M 332,212 Q 344,196 356,212" />
+        {/* Row 6 y=236 offset */}
+        <path d="M 100,236 Q 112,220 124,236" /><path d="M 124,236 Q 136,220 148,236" />
+        <path d="M 148,236 Q 160,220 172,236" /><path d="M 172,236 Q 184,220 196,236" />
+        <path d="M 196,236 Q 208,220 220,236" /><path d="M 220,236 Q 232,220 244,236" />
+        <path d="M 244,236 Q 256,220 268,236" /><path d="M 268,236 Q 280,220 292,236" />
+        <path d="M 292,236 Q 304,220 316,236" /><path d="M 316,236 Q 328,220 340,236" />
+        {/* Row 7 y=258 */}
+        <path d="M 110,258 Q 122,242 134,258" /><path d="M 134,258 Q 146,242 158,258" />
+        <path d="M 158,258 Q 170,242 182,258" /><path d="M 182,258 Q 194,242 206,258" />
+        <path d="M 206,258 Q 218,242 230,258" /><path d="M 230,258 Q 242,242 254,258" />
+        <path d="M 254,258 Q 266,242 278,258" /><path d="M 278,258 Q 290,242 302,258" />
+        <path d="M 302,258 Q 314,242 326,258" />
       </g>
 
       {/* Lateral line */}
-      <path d="M 96,120 C 140,118 185,116 230,118 C 260,119 280,120 298,120" stroke="currentColor" strokeWidth="0.8" fill="none" opacity="0.3" strokeDasharray="4,3" />
+      <path d="M 90,185 C 142,183 198,180 254,179 C 300,178 334,181 356,185"
+            stroke="currentColor" strokeWidth="1" fill="none" opacity="0.35" strokeDasharray="5,3" />
 
       {/* Eye */}
-      <circle cx="60" cy="112" r="6" fill="currentColor" />
-      <circle cx="59" cy="110" r="2" fill="currentColor" opacity="0.3" />
+      <circle cx="76" cy="175" r="10" fill="currentColor" />
+      <circle cx="73" cy="172" r="4" fill="currentColor" opacity="0.25" />
 
       {/* Barbels */}
-      <path d="M 42,116 C 28,108 16,102 8,96" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-      <path d="M 42,124 C 30,128 18,132 10,134" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      <path d="M 52,179 C 32,164 16,150 6,140" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M 52,191 C 36,202 22,212 8,218" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
     </svg>
   )
 }
@@ -167,23 +232,34 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
       paddingBottom: 'max(2rem, env(safe-area-inset-bottom))',
     }}>
 
-      {/* Koi ghost — positioned behind all content */}
+      {/* Koi ghost — outer div owns the fade-out; animation lives on inner div to avoid cascade conflict */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
           zIndex: 0,
+          pointerEvents: 'none',
           opacity: beginning ? 0 : 1,
           transition: beginning ? 'opacity 1s ease' : 'none',
-          animation: 'koiPulse 8s ease-in-out infinite',
         }}
       >
-        <div style={{ animation: 'koiSway 8s ease-in-out infinite' }}>
-          <KoiFish />
+        {/* Mid div — lower half of screen, pulse animation */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            animation: 'koiPulse 8s ease-in-out infinite',
+          }}
+        >
+          <div style={{ animation: 'koiSway 8s ease-in-out infinite' }}>
+            <KoiFish />
+          </div>
         </div>
       </div>
 

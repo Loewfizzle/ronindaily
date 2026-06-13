@@ -562,8 +562,8 @@ input[type='number'] {
 /* ── Koi fish watermark ───────────────────────────────────────────────────── */
 
 @keyframes koiPulse {
-  0%, 100% { opacity: 0.055 }
-  50%       { opacity: 0.10 }
+  0%, 100% { opacity: 0.12 }
+  50%       { opacity: 0.18 }
 }
 
 @keyframes koiSway {
