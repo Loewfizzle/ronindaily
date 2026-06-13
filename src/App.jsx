@@ -12,6 +12,26 @@ function LoadingScreen() {
 }
 
 function LoginScreen({ onSignIn }) {
+  const [email, setEmail]   = useState('')
+  const [sent, setSent]     = useState(false)
+  const [error, setError]   = useState(null)
+
+  const handleEmailSubmit = async () => {
+    const trimmed = email.trim()
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setError('Enter a valid email.')
+      return
+    }
+    setError(null)
+    try {
+      await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: { emailRedirectTo: 'https://ronindaily.app' },
+      })
+    } catch { /* network error — fall through to sent state */ }
+    setSent(true)
+  }
+
   return (
     <div style={{
       minHeight: '100svh',
@@ -28,9 +48,45 @@ function LoginScreen({ onSignIn }) {
       <div style={{ fontSize: '0.63rem', letterSpacing: '0.38em', color: 'var(--text)', fontWeight: 500, textTransform: 'uppercase', marginBottom: '3rem' }}>
         Ronin Daily
       </div>
-      <button onClick={onSignIn} className="commit-btn" style={{ width: '100%', maxWidth: '280px' }}>
-        Continue with Google
-      </button>
+
+      {sent ? (
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', textAlign: 'center', maxWidth: '280px', margin: 0, lineHeight: 1.7 }}>
+          Check your email. A sign-in link has been sent.
+        </p>
+      ) : (
+        <>
+          <button onClick={onSignIn} className="commit-btn" style={{ width: '100%', maxWidth: '280px' }}>
+            Continue with Google
+          </button>
+
+          <div style={{ width: '100%', maxWidth: '280px', borderTop: '1px solid var(--border)', margin: '1.75rem 0' }} />
+
+          <div style={{ width: '100%', maxWidth: '280px' }}>
+            <input
+              className="input-bare"
+              type="email"
+              inputMode="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError(null) }}
+              style={{ width: '100%' }}
+            />
+            {error && (
+              <div style={{ fontSize: '0.7rem', color: 'var(--red-bright)', marginTop: '0.4rem' }}>
+                {error}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleEmailSubmit}
+            className="commit-btn"
+            style={{ width: '100%', maxWidth: '280px', marginTop: '1rem' }}
+          >
+            Continue with Email
+          </button>
+        </>
+      )}
     </div>
   )
 }
