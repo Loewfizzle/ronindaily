@@ -152,6 +152,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
           </p>
         </div>
 
+        <form onSubmit={(e) => e.preventDefault()}>
         <div className="onboarding-fields" style={S.fields}>
           {/* Unit system */}
           <div>
@@ -178,7 +179,10 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                   placeholder="0"
                   enterKeyHint="next"
                   value={form.weightLbs}
-                  onChange={(e) => set('weightLbs', e.target.value)}
+                  onChange={(e) => {
+                    set('weightLbs', e.target.value)
+                    if (e.target.value.length >= 3) advance(unit === 'imperial' ? heightFtRef : heightCmRef)
+                  }}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(unit === 'imperial' ? heightFtRef : heightCmRef) } }}
                   style={{ width: '5rem' }}
                 />
@@ -198,7 +202,10 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                   placeholder="0"
                   enterKeyHint="next"
                   value={form.goalWeightLbs}
-                  onChange={(e) => set('goalWeightLbs', e.target.value)}
+                  onChange={(e) => {
+                    set('goalWeightLbs', e.target.value)
+                    if (e.target.value.length >= 3) advance(timelineRef)
+                  }}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(timelineRef) } }}
                   style={{ width: '5rem' }}
                 />
@@ -222,7 +229,11 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                     placeholder="5"
                     enterKeyHint="next"
                     value={form.heightFt}
-                    onChange={(e) => set('heightFt', e.target.value)}
+                    onChange={(e) => {
+                      set('heightFt', e.target.value)
+                      // ft is always a single digit (3–8) — advance immediately
+                      if (e.target.value.length >= 1) advance(heightInRef)
+                    }}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(heightInRef) } }}
                     style={{ width: '3rem' }}
                   />
@@ -237,7 +248,11 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                     placeholder="10"
                     enterKeyHint="next"
                     value={form.heightIn}
-                    onChange={(e) => set('heightIn', e.target.value)}
+                    onChange={(e) => {
+                      set('heightIn', e.target.value)
+                      // advance at 2 chars (10–11) or single digit that can't grow (0, 2–9)
+                      if (e.target.value.length >= 2 || (e.target.value.length === 1 && e.target.value !== '1')) advance(ageRef)
+                    }}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(ageRef) } }}
                     style={{ width: '3rem' }}
                   />
@@ -254,7 +269,10 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                   placeholder="178"
                   enterKeyHint="next"
                   value={form.heightCm}
-                  onChange={(e) => set('heightCm', e.target.value)}
+                  onChange={(e) => {
+                    set('heightCm', e.target.value)
+                    if (e.target.value.length >= 3) advance(ageRef)
+                  }}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(ageRef) } }}
                   style={{ width: '5rem' }}
                 />
@@ -276,7 +294,10 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                 placeholder="35"
                 enterKeyHint="next"
                 value={form.age}
-                onChange={(e) => set('age', e.target.value)}
+                onChange={(e) => {
+                  set('age', e.target.value)
+                  if (e.target.value.length >= 2) advance(goalRef)
+                }}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(goalRef) } }}
                 style={{ width: '4rem' }}
               />
@@ -319,9 +340,10 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
 
           {/* Commit */}
           <div style={{ paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
-            <button className="commit-btn" onClick={handleCommit}>Commit</button>
+            <button type="button" className="commit-btn" onClick={handleCommit}>Commit</button>
           </div>
         </div>
+        </form>
       </div>
     </div>
   )
