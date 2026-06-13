@@ -6,10 +6,10 @@ import ShareSheet from './ShareSheet'
 import MealPlanSheet from './MealPlanSheet'
 import BadgeBanner from './BadgeBanner'
 import BadgeDetailSheet from './BadgeDetailSheet'
-import { calculatePlan } from '../utils/calculate'
+import { calculatePlan, formatMovementItem } from '../utils/calculate'
 import { checkAndAwardBadges, BADGE_KANJI } from '../utils/badges'
 import { supabase } from '../lib/supabase'
-import type { PlanResult, Meal, UnitSystem } from '../types'
+import type { PlanResult, Meal, UnitSystem, MovementItem } from '../types'
 import type { BadgeDef } from '../utils/badges'
 
 interface EarnedBadge {
@@ -53,6 +53,12 @@ function paceDisplay(pace: number, unit: UnitSystem): string {
 
 function localDateStr(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const ACTIVITY_LABEL: Record<string, string> = {
+  walk: 'walking', bike: 'cycling', run: 'running',
+  resistance: 'resistance training', bodyweight: 'bodyweight',
+  swim: 'swimming', boxing: 'boxing', yoga: 'yoga',
 }
 
 interface DashboardProps {
@@ -117,6 +123,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [selectedBadge, setSelectedBadge] = useState<EarnedBadge | null>(null)
   const [skipOpen, setSkipOpen]           = useState(false)
   const [skipConfirmed, setSkipConfirmed] = useState(false)
+  const [dismissed, setDismissed] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(`ronin_dismissed_activities_${localDateStr()}`)
+      return raw ? (JSON.parse(raw) as string[]) : []
+    } catch { return [] }
+  })
   const plan = loadPlan()
   const planRef = useRef(plan)
   planRef.current = plan
@@ -132,6 +144,10 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const showCheckin  = plan != null && plan.dayNumber % 7 === 0 && lastCheckin !== plan.weekNumber
   const savedBest    = parseFloat(localStorage.getItem('ronin_best_progress') || '0')
   const bestProgress = Math.max(progressPct, savedBest)
+
+  useEffect(() => {
+    localStorage.setItem(`ronin_dismissed_activities_${localDateStr()}`, JSON.stringify(dismissed))
+  }, [dismissed])
 
   // Persist progress milestones as a side-effect, not in the render body.
   useEffect(() => {
@@ -250,6 +266,23 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   } = plan
 
   // progressPct, lastCheckin, showCheckin, savedBest, bestProgress computed above the early return.
+
+  // Dismiss/restore movement activities for today.
+  const activePrescriptions = (() => {
+    const active = movement.filter(m => !dismissed.includes(m.id))
+    if (active.length === 0) return movement
+    const perCal = Math.round(exerciseBurn / active.length)
+    return active.map(m => formatMovementItem(m.id, perCal))
+  })()
+  const dismissedItems = movement.filter(m => dismissed.includes(m.id))
+
+  const handleDismiss = (id: string) => {
+    const active = movement.filter(m => !dismissed.includes(m.id))
+    if (active.length <= 1) return
+    setDismissed(prev => [...prev, id])
+  }
+  const handleRestore = (id: string) => setDismissed(prev => prev.filter(d => d !== id))
+  const handleResetDismissed = () => setDismissed([])
 
   const handleBadgeDismiss = useCallback(() => {
     setBadgeQueue(prev => prev.slice(1))
@@ -397,11 +430,59 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
           <div className="mission-block" onClick={() => setSheet('movement')}>
             <BlockHeader label="Movement" />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '0.3rem' }}>
-              {movement.map((m, i) => (
-                <div key={i} style={{ fontSize: '1.05rem', color: 'var(--text)', fontWeight: 400 }}>{m}</div>
+            {/* Active activities with X dismiss buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '0.25rem' }}>
+              {activePrescriptions.map((item) => (
+                <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: '1.05rem', color: 'var(--text)', fontWeight: 400 }}>{item.text}</div>
+                  {activePrescriptions.length > 1 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDismiss(item.id) }}
+                      aria-label={`Dismiss ${ACTIVITY_LABEL[item.id] ?? item.id}`}
+                      style={{
+                        background: 'none', border: 'none', color: 'var(--text-3)',
+                        cursor: 'pointer', fontSize: '0.65rem',
+                        minWidth: '44px', minHeight: '44px', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '0 0.25rem',
+                      }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
+            {/* Dismissed — restore links */}
+            {dismissedItems.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {dismissedItems.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={(e) => { e.stopPropagation(); handleRestore(item.id) }}
+                    style={{
+                      background: 'none', border: 'none', color: 'var(--text-3)',
+                      fontSize: '0.7rem', letterSpacing: '0.04em',
+                      cursor: 'pointer', padding: '0.4rem 0', textAlign: 'left',
+                      minHeight: '44px', fontFamily: 'Inter, sans-serif', display: 'block',
+                    }}
+                  >
+                    + Restore {ACTIVITY_LABEL[item.id] ?? item.id}
+                  </button>
+                ))}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleResetDismissed() }}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--text-3)',
+                    fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+                    cursor: 'pointer', padding: '0.1rem 0', textAlign: 'left',
+                    minHeight: '44px', fontFamily: 'Inter, sans-serif', display: 'block',
+                  }}
+                >
+                  Reset
+                </button>
+              </div>
+            )}
             <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>{movementCal} cal burn required.</div>
           </div>
 
@@ -447,7 +528,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       </BottomSheet>
 
       <BottomSheet open={sheet === 'movement'} onClose={() => setSheet(null)} title="Movement">
-        <MovementDetail movement={movement} cal={movementCal} />
+        <MovementDetail movement={activePrescriptions} cal={movementCal} />
       </BottomSheet>
 
       <BottomSheet open={sheet === 'progress'} onClose={() => setSheet(null)} title="Progress">
@@ -679,12 +760,7 @@ function FoodDetail({ data }: FoodDetailProps) {
   )
 }
 
-interface MovementDetailProps {
-  movement: string[]
-  cal: number
-}
-
-function MovementDetail({ movement, cal }: MovementDetailProps) {
+function MovementDetail({ movement, cal }: { movement: MovementItem[]; cal: number }) {
   return (
     <div>
       <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
@@ -694,10 +770,10 @@ function MovementDetail({ movement, cal }: MovementDetailProps) {
         <div style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>Required. Not optional.</div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {movement.map((m, i) => (
-          <div key={i} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+        {movement.map((item) => (
+          <div key={item.id} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
             <div style={{ width: '1px', height: '1.15rem', background: 'var(--red)', marginTop: '0.15rem', flexShrink: 0 }} />
-            <span style={{ fontSize: '1.05rem', color: 'var(--text)', lineHeight: 1.5 }}>{m}</span>
+            <span style={{ fontSize: '1.05rem', color: 'var(--text)', lineHeight: 1.5 }}>{item.text}</span>
           </div>
         ))}
       </div>

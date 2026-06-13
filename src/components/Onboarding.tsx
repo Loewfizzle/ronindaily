@@ -2,6 +2,17 @@ import { useState, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import type { UserProfile, UnitSystem, Sex } from '../types'
 
+const ACTIVITIES = [
+  { id: 'walk',       emoji: '🚶', name: 'Walking'             },
+  { id: 'bike',       emoji: '🚴', name: 'Cycling'             },
+  { id: 'run',        emoji: '🏃', name: 'Running'             },
+  { id: 'resistance', emoji: '💪', name: 'Resistance Training' },
+  { id: 'bodyweight', emoji: '🤸', name: 'Bodyweight'          },
+  { id: 'swim',       emoji: '🏊', name: 'Swimming'            },
+  { id: 'boxing',     emoji: '🥊', name: 'Boxing'              },
+  { id: 'yoga',       emoji: '🧘', name: 'Yoga'                },
+] as const
+
 interface OnboardingStyles {
   page: CSSProperties
   logo: CSSProperties
@@ -56,7 +67,7 @@ interface OnboardingForm {
   heightIn: string
   heightCm: string
   age: string
-  sex: string  // '' until user selects; narrowed to Sex after validation
+  sex: string
   goalWeightLbs: string
   targetWeeks: string
 }
@@ -69,6 +80,7 @@ interface FormErrors {
   sex?: string
   goalWeightLbs?: string
   targetWeeks?: string
+  activities?: string
 }
 
 interface OnboardingProps {
@@ -80,10 +92,10 @@ interface PersonalStats {
   age: string; sex: string
   heightCm: string; heightFt: string; heightIn: string
   unit: UnitSystem
+  activities?: string[]
 }
 
 export default function Onboarding({ onCommit, initialProfile = null }: OnboardingProps) {
-  // When no initialProfile (fresh start or post-reset), load immutable stats so user skips re-entering them
   const saved: PersonalStats | null = (() => {
     if (initialProfile !== null) return null
     try {
@@ -103,6 +115,11 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
     goalWeightLbs: initialProfile?.goalWeightLbs ?? '',
     targetWeeks:   initialProfile?.targetWeeks   ?? '12',
   })
+  const [activities, setActivities] = useState<string[]>(() => {
+    if (initialProfile?.activities?.length) return initialProfile.activities
+    if (saved?.activities?.length) return saved.activities
+    return ['walk', 'bodyweight']
+  })
   const [errors, setErrors] = useState<FormErrors>({})
 
   const weightRef    = useRef<HTMLInputElement>(null)
@@ -118,6 +135,11 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
   const set = (field: keyof OnboardingForm, value: string) => {
     setForm((p) => ({ ...p, [field]: value }))
     if (errors[field as keyof FormErrors]) setErrors((p) => ({ ...p, [field]: undefined }))
+  }
+
+  const toggleActivity = (id: string) => {
+    setActivities(prev => prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id])
+    if (errors.activities) setErrors(p => ({ ...p, activities: undefined }))
   }
 
   const validate = (): FormErrors => {
@@ -140,6 +162,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
       e.goalWeightLbs = unit === 'metric' ? 'Must be ≥ 0.5 kg less' : 'Must be ≥ 1 lb less'
     const weeks = parseInt(form.targetWeeks, 10)
     if (!form.targetWeeks || isNaN(weeks) || weeks < 4 || weeks > 104) e.targetWeeks = '4–104 weeks'
+    if (activities.length === 0) e.activities = 'Select at least one activity'
     return e
   }
 
@@ -149,13 +172,11 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
       setErrors(e)
       return
     }
-    // sex is guaranteed non-empty after validation
-    onCommit({ ...form, unit, sex: form.sex as Sex })
+    onCommit({ ...form, unit, sex: form.sex as Sex, activities })
   }
 
   return (
     <div style={S.page}>
-      {/* Center the content block on desktop */}
       <div className="onboarding-inner">
         <div style={S.logo}>
           <div className="font-jp onboarding-kanji" style={S.kanji}>侍</div>
@@ -183,7 +204,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
             </div>
           </div>
 
-          {/* Current weight + Goal weight — side by side on desktop */}
+          {/* Current weight + Goal weight */}
           <div className="onboarding-weight-pair">
             <div>
               <div className="field-label">Current Weight</div>
@@ -248,7 +269,6 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                     value={form.heightFt}
                     onChange={(e) => {
                       set('heightFt', e.target.value)
-                      // ft is always a single digit (3–8) — advance immediately
                       if (e.target.value.length >= 1) advance(heightInRef)
                     }}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(heightInRef) } }}
@@ -267,7 +287,6 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                     value={form.heightIn}
                     onChange={(e) => {
                       set('heightIn', e.target.value)
-                      // advance at 2 chars (10–11) or single digit that can't grow (0, 2–9)
                       if (e.target.value.length >= 2 || (e.target.value.length === 1 && e.target.value !== '1')) advance(ageRef)
                     }}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(ageRef) } }}
@@ -299,7 +318,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
             {(errors.heightFt || errors.heightCm) && <div className="field-error">Required</div>}
           </div>
 
-          {/* Age + Sex — side by side on mobile */}
+          {/* Age + Sex */}
           <div className="onboarding-sex-age-pair">
             <div>
               <div className="field-label">Age</div>
@@ -359,6 +378,28 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                 = {parseInt(form.targetWeeks, 10) * 7} days
               </div>
             )}
+          </div>
+
+          {/* Preferred Activities */}
+          <div>
+            <div className="field-label">Preferred Activities</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', marginBottom: '0.85rem', letterSpacing: '0.04em', lineHeight: 1.6 }}>
+              Select all you are willing to do. You can always adjust.
+            </div>
+            <div className="activity-grid">
+              {ACTIVITIES.map(({ id, emoji, name }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={'toggle-btn activity-btn' + (activities.includes(id) ? ' active' : '')}
+                  onClick={() => toggleActivity(id)}
+                >
+                  <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>{emoji}</span>
+                  <span style={{ fontSize: '0.58rem', letterSpacing: '0.08em', lineHeight: 1.2 }}>{name}</span>
+                </button>
+              ))}
+            </div>
+            {errors.activities && <div className="field-error" style={{ marginTop: '0.5rem' }}>{errors.activities}</div>}
           </div>
 
           {/* Commit */}

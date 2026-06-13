@@ -130,6 +130,7 @@ function profileToLocal(data: ProfileRow): UserProfile {
     heightCm: '',
     heightFt: '',
     heightIn: '',
+    activities: data.activities ?? undefined,
   }
   if (data.unit === 'metric') {
     profile.heightCm = data.height_cm > 0 ? String(data.height_cm) : ''
@@ -159,6 +160,7 @@ function profileToDb(profile: UserProfile, userId: string, startDate: Date): Pro
     age: parseInt(profile.age, 10),
     target_weeks: parseInt(profile.targetWeeks, 10),
     start_date: startDate.toISOString().split('T')[0],
+    activities: profile.activities ?? null,
   }
 }
 
@@ -382,6 +384,7 @@ export default function App() {
           age: p.age, sex: p.sex,
           heightCm: p.heightCm, heightFt: p.heightFt, heightIn: p.heightIn,
           unit: p.unit,
+          activities: p.activities,
         }))
       }
     } catch { /* corrupt */ }

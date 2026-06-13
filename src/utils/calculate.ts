@@ -1,28 +1,49 @@
-import type { UserProfile, PlanResult, Meal, Sex } from '../types'
+import type { UserProfile, PlanResult, Meal, Sex, MovementItem } from '../types'
 
-// Calories in one pound of body fat — the universal deficit conversion constant
 const CAL_PER_LB = 3500
-
-// Sedentary TDEE multiplier (BMR × 1.2 for desk-job baseline with no exercise credit)
 const ACTIVITY_FACTOR = 1.2
-
-// Fraction of the daily deficit achieved through eating less
 const FOOD_DEFICIT_SPLIT = 0.70
-
-// Fraction of the daily deficit achieved through exercise
 const EXERCISE_DEFICIT_SPLIT = 0.30
-
-// Calories burned per mile of walking at a moderate pace (~3 mph)
-const CAL_PER_MILE = 100
-
-// Calories burned per minute of resistance training (compound lifts, moderate intensity)
-const CAL_PER_MIN_RESISTANCE = 8
-
-// Minimum safe daily calorie intake for males — below this risks muscle loss and metabolic adaptation
 const MIN_CAL_MALE = 1500
-
-// Minimum safe daily calorie intake for females
 const MIN_CAL_FEMALE = 1200
+
+const DEFAULT_ACTIVITIES = ['walk', 'resistance']
+
+interface ActivityConfig {
+  type: 'distance' | 'time'
+  rate: number        // cal/mile (distance) or cal/min (time)
+  verb: string        // "Walk", "Bike", "Run" — empty for time-based
+  timeLabel: string   // "resistance training", "bodyweight" — empty for distance-based
+}
+
+const ACTIVITY_CONFIGS: Record<string, ActivityConfig> = {
+  walk:       { type: 'distance', rate: 100, verb: 'Walk',  timeLabel: ''                  },
+  bike:       { type: 'distance', rate: 50,  verb: 'Bike',  timeLabel: ''                  },
+  run:        { type: 'distance', rate: 120, verb: 'Run',   timeLabel: ''                  },
+  resistance: { type: 'time',    rate: 8,   verb: '',       timeLabel: 'resistance training' },
+  bodyweight: { type: 'time',    rate: 6,   verb: '',       timeLabel: 'bodyweight'         },
+  swim:       { type: 'time',    rate: 10,  verb: '',       timeLabel: 'swimming'           },
+  boxing:     { type: 'time',    rate: 10,  verb: '',       timeLabel: 'boxing'             },
+  yoga:       { type: 'time',    rate: 4,   verb: '',       timeLabel: 'yoga'               },
+}
+
+/**
+ * Formats a single activity prescription into a human-readable MovementItem.
+ * Exported for use in Dashboard's dismiss/restore recalculation.
+ */
+export function formatMovementItem(id: string, cal: number): MovementItem {
+  const cfg = ACTIVITY_CONFIGS[id]
+  if (!cfg) {
+    const mins = Math.max(5, Math.round(cal / 6 / 5) * 5)
+    return { id, text: `${mins} min exercise.`, cal }
+  }
+  if (cfg.type === 'distance') {
+    const dist = Math.round(cal / cfg.rate * 10) / 10
+    return { id, text: `${cfg.verb} ${dist} miles.`, cal }
+  }
+  const mins = Math.max(5, Math.round(cal / cfg.rate / 5) * 5)
+  return { id, text: `${mins} min ${cfg.timeLabel}.`, cal }
+}
 
 function lbsToKg(lbs: number): number { return lbs / 2.20462 }
 
@@ -60,14 +81,12 @@ function daysBetween(a: Date, b: Date): number {
  *     cap the deficit at the safe maximum and project a realistic end date at that rate.
  *  5. Split the capped deficit FOOD_DEFICIT_SPLIT / EXERCISE_DEFICIT_SPLIT (70 / 30).
  *  6. Build meal breakdown and movement prescription from the resulting targets.
- *
- * @param profile    - User profile from localStorage / onboarding form.
- * @param startDate  - The local date the user committed to their goal.
+ *     Movement is split evenly across the user's selected activities.
  */
 export function calculatePlan(profile: UserProfile, startDate: Date = new Date()): PlanResult {
-  const sex        = profile.sex
-  const age        = parseInt(profile.age, 10)
-  const unit       = profile.unit
+  const sex         = profile.sex
+  const age         = parseInt(profile.age, 10)
+  const unit        = profile.unit
   const targetWeeks = parseInt(profile.targetWeeks, 10)
 
   // Normalise original (committed) weights.
@@ -88,7 +107,6 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
   }
 
   // Current weight — updated by weekly check-ins, stored under the same unit as weightLbs.
-  // Falls back to original start weight when no check-in has occurred.
   let currentWeightLbs: number, currentWeightKg: number
 
   if (profile.currentWeightLbs != null) {
@@ -108,7 +126,7 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
     currentWeightKg  = startWeightKg
   }
 
-  // Timeline — computed before deficit so daysLeft is available for post-check-in recalc.
+  // Timeline
   const today             = new Date()
   const originalTotalDays = targetWeeks * 7
   const targetDate        = addDays(startDate, originalTotalDays)
@@ -117,14 +135,12 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
   const weekNumber        = Math.ceil(dayNumber / 7)
 
   // Deficit: use remaining days after first check-in so the plan adapts to real weight.
-  // Before any check-in, use the original full-timeline target to keep numbers stable.
   const poundsToLose         = Math.max(0, currentWeightLbs - goalWeightLbs)
   const totalCalDeficit      = poundsToLose * CAL_PER_LB
   const hasCheckedIn         = profile.currentWeightLbs != null
   const deficitDays          = hasCheckedIn ? Math.max(1, daysLeft) : originalTotalDays
   const requiredDailyDeficit = deficitDays > 0 ? totalCalDeficit / deficitDays : 0
 
-  // BMR → TDEE uses current weight so the math stays accurate as the user loses weight.
   const bmr  = mifflinBmr(currentWeightKg, heightCm, age, sex)
   const tdee = Math.round(bmr * ACTIVITY_FACTOR)
 
@@ -144,7 +160,6 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
     realisticEndDate = null
   }
 
-  // Food / exercise split
   const foodDeficit   = Math.round(dailyDeficit * FOOD_DEFICIT_SPLIT)
   const exerciseBurn  = Math.round(dailyDeficit * EXERCISE_DEFICIT_SPLIT)
   const calorieTarget = Math.max(minCal, tdee - foodDeficit)
@@ -161,20 +176,23 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
     { name: 'Snacks',    cal: snacks    },
   ]
 
-  // Movement prescription
-  const movement: string[] = []
+  // Movement prescription — split burn target evenly across selected activities.
+  // Falls back to DEFAULT_ACTIVITIES for users who pre-date this feature.
+  const selectedActivities = (profile.activities && profile.activities.length > 0)
+    ? profile.activities
+    : DEFAULT_ACTIVITIES
+
+  const movement: MovementItem[] = []
   if (exerciseBurn >= 50) {
-    const walkCal    = Math.round(exerciseBurn * 0.60)
-    const resistCal  = exerciseBurn - walkCal
-    const walkMiles  = parseFloat((walkCal / CAL_PER_MILE).toFixed(1))
-    const resistMins = Math.max(5, Math.round(resistCal / CAL_PER_MIN_RESISTANCE / 5) * 5)
-    if (walkMiles > 0) movement.push(`Walk ${walkMiles} miles.`)
-    if (resistMins > 0) movement.push(`${resistMins} min resistance training.`)
+    const perActivity = Math.round(exerciseBurn / selectedActivities.length)
+    for (const id of selectedActivities) {
+      movement.push(formatMovementItem(id, perActivity))
+    }
   } else {
-    movement.push('30 min walking.')
+    // Very low deficit — show minimum prescription from first selected activity
+    movement.push(formatMovementItem(selectedActivities[0], Math.max(50, exerciseBurn)))
   }
 
-  // Pace needed to hit goal from current weight over remaining time
   const pacePerWeek = daysLeft > 0
     ? parseFloat(((poundsToLose / daysLeft) * 7).toFixed(1))
     : 0

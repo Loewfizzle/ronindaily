@@ -25,6 +25,7 @@ export type Database = {
           goal_weight: number
           target_weeks: number
           start_date: string
+          activities: string[] | null
         }
         Insert: {
           id: string
@@ -37,6 +38,7 @@ export type Database = {
           goal_weight: number
           target_weeks: number
           start_date: string
+          activities?: string[] | null
         }
         Update: {
           id?: string
@@ -49,6 +51,7 @@ export type Database = {
           goal_weight?: number
           target_weeks?: number
           start_date?: string
+          activities?: string[] | null
         }
         Relationships: [
           {

@@ -139,6 +139,33 @@ Discipline-themed achievement system that rewards consistency without cheerleadi
 
 ---
 
+## WEARABLE SYNC
+
+Sync real activity and calorie burn data from wearable devices directly into the app. At end of day the app pulls actual burn data and recalculates remaining deficit automatically.
+
+Priority order:
+
+**Fitbit** — web OAuth API, no native app required. Pull daily steps, calories burned, heart rate. First wearable to build.
+
+**Garmin** — Connect IQ API, OAuth based, web compatible. Pull activity data and daily calorie burn.
+
+**Whoop** — WHOOP API, OAuth based. Pull strain score, calories burned, recovery data. Whoop users are exactly the Ronin Daily target audience — disciplined, data driven, serious about performance.
+
+**Google Fit** — REST API, OAuth based, web compatible.
+
+**Apple Health / Apple Watch** — requires native iOS app wrapper (WKWebView or React Native). Cannot be accessed from a pure PWA. Build this when the App Store version is developed. Will require Apple Developer account and HealthKit entitlement.
+
+Flow for all integrations:
+
+- User connects their device via OAuth in Settings
+- App pulls yesterday's actual burn data each morning
+- Dashboard recalculates deficit based on real burn vs planned burn
+- If user burned more than planned — deficit increases, shown as a bonus
+- If user burned less than planned — deficit shortfall shown, user encouraged to make it up
+- Weekly check-in incorporates real burn data into plan recalculation
+
+---
+
 ## APPLE SIGN IN
 
 - Requires Apple Developer account ($99/year)

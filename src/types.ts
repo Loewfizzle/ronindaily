@@ -22,6 +22,13 @@ export interface UserProfile {
   heightFt: string          // imperial height feet component
   heightIn: string          // imperial height inches component
   currentWeightLbs?: string // latest check-in weight (same unit quirk); absent until first check-in
+  activities?: string[]     // selected activity IDs e.g. ['walk', 'resistance']
+}
+
+export interface MovementItem {
+  id: string
+  text: string  // human-readable prescription e.g. "Walk 1.2 miles."
+  cal: number
 }
 
 export interface Meal {
@@ -50,7 +57,7 @@ export interface PlanResult {
   calorieTarget: number
   exerciseBurn: number
   meals: Meal[]
-  movement: string[]
+  movement: MovementItem[]
   movementCal: number
   pacePerWeek: number
 }
