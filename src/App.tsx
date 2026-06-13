@@ -357,6 +357,11 @@ export default function App() {
     } else {
       // New mission — enter preparation period; start date is set only when BEGIN is hit
       localStorage.setItem('ronin_prepared', 'false')
+      // Clear any cached plan data — calorie target may have changed
+      localStorage.removeItem('ronin_meal_plan')
+      localStorage.removeItem('ronin_meal_prefs')
+      localStorage.removeItem('ronin_grocery_list')
+      localStorage.removeItem('ronin_grocery_checked')
       console.log('[ronin] handleCommit → preparation (new mission)')
       setScreen('preparation')
     }
@@ -439,7 +444,7 @@ export default function App() {
         <Onboarding onCommit={handleCommit} initialProfile={initialProfile} />
       )}
       {screen === 'preparation' && (
-        <PreparationScreen onBegin={handleBegin} onReset={handleReset} />
+        <PreparationScreen onBegin={handleBegin} onReset={handleReset} onAdjustGoal={handleAdjustGoal} />
       )}
       {screen === 'dashboard' && (
         <Dashboard

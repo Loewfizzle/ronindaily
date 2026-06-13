@@ -149,6 +149,7 @@ function KoiFish() {
 interface PreparationScreenProps {
   onBegin: () => void
   onReset: () => void
+  onAdjustGoal: () => void
 }
 
 // ── Shared page style (mobile base — desktop overrides via .prep-page class) ──
@@ -165,7 +166,7 @@ const pageBase = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function PreparationScreen({ onBegin, onReset }: PreparationScreenProps) {
+export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: PreparationScreenProps) {
   const [step, setStep]               = useState<1|2|3|4>(1)
   const [direction, setDirection]     = useState<'forward'|'back'>('forward')
   const [beginning, setBeginning]     = useState(false)
@@ -350,7 +351,7 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
                 Your mission begins when you are ready. Review your plan. Gather what you need. Return when prepared.
               </div>
 
-              <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '400px', marginBottom: '3rem' }}>
+              <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '400px', marginBottom: '1.25rem' }}>
                 {statBlocks.map(({ label, value }) => (
                   <div key={label} style={{ flex: 1, background: 'var(--elevated)', padding: '1rem 0.75rem', textAlign: 'center' }}>
                     <div style={{
@@ -364,6 +365,20 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div style={{ marginBottom: '2rem' }}>
+                <button
+                  type="button"
+                  onClick={onAdjustGoal}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--text-3)',
+                    fontSize: '0.8rem', letterSpacing: '0.04em', cursor: 'pointer',
+                    padding: 0, fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Edit goal →
+                </button>
               </div>
 
               <div style={{ width: '100%', maxWidth: '480px' }}>
