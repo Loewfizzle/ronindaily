@@ -381,19 +381,9 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                 </button>
               </div>
 
-              <div style={{ width: '100%', maxWidth: '480px' }}>
+              <div style={{ width: '100%', maxWidth: '480px', paddingBottom: '0.5rem' }}>
                 <button type="button" className="commit-btn" onClick={() => go(2, 'forward')} disabled={beginning}>
                   Review Meal Plan →
-                </button>
-              </div>
-
-              <div style={{ marginTop: '1.75rem', paddingBottom: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => showDishonor()}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
-                >
-                  I am not ready.
                 </button>
               </div>
             </div>
@@ -469,77 +459,128 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
         )}
 
         {/* ── STEP 4 — FINAL COMMITMENT ─────────────────────────────────── */}
-        {step === 4 && (
-          <div
-            className="prep-page"
-            style={{
-              ...pageBase,
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingTop: 'max(4rem, env(safe-area-inset-top))',
-              paddingBottom: 'max(3rem, env(safe-area-inset-bottom))',
-              opacity: beginning ? 0 : 1,
-              transition: beginning ? 'opacity 0.8s ease' : 'none',
-            }}
-          >
+        {step === 4 && (() => {
+          const hasMealPlan   = Boolean(localStorage.getItem('ronin_meal_plan'))
+          const hasGrocery    = Boolean(localStorage.getItem('ronin_grocery_list'))
+          return (
             <div
-              className="prep-card"
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+              className="prep-page"
+              style={{
+                ...pageBase,
+                paddingTop: 'max(4rem, env(safe-area-inset-top))',
+                paddingBottom: 'max(3rem, env(safe-area-inset-bottom))',
+                opacity: beginning ? 0 : 1,
+                transition: beginning ? 'opacity 0.8s ease' : 'none',
+              }}
             >
-              <div style={{ alignSelf: 'flex-start', marginBottom: '2.5rem' }}>
-                <button
-                  type="button"
-                  className="commit-btn"
-                  style={{ width: 'auto', padding: '0.6rem 1.5rem' }}
-                  onClick={() => go(3, 'back')}
+              {/* Logo — above card */}
+              <div className="prep-logo" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <div
+                  className="font-jp"
+                  style={{
+                    fontSize: '5rem', color: 'var(--red)', lineHeight: 1, marginBottom: '0.75rem',
+                    animation: 'kanjiPulse 4s ease-in-out infinite',
+                  }}
                 >
-                  ← Back
-                </button>
+                  侍
+                </div>
+                <div style={{
+                  fontSize: '1.1rem', letterSpacing: '0.44em', color: 'var(--text)',
+                  fontWeight: 500, textTransform: 'uppercase', marginBottom: '1.5rem',
+                }}>
+                  Ronin Daily
+                </div>
+                <div style={{ width: '100%', height: '1px', background: 'var(--red)', opacity: 0.35 }} />
               </div>
 
-              <div
-                className="font-jp"
-                style={{
-                  fontSize: '5rem', color: 'var(--red)', lineHeight: 1, marginBottom: '3rem',
-                  animation: 'kanjiPulse 4s ease-in-out infinite',
-                }}
-              >
-                侍
-              </div>
+              {/* Card */}
+              <div className="prep-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
-              <div style={{
-                fontSize: '1rem', color: 'var(--text-2)', textAlign: 'center',
-                maxWidth: '280px', lineHeight: 2, letterSpacing: '0.04em', marginBottom: '4rem',
-              }}>
-                Your mission begins now.<br />
-                There is no pause.<br />
-                There is no mercy.<br />
-                Only the work.
-              </div>
+                {/* YOUR MISSION recap block */}
+                <div style={{ width: '100%', marginBottom: '2.25rem' }}>
+                  <div style={{
+                    fontSize: '0.62rem', letterSpacing: '0.3em', color: 'var(--text-2)',
+                    textTransform: 'uppercase', marginBottom: '0.85rem',
+                  }}>
+                    Your Mission
+                  </div>
+                  <div style={{
+                    border: '1px solid var(--border-mid)', background: 'var(--surface)',
+                    padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.9rem',
+                  }}>
+                    {/* Goal */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
+                      <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', flexShrink: 0 }}>Goal</span>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text)', textAlign: 'right', lineHeight: 1.5 }}>Lose {loseDisplay} in {targetWeeks} weeks</span>
+                    </div>
+                    {/* Daily Target */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
+                      <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', flexShrink: 0 }}>Daily Target</span>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text)', textAlign: 'right', lineHeight: 1.5 }}>{calorieTarget.toLocaleString()} calories per day</span>
+                    </div>
+                    {/* Movement */}
+                    {plan.movement.length > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                        <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', flexShrink: 0, paddingTop: '0.15rem' }}>Movement</span>
+                        <div style={{ textAlign: 'right' }}>
+                          {plan.movement.map((m, i) => (
+                            <div key={i} style={{ fontSize: '0.9rem', color: 'var(--text)', lineHeight: 1.65 }}>{m.text}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Meal Plan */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
+                      <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', flexShrink: 0 }}>Meal Plan</span>
+                      <span style={{ fontSize: '0.9rem', color: hasMealPlan ? 'var(--red)' : 'var(--text-3)', textAlign: 'right' }}>
+                        {hasMealPlan ? 'Ready ✓' : 'Not generated'}
+                      </span>
+                    </div>
+                    {/* Grocery List */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
+                      <span style={{ fontSize: '0.7rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', flexShrink: 0 }}>Grocery List</span>
+                      <span style={{ fontSize: '0.9rem', color: hasGrocery ? 'var(--red)' : 'var(--text-3)', textAlign: 'right' }}>
+                        {hasGrocery ? 'Ready ✓' : 'Not generated'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-              <div style={{ width: '100%', maxWidth: '480px' }}>
-                <button
-                  type="button"
-                  className="commit-btn"
-                  onClick={handleBeginClick}
-                  disabled={beginning}
-                >
-                  I Am Prepared. Begin.
-                </button>
-              </div>
+                {/* Quote */}
+                <div style={{
+                  fontSize: '1rem', fontStyle: 'italic', color: 'var(--text-2)',
+                  textAlign: 'center', lineHeight: 1.85, marginBottom: '2.5rem',
+                  maxWidth: '320px',
+                }}>
+                  Your mission begins now. There is no pause. There is no mercy. Only the work.
+                </div>
 
-              <div style={{ marginTop: '2rem' }}>
-                <button
-                  type="button"
-                  onClick={() => showDishonor(() => go(1, 'back'))}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
-                >
-                  I am not ready.
-                </button>
+                {/* CTA */}
+                <div style={{ width: '100%', maxWidth: '480px' }}>
+                  <button
+                    type="button"
+                    className="commit-btn"
+                    onClick={handleBeginClick}
+                    disabled={beginning}
+                  >
+                    I Am Prepared. Begin.
+                  </button>
+                </div>
+
+                {/* Dishonor link */}
+                <div style={{ marginTop: '2rem', paddingBottom: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => showDishonor(() => go(1, 'back'))}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
+                  >
+                    ← I am not ready.
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
 
       </div>
     </div>
