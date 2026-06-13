@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import FullSheet from './FullSheet'
 import MealPlanView, { type MealPlanViewHandle } from './MealPlanView'
 import GroceryListSheet from './GroceryListSheet'
@@ -32,6 +32,10 @@ function RefreshIcon() {
 export default function MealPlanSheet({ open, onClose, calorieTarget, unit }: MealPlanSheetProps) {
   const [groceryOpen, setGroceryOpen] = useState(false)
   const mealPlanRef = useRef<MealPlanViewHandle>(null)
+
+  useEffect(() => {
+    if (!open) setGroceryOpen(false)
+  }, [open])
 
   const headerActions = (
     <>

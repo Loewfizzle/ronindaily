@@ -402,6 +402,8 @@ export default function App() {
   const handleReset = async () => {
     if (user) {
       try {
+        await supabase.from('activity_logs').delete().eq('user_id', user.id)
+        await supabase.from('badges').delete().eq('user_id', user.id)
         await supabase.from('daily_logs').delete().eq('user_id', user.id)
         await supabase.from('checkins').delete().eq('user_id', user.id)
         await supabase.from('profiles').delete().eq('id', user.id)

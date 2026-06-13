@@ -96,7 +96,7 @@ function FooterContent({
         <button
           onClick={onShare}
           aria-label="Share"
-          style={{ background: 'none', border: 'none', padding: '0.25rem', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', lineHeight: 1 }}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, minWidth: '44px', minHeight: '44px' }}
         >
           <svg width="11" height="13" viewBox="0 0 11 13" fill="none">
             <line x1="5.5" y1="9" x2="5.5" y2="1" stroke="currentColor" strokeWidth="1"/>
@@ -296,6 +296,61 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     loadActivityLog()
   }, [])
 
+  const handleLogActivity = useCallback((id: string, amount: number) => {
+    const today = localDateStr()
+    setActivityLog(prev => {
+      const next = { ...prev, [id]: amount }
+      localStorage.setItem(`ronin_activity_log_${today}`, JSON.stringify(next))
+      return next
+    })
+    if (logDebounceRef.current[id]) clearTimeout(logDebounceRef.current[id])
+    logDebounceRef.current[id] = setTimeout(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user || !planRef.current) return
+        const item = planRef.current.movement.find(m => m.id === id)
+        const info = getActivityInfo(id)
+        if (!info) return
+        const plannedCal = item?.cal ?? 0
+        const plannedAmount = Math.round(plannedCal / info.rate * 10) / 10
+        const actUnit = info.type === 'distance' ? 'miles' : 'minutes'
+        await supabase.from('activity_logs').upsert(
+          { user_id: user.id, logged_date: today, activity_id: id, planned_amount: plannedAmount, actual_amount: amount, unit: actUnit },
+          { onConflict: 'user_id,logged_date,activity_id' },
+        )
+      } catch { /* offline — localStorage cache is source of truth */ }
+    }, 1000)
+  }, [])
+
+  const handleUnlogActivity = useCallback((id: string) => {
+    const today = localDateStr()
+    if (logDebounceRef.current[id]) {
+      clearTimeout(logDebounceRef.current[id])
+      delete logDebounceRef.current[id]
+    }
+    setActivityLog(prev => {
+      const next = { ...prev }
+      delete next[id]
+      localStorage.setItem(`ronin_activity_log_${today}`, JSON.stringify(next))
+      return next
+    });
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        await supabase.from('activity_logs')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('logged_date', today)
+          .eq('activity_id', id)
+      } catch { /* offline */ }
+    })()
+  }, [])
+
+  const handleBadgeDismiss = useCallback(() => {
+    setBadgeQueue(prev => prev.slice(1))
+  }, [])
+
   if (!plan) {
     return (
       <div style={{ minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
@@ -345,62 +400,6 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   }
   const handleRestore = (id: string) => setDismissed(prev => prev.filter(d => d !== id))
   const handleResetDismissed = () => setDismissed([])
-
-  const handleLogActivity = useCallback((id: string, amount: number) => {
-    const today = localDateStr()
-    setActivityLog(prev => {
-      const next = { ...prev, [id]: amount }
-      localStorage.setItem(`ronin_activity_log_${today}`, JSON.stringify(next))
-      return next
-    })
-    // Debounce Supabase write — localStorage update above is immediate for real-time recalc
-    if (logDebounceRef.current[id]) clearTimeout(logDebounceRef.current[id])
-    logDebounceRef.current[id] = setTimeout(async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user || !planRef.current) return
-        const item = planRef.current.movement.find(m => m.id === id)
-        const info = getActivityInfo(id)
-        if (!info) return
-        const plannedCal = item?.cal ?? 0
-        const plannedAmount = Math.round(plannedCal / info.rate * 10) / 10
-        const actUnit = info.type === 'distance' ? 'miles' : 'minutes'
-        await supabase.from('activity_logs').upsert(
-          { user_id: user.id, logged_date: today, activity_id: id, planned_amount: plannedAmount, actual_amount: amount, unit: actUnit },
-          { onConflict: 'user_id,logged_date,activity_id' },
-        )
-      } catch { /* offline — localStorage cache is source of truth */ }
-    }, 1000)
-  }, [])
-
-  const handleUnlogActivity = useCallback((id: string) => {
-    const today = localDateStr()
-    if (logDebounceRef.current[id]) {
-      clearTimeout(logDebounceRef.current[id])
-      delete logDebounceRef.current[id]
-    }
-    setActivityLog(prev => {
-      const next = { ...prev }
-      delete next[id]
-      localStorage.setItem(`ronin_activity_log_${today}`, JSON.stringify(next))
-      return next
-    });
-    (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        await supabase.from('activity_logs')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('logged_date', today)
-          .eq('activity_id', id)
-      } catch { /* offline */ }
-    })()
-  }, [])
-
-  const handleBadgeDismiss = useCallback(() => {
-    setBadgeQueue(prev => prev.slice(1))
-  }, [])
 
   const handleSkipConfirm = async () => {
     const today = localDateStr()
@@ -637,7 +636,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           <div style={{ textAlign: 'center', paddingTop: '0.85rem', paddingBottom: '0.5rem' }}>
             <button
               onClick={() => setSkipOpen(true)}
-              style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', opacity: 0.5 }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', opacity: 0.5, minHeight: '44px', minWidth: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
             >
               I skipped today.
             </button>
@@ -855,10 +854,10 @@ interface FoodDetailProps {
 function FoodDetail({ data, dayNumber }: FoodDetailProps) {
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  const mealPlan = (() => {
+  const mealPlan = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('ronin_meal_plan') || 'null') as MealPlanData | null }
     catch { return null }
-  })()
+  }, [])
 
   // Cycle through 7-day plan; fall back to first day if index out of range
   const dayIndex = (dayNumber - 1) % 7

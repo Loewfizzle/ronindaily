@@ -56,15 +56,6 @@ function RefreshIcon({ size = 14 }: { size?: number }) {
   )
 }
 
-function PrefsIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
-      <circle cx="8" cy="8" r="2.5" />
-      <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.2 3.2l1.4 1.4M11.4 11.4l1.4 1.4M3.2 12.8l1.4-1.4M11.4 4.6l1.4-1.4" />
-    </svg>
-  )
-}
-
 // ── Props & handle ────────────────────────────────────────────────────────────
 
 interface MealPlanViewProps {
@@ -258,7 +249,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
       {mealPlan && (
         <button
           onClick={() => setScreen('ready')}
-          style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.8rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0, textAlign: 'left', alignSelf: 'flex-start' }}
+          style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.8rem', letterSpacing: '0.1em', cursor: 'pointer', padding: '0 0.5rem', textAlign: 'left', alignSelf: 'flex-start', minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
           ← back to plan
         </button>
