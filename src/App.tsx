@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import type { User } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import Onboarding from './components/Onboarding'
 import Dashboard from './components/Dashboard'
+import type { UserProfile, Screen, ProfileRow } from './types'
 
 function LoadingScreen() {
   return (
@@ -11,10 +13,14 @@ function LoadingScreen() {
   )
 }
 
-function LoginScreen({ connectionError }) {
+interface LoginScreenProps {
+  connectionError: boolean
+}
+
+function LoginScreen({ connectionError }: LoginScreenProps) {
   const [email, setEmail] = useState('')
   const [sent, setSent]   = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   const handleGoogleSignIn = async () => {
     setError(null)
@@ -108,8 +114,8 @@ function LoginScreen({ connectionError }) {
   )
 }
 
-function profileToLocal(data) {
-  const profile = {
+function profileToLocal(data: ProfileRow): UserProfile {
+  const profile: UserProfile = {
     unit: data.unit,
     sex: data.sex,
     age: String(data.age),
@@ -130,10 +136,22 @@ function profileToLocal(data) {
   return profile
 }
 
-function profileToDb(profile, userId, startDate) {
-  let height_cm
+interface ProfileDbRow {
+  id: string
+  sex: string
+  unit: string
+  start_weight: number
+  goal_weight: number
+  height_cm: number
+  age: number
+  target_weeks: number
+  start_date: string
+}
+
+function profileToDb(profile: UserProfile, userId: string, startDate: Date): ProfileDbRow {
+  let height_cm: number
   if (profile.unit === 'imperial') {
-    const totalIn = parseFloat(profile.heightFt) * 12 + parseFloat(profile.heightIn || 0)
+    const totalIn = parseFloat(profile.heightFt) * 12 + parseFloat(profile.heightIn || '0')
     height_cm = Math.round(totalIn * 2.54 * 10) / 10
   } else {
     height_cm = parseFloat(profile.heightCm)
@@ -160,11 +178,11 @@ function clearLocal() {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState('loading')
-  const [user, setUser] = useState(null)
-  const [initialProfile, setInitialProfile] = useState(null)
+  const [screen, setScreen]               = useState<Screen>('loading')
+  const [user, setUser]                   = useState<User | null>(null)
+  const [initialProfile, setInitialProfile] = useState<UserProfile | null>(null)
   const [connectionError, setConnectionError] = useState(false)
-  const [profileError, setProfileError] = useState(false)
+  const [profileError, setProfileError]   = useState(false)
 
   useEffect(() => {
     let settled = false
@@ -182,9 +200,6 @@ export default function App() {
       loadProfile(session.user.id)
     })
 
-    // Fallback: if Supabase doesn't respond in 4s, use localStorage cache.
-    // Only surface the connection error when falling back to the login screen
-    // (no cached data to show means the user is actually blocked).
     const timer = setTimeout(() => {
       if (!settled) {
         const hasCache = !!localStorage.getItem('ronin_committed')
@@ -197,9 +212,10 @@ export default function App() {
       subscription.unsubscribe()
       clearTimeout(timer)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function loadProfile(userId) {
+  async function loadProfile(userId: string) {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -212,10 +228,10 @@ export default function App() {
         return
       }
 
-      const profile = profileToLocal(data)
+      const profile = profileToLocal(data as ProfileRow)
       localStorage.setItem('ronin_profile', JSON.stringify(profile))
       localStorage.setItem('ronin_committed', 'true')
-      const [sy, sm, sd] = data.start_date.split('-').map(Number)
+      const [sy, sm, sd] = (data as ProfileRow).start_date.split('-').map(Number)
       localStorage.setItem('ronin_start', new Date(sy, sm - 1, sd).toISOString())
 
       const { data: checkins } = await supabase
@@ -225,10 +241,10 @@ export default function App() {
         .order('week_number', { ascending: false })
         .limit(1)
 
-      if (checkins?.length > 0) {
-        const last = checkins[0]
+      if (checkins && checkins.length > 0) {
+        const last = checkins[0] as { week_number: number; weight: number }
         localStorage.setItem('ronin_last_checkin', String(last.week_number))
-        const withCheckin = { ...profile, currentWeightLbs: String(last.weight) }
+        const withCheckin: UserProfile = { ...profile, currentWeightLbs: String(last.weight) }
         localStorage.setItem('ronin_profile', JSON.stringify(withCheckin))
       }
 
@@ -240,7 +256,7 @@ export default function App() {
     }
   }
 
-  const handleCommit = async (data) => {
+  const handleCommit = async (data: UserProfile) => {
     const startDate = new Date()
     localStorage.setItem('ronin_profile', JSON.stringify(data))
     localStorage.setItem('ronin_committed', 'true')
@@ -259,7 +275,7 @@ export default function App() {
 
   const handleAdjustGoal = () => {
     const stored = localStorage.getItem('ronin_profile')
-    setInitialProfile(stored ? JSON.parse(stored) : null)
+    setInitialProfile(stored ? (JSON.parse(stored) as UserProfile) : null)
     localStorage.removeItem('ronin_committed')
     localStorage.removeItem('ronin_start')
     setScreen('onboarding')
@@ -281,7 +297,6 @@ export default function App() {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut()
-      // onAuthStateChange will fire with null session → clearLocal + login screen
     } catch {
       clearLocal()
       setUser(null)
@@ -290,7 +305,7 @@ export default function App() {
   }
 
   if (screen === 'loading') return <LoadingScreen />
-  if (screen === 'login') return <LoginScreen connectionError={connectionError} />
+  if (screen === 'login')   return <LoginScreen connectionError={connectionError} />
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100svh' }}>

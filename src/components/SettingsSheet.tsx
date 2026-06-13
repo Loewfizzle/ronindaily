@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import BottomSheet from './BottomSheet'
 
-const OPTIONS = [
+interface SettingsOption {
+  id: 'signout' | 'adjust' | 'reset'
+  label: string
+  desc: string
+  confirm: string
+}
+
+const OPTIONS: SettingsOption[] = [
   {
     id: 'signout',
     label: 'Sign Out',
@@ -22,8 +29,16 @@ const OPTIONS = [
   },
 ]
 
-export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, onSignOut }) {
-  const [confirming, setConfirming] = useState(null)
+interface SettingsSheetProps {
+  open: boolean
+  onClose: () => void
+  onAdjustGoal: () => void
+  onReset: () => void
+  onSignOut: () => void
+}
+
+export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, onSignOut }: SettingsSheetProps) {
+  const [confirming, setConfirming] = useState<SettingsOption['id'] | null>(null)
 
   const handleClose = () => {
     setConfirming(null)
@@ -44,32 +59,15 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
         {OPTIONS.map((opt, i) => (
           <div
             key={opt.id}
-            style={{
-              borderTop: i > 0 ? '1px solid var(--border)' : 'none',
-              padding: '1.1rem 0',
-            }}
+            style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none', padding: '1.1rem 0' }}
           >
-            <div
-              style={{
-                fontSize: '0.82rem',
-                color: 'var(--text)',
-                letterSpacing: '0.06em',
-                marginBottom: '0.4rem',
-              }}
-            >
+            <div style={{ fontSize: '0.82rem', color: 'var(--text)', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>
               {opt.label}
             </div>
 
             {confirming === opt.id ? (
               <div>
-                <p
-                  style={{
-                    fontSize: '0.85rem',
-                    color: 'var(--text-2)',
-                    lineHeight: 1.65,
-                    margin: '0 0 0.9rem',
-                  }}
-                >
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 0.9rem' }}>
                   {opt.confirm}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
@@ -109,14 +107,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
                 </div>
               </div>
             ) : (
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'baseline',
-                  gap: '1rem',
-                }}
-              >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
                   {opt.desc}
                 </span>

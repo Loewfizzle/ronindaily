@@ -1,3 +1,5 @@
+import type { UserProfile, PlanResult, Meal, Sex } from '../types'
+
 // Calories in one pound of body fat — the universal deficit conversion constant
 const CAL_PER_LB = 3500
 
@@ -22,22 +24,25 @@ const MIN_CAL_MALE = 1500
 // Minimum safe daily calorie intake for females
 const MIN_CAL_FEMALE = 1200
 
-function lbsToKg(lbs) { return lbs / 2.20462 }
-function ftInToCm(ft, inches) { return (parseFloat(ft) * 12 + parseFloat(inches || 0)) * 2.54 }
+function lbsToKg(lbs: number): number { return lbs / 2.20462 }
 
-function mifflinBmr(weightKg, heightCm, age, sex) {
+function ftInToCm(ft: string, inches: string = ''): number {
+  return (parseFloat(ft) * 12 + parseFloat(inches || '0')) * 2.54
+}
+
+function mifflinBmr(weightKg: number, heightCm: number, age: number, sex: Sex): number {
   const base = 10 * weightKg + 6.25 * heightCm - 5 * age
   return sex === 'M' ? base + 5 : base - 161
 }
 
-function addDays(date, n) {
+function addDays(date: Date, n: number): Date {
   const d = new Date(date)
   d.setDate(d.getDate() + n)
   return d
 }
 
-function daysBetween(a, b) {
-  return Math.round((new Date(b) - new Date(a)) / 86400000)
+function daysBetween(a: Date, b: Date): number {
+  return Math.round((b.getTime() - a.getTime()) / 86400000)
 }
 
 /**
@@ -53,55 +58,19 @@ function daysBetween(a, b) {
  *  5. Split the capped deficit FOOD_DEFICIT_SPLIT / EXERCISE_DEFICIT_SPLIT (70 / 30).
  *  6. Build meal breakdown and movement prescription from the resulting targets.
  *
- * @param {Object}       profile
- * @param {'imperial'|'metric'} profile.unit        - Unit system selected during onboarding.
- * @param {'M'|'F'}      profile.sex                - Biological sex (drives Mifflin-St Jeor offset and calorie floor).
- * @param {string|number} profile.age               - Age in years.
- * @param {string|number} profile.targetWeeks       - Desired timeline in weeks.
- * @param {string|number} profile.weightLbs         - Committed start weight. Holds lbs when imperial, kg when metric
- *                                                    (naming quirk from original design — do not rename without migrating localStorage).
- * @param {string|number} profile.goalWeightLbs     - Goal weight. Same unit quirk as weightLbs.
- * @param {string}        [profile.heightFt]        - Feet component of height (imperial only).
- * @param {string}        [profile.heightIn]        - Inches component of height (imperial only).
- * @param {string|number} [profile.heightCm]        - Height in centimetres (metric only).
- * @param {string|number} [profile.currentWeightLbs] - Most recent weekly check-in weight. Same unit quirk as weightLbs.
- *                                                     Omit (or null) until the first check-in; falls back to start weight.
- * @param {Date}          [startDate=new Date()]    - The local date the user committed to their goal.
- *
- * @returns {Object} plan
- * @returns {string}  plan.unit             - Passes through profile.unit for display helpers in the UI.
- * @returns {boolean} plan.unsustainable    - True when the required deficit exceeds the safe daily maximum.
- * @returns {Date|null} plan.realisticEndDate - Projected completion at the capped safe-max rate; null when plan is sustainable.
- * @returns {number}  plan.startWeight      - Committed start weight in lbs (rounded integer).
- * @returns {number}  plan.currentWeight    - Latest check-in weight in lbs (rounded); equals startWeight before first check-in.
- * @returns {number}  plan.goalWeight       - Goal weight in lbs (rounded integer).
- * @returns {number}  plan.poundsToLose     - Pounds remaining to goal from current weight (rounded, minimum 0).
- * @returns {Date}    plan.date             - Today's date object.
- * @returns {Date}    plan.startDate        - The goal commitment date.
- * @returns {Date}    plan.targetDate       - Original projected completion date (startDate + targetWeeks × 7).
- * @returns {number}  plan.totalDays        - targetWeeks × 7.
- * @returns {number}  plan.dayNumber        - Day of the plan (1-indexed, minimum 1).
- * @returns {number}  plan.daysLeft         - Calendar days remaining to targetDate (minimum 0).
- * @returns {number}  plan.weekNumber       - Current week number (ceil(dayNumber / 7)).
- * @returns {number}  plan.maintenance      - Sedentary TDEE in calories (rounded).
- * @returns {number}  plan.dailyDeficit     - Net daily calorie deficit (rounded, capped at safe maximum).
- * @returns {number}  plan.calorieTarget    - Daily food intake target in calories (maintenance − food portion of deficit).
- * @returns {number}  plan.exerciseBurn     - Daily exercise calorie burn required.
- * @returns {Array<{name: string, cal: number}>} plan.meals - Meal breakdown (breakfast 25%, lunch 33%, dinner 33%, snacks remainder).
- * @returns {string[]} plan.movement        - Exercise prescription as human-readable strings.
- * @returns {number}  plan.movementCal      - Alias for exerciseBurn; surfaced for convenience.
- * @returns {number}  plan.streak           - Placeholder (always 1); real streak is computed and managed by Dashboard.
- * @returns {number}  plan.pacePerWeek      - Pounds per week required to hit goal from current weight over daysLeft.
+ * @param profile    - User profile from localStorage / onboarding form.
+ * @param startDate  - The local date the user committed to their goal.
  */
-export function calculatePlan(profile, startDate = new Date()) {
-  const sex = profile.sex
-  const age = parseInt(profile.age, 10)
-  const unit = profile.unit
+export function calculatePlan(profile: UserProfile, startDate: Date = new Date()): PlanResult {
+  const sex        = profile.sex
+  const age        = parseInt(profile.age, 10)
+  const unit       = profile.unit
   const targetWeeks = parseInt(profile.targetWeeks, 10)
 
   // Normalise original (committed) weights.
   // Field naming quirk: weightLbs/goalWeightLbs hold kg values when unit === 'metric'.
-  let startWeightLbs, goalWeightLbs, startWeightKg, heightCm
+  let startWeightLbs: number, goalWeightLbs: number, startWeightKg: number, heightCm: number
+
   if (unit === 'imperial') {
     startWeightLbs = parseFloat(profile.weightLbs)
     goalWeightLbs  = parseFloat(profile.goalWeightLbs)
@@ -117,7 +86,8 @@ export function calculatePlan(profile, startDate = new Date()) {
 
   // Current weight — updated by weekly check-ins, stored under the same unit as weightLbs.
   // Falls back to original start weight when no check-in has occurred.
-  let currentWeightLbs, currentWeightKg
+  let currentWeightLbs: number, currentWeightKg: number
+
   if (profile.currentWeightLbs != null) {
     const raw = parseFloat(profile.currentWeightLbs)
     if (unit === 'imperial') {
@@ -142,10 +112,10 @@ export function calculatePlan(profile, startDate = new Date()) {
 
   // Deficit: use remaining days after first check-in so the plan adapts to real weight.
   // Before any check-in, use the original full-timeline target to keep numbers stable.
-  const poundsToLose       = Math.max(0, currentWeightLbs - goalWeightLbs)
-  const totalCalDeficit    = poundsToLose * CAL_PER_LB
-  const hasCheckedIn       = profile.currentWeightLbs != null
-  const deficitDays        = hasCheckedIn ? Math.max(1, daysLeft) : originalTotalDays
+  const poundsToLose         = Math.max(0, currentWeightLbs - goalWeightLbs)
+  const totalCalDeficit      = poundsToLose * CAL_PER_LB
+  const hasCheckedIn         = profile.currentWeightLbs != null
+  const deficitDays          = hasCheckedIn ? Math.max(1, daysLeft) : originalTotalDays
   const requiredDailyDeficit = deficitDays > 0 ? totalCalDeficit / deficitDays : 0
 
   // BMR → TDEE uses current weight so the math stays accurate as the user loses weight.
@@ -155,7 +125,7 @@ export function calculatePlan(profile, startDate = new Date()) {
   const minCal         = sex === 'M' ? MIN_CAL_MALE : MIN_CAL_FEMALE
   const maxSafeDeficit = tdee - minCal
 
-  let dailyDeficit, unsustainable, realisticEndDate
+  let dailyDeficit: number, unsustainable: boolean, realisticEndDate: Date | null
 
   if (requiredDailyDeficit > maxSafeDeficit) {
     unsustainable = true
@@ -178,7 +148,7 @@ export function calculatePlan(profile, startDate = new Date()) {
   const lunch     = Math.round(calorieTarget * 0.33)
   const dinner    = Math.round(calorieTarget * 0.33)
   const snacks    = calorieTarget - breakfast - lunch - dinner
-  const meals = [
+  const meals: Meal[] = [
     { name: 'Breakfast', cal: breakfast },
     { name: 'Lunch',     cal: lunch     },
     { name: 'Dinner',    cal: dinner    },
@@ -186,7 +156,7 @@ export function calculatePlan(profile, startDate = new Date()) {
   ]
 
   // Movement prescription
-  const movement = []
+  const movement: string[] = []
   if (exerciseBurn >= 50) {
     const walkCal    = Math.round(exerciseBurn * 0.60)
     const resistCal  = exerciseBurn - walkCal

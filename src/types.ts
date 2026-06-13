@@ -1,0 +1,107 @@
+import type { User } from '@supabase/supabase-js'
+
+export type UnitSystem = 'imperial' | 'metric'
+export type Sex = 'M' | 'F'
+export type Screen = 'loading' | 'login' | 'onboarding' | 'dashboard'
+
+/**
+ * User profile — mirrors the profiles Supabase table plus all onboarding form fields.
+ * NAMING QUIRK: weightLbs / goalWeightLbs / currentWeightLbs hold kg values when
+ * unit === 'metric'. The field names were established early and changing them would
+ * require a localStorage migration.
+ */
+export interface UserProfile {
+  unit: UnitSystem
+  sex: Sex
+  age: string
+  targetWeeks: string
+  weightLbs: string         // start weight (lbs if imperial, kg if metric — see quirk above)
+  goalWeightLbs: string     // goal weight (same unit quirk)
+  heightCm: string          // metric height in cm
+  heightFt: string          // imperial height feet component
+  heightIn: string          // imperial height inches component
+  currentWeightLbs?: string // latest check-in weight (same unit quirk); absent until first check-in
+}
+
+export interface Meal {
+  name: string
+  cal: number
+}
+
+/** Every property returned by calculatePlan. */
+export interface PlanResult {
+  unit: UnitSystem
+  unsustainable: boolean
+  realisticEndDate: Date | null
+  startWeight: number
+  currentWeight: number
+  goalWeight: number
+  poundsToLose: number
+  date: Date
+  startDate: Date
+  targetDate: Date
+  totalDays: number
+  dayNumber: number
+  daysLeft: number
+  weekNumber: number
+  maintenance: number
+  dailyDeficit: number
+  calorieTarget: number
+  exerciseBurn: number
+  meals: Meal[]
+  movement: string[]
+  movementCal: number
+  streak: number
+  pacePerWeek: number
+}
+
+/** Weekly weight check-in submitted by the user. */
+export interface CheckinData {
+  weekNumber: number
+  weight: number
+  checkedInAt: string
+}
+
+/** A single daily-app-open record used for streak tracking. */
+export interface DailyLog {
+  userId: string
+  loggedDate: string
+}
+
+/** Auth state surface used by App. */
+export interface AuthState {
+  user: User | null
+  loading: boolean
+  error: string | null
+}
+
+// ── Supabase table row shapes (used for casting query results) ────────────────
+
+export interface ProfileRow {
+  id: string
+  created_at: string
+  unit: UnitSystem
+  sex: Sex
+  age: number
+  height_cm: number
+  start_weight: number
+  goal_weight: number
+  target_weeks: number
+  start_date: string
+}
+
+export interface CheckinRow {
+  id: string
+  created_at: string
+  user_id: string
+  week_number: number
+  weight: number
+  checked_in_at: string
+}
+
+export interface DailyLogRow {
+  id: string
+  created_at: string
+  user_id: string
+  logged_date: string
+}

@@ -1,19 +1,26 @@
 import { useState } from 'react'
 import BottomSheet from './BottomSheet'
 import { supabase } from '../lib/supabase'
+import type { PlanResult } from '../types'
 
-export default function CheckinSheet({ open, onClose, plan }) {
+interface CheckinSheetProps {
+  open: boolean
+  onClose: () => void
+  plan: PlanResult | null
+}
+
+export default function CheckinSheet({ open, onClose, plan }: CheckinSheetProps) {
   const [weight, setWeight] = useState('')
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   if (!plan) return null
 
-  const profile    = JSON.parse(localStorage.getItem('ronin_profile') || '{}')
+  const profile    = JSON.parse(localStorage.getItem('ronin_profile') || '{}') as Record<string, string>
   const unit       = profile.unit || 'imperial'
   const unitLabel  = unit === 'metric' ? 'kg' : 'lbs'
 
-  // Original pace for comparison: (startWeight - goalWeight) / targetWeeks per week, in user's unit
-  const origStart  = parseFloat(profile.weightLbs   || '0')  // kg if metric, lbs if imperial
+  // Original pace for comparison
+  const origStart  = parseFloat(profile.weightLbs   || '0')
   const origGoal   = parseFloat(profile.goalWeightLbs || '0')
   const totalWeeks = parseInt(profile.targetWeeks    || '1', 10)
   const weeklyPace = (origStart - origGoal) / totalWeeks
@@ -26,7 +33,7 @@ export default function CheckinSheet({ open, onClose, plan }) {
 
   const parsedW = parseFloat(weight)
 
-  const getPaceLine = (w) => {
+  const getPaceLine = (w: number): string => {
     const diff = w - expectedNow
     if (diff < -0.5) return 'Ahead of pace.'
     if (diff > 0.5)  return 'Behind pace. Adjust or accept the cost.'
@@ -46,7 +53,7 @@ export default function CheckinSheet({ open, onClose, plan }) {
       setError('Enter a valid weight')
       return
     }
-    const stored = JSON.parse(localStorage.getItem('ronin_profile') || '{}')
+    const stored = JSON.parse(localStorage.getItem('ronin_profile') || '{}') as Record<string, string>
     stored.currentWeightLbs = String(parsedW)
     localStorage.setItem('ronin_profile', JSON.stringify(stored))
     localStorage.setItem('ronin_last_checkin', String(plan.weekNumber))
@@ -71,7 +78,6 @@ export default function CheckinSheet({ open, onClose, plan }) {
   return (
     <BottomSheet open={open} onClose={handleClose} title="Check-In">
       <div>
-        {/* Weight input */}
         <div style={{ marginBottom: '1.5rem' }}>
           <div className="field-label">Current Weight</div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem' }}>
@@ -96,7 +102,6 @@ export default function CheckinSheet({ open, onClose, plan }) {
           )}
         </div>
 
-        {/* Last logged weight reference */}
         <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
             Last logged
@@ -106,7 +111,6 @@ export default function CheckinSheet({ open, onClose, plan }) {
           </div>
         </div>
 
-        {/* Confirm */}
         <button className="commit-btn" onClick={handleConfirm}>
           Confirm
         </button>
