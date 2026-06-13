@@ -6,7 +6,7 @@ import ShareSheet from './ShareSheet'
 import MealPlanSheet from './MealPlanSheet'
 import BadgeBanner from './BadgeBanner'
 import BadgeDetailSheet from './BadgeDetailSheet'
-import { calculatePlan, formatMovementItem } from '../utils/calculate'
+import { calculatePlan, formatMovementItem, getActivityInfo } from '../utils/calculate'
 import { checkAndAwardBadges, BADGE_KANJI } from '../utils/badges'
 import { supabase } from '../lib/supabase'
 import type { PlanResult, Meal, UnitSystem, MovementItem } from '../types'
@@ -130,6 +130,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       const raw = localStorage.getItem(`ronin_dismissed_activities_${localDateStr()}`)
       return raw ? (JSON.parse(raw) as string[]) : []
     } catch { return [] }
+  })
+  const [activityLog, setActivityLog] = useState<Record<string, number>>(() => {
+    try {
+      const raw = localStorage.getItem(`ronin_activity_log_${localDateStr()}`)
+      return raw ? (JSON.parse(raw) as Record<string, number>) : {}
+    } catch { return {} }
   })
   const plan = useMemo(() => loadPlan(), [refreshKey])
   const planRef = useRef(plan)
@@ -261,6 +267,31 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     logAndCalcStreak()
   }, [])
 
+  // Load today's activity log from Supabase on mount (Supabase wins over localStorage cache).
+  useEffect(() => {
+    async function loadActivityLog() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const today = localDateStr()
+        const { data: logs } = await supabase
+          .from('activity_logs')
+          .select('activity_id, actual_amount')
+          .eq('user_id', user.id)
+          .eq('logged_date', today)
+        if (!logs || logs.length === 0) return
+        const loaded: Record<string, number> = {}
+        for (const log of logs) loaded[log.activity_id] = Number(log.actual_amount)
+        setActivityLog(prev => {
+          const merged = { ...prev, ...loaded }
+          localStorage.setItem(`ronin_activity_log_${today}`, JSON.stringify(merged))
+          return merged
+        })
+      } catch { /* offline — localStorage cache stands */ }
+    }
+    loadActivityLog()
+  }, [])
+
   if (!plan) {
     return (
       <div style={{ minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
@@ -284,6 +315,16 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
   // progressPct, lastCheckin, showCheckin, savedBest, bestProgress computed above the early return.
 
+  // Actual cal burned from logged activities vs planned target.
+  const actualCalBurned = Object.entries(activityLog)
+    .filter(([id]) => movement.some(m => m.id === id))
+    .reduce((sum, [id, amount]) => {
+      const info = getActivityInfo(id)
+      return sum + (info ? Math.round(amount * info.rate) : 0)
+    }, 0)
+  const hasActivityLog = Object.keys(activityLog).some(id => movement.some(m => m.id === id))
+  const calSurplus = actualCalBurned - movementCal
+
   // Dismiss/restore movement activities for today.
   const activePrescriptions = (() => {
     const active = movement.filter(m => !dismissed.includes(m.id))
@@ -300,6 +341,29 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   }
   const handleRestore = (id: string) => setDismissed(prev => prev.filter(d => d !== id))
   const handleResetDismissed = () => setDismissed([])
+
+  const handleLogActivity = useCallback(async (id: string, amount: number) => {
+    const today = localDateStr()
+    setActivityLog(prev => {
+      const next = { ...prev, [id]: amount }
+      localStorage.setItem(`ronin_activity_log_${today}`, JSON.stringify(next))
+      return next
+    })
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || !planRef.current) return
+      const item = planRef.current.movement.find(m => m.id === id)
+      const info = getActivityInfo(id)
+      if (!info) return
+      const plannedCal = item?.cal ?? 0
+      const plannedAmount = Math.round(plannedCal / info.rate * 10) / 10
+      const unit = info.type === 'distance' ? 'miles' : 'minutes'
+      await supabase.from('activity_logs').upsert(
+        { user_id: user.id, logged_date: today, activity_id: id, planned_amount: plannedAmount, actual_amount: amount, unit },
+        { onConflict: 'user_id,logged_date,activity_id' },
+      )
+    } catch { /* offline — localStorage cache is source of truth */ }
+  }, [])
 
   const handleBadgeDismiss = useCallback(() => {
     setBadgeQueue(prev => prev.slice(1))
@@ -502,7 +566,13 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
                 </button>
               </div>
             )}
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>{movementCal} cal burn required.</div>
+            {hasActivityLog ? (
+              <div style={{ fontSize: '0.8rem', color: calSurplus >= 0 ? '#4a7c59' : 'var(--text-2)' }}>
+                {actualCalBurned} cal burned · {calSurplus >= 0 ? `+${calSurplus} surplus` : `${Math.abs(calSurplus)} shortfall`}.
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>{movementCal} cal burn required.</div>
+            )}
           </div>
 
           <div className="mission-block" onClick={() => setSheet('progress')}>
@@ -547,7 +617,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       </BottomSheet>
 
       <BottomSheet open={sheet === 'movement'} onClose={() => setSheet(null)} title="Movement">
-        <MovementDetail movement={activePrescriptions} cal={movementCal} />
+        <MovementDetail movement={movement} cal={movementCal} activityLog={activityLog} onLog={handleLogActivity} />
       </BottomSheet>
 
       <BottomSheet open={sheet === 'progress'} onClose={() => setSheet(null)} title="Progress">
@@ -779,7 +849,22 @@ function FoodDetail({ data }: FoodDetailProps) {
   )
 }
 
-function MovementDetail({ movement, cal }: { movement: MovementItem[]; cal: number }) {
+function MovementDetail({ movement, cal, activityLog, onLog }: {
+  movement: MovementItem[]
+  cal: number
+  activityLog: Record<string, number>
+  onLog: (id: string, amount: number) => void
+}) {
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+
+  const handleConfirm = (item: MovementItem) => {
+    const raw = drafts[item.id] ?? ''
+    const amount = parseFloat(raw)
+    if (isNaN(amount) || amount <= 0) return
+    onLog(item.id, amount)
+    setDrafts(prev => ({ ...prev, [item.id]: '' }))
+  }
+
   return (
     <div>
       <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
@@ -796,6 +881,75 @@ function MovementDetail({ movement, cal }: { movement: MovementItem[]; cal: numb
           </div>
         ))}
       </div>
+
+      {/* LOG TODAY */}
+      <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+        <div style={{ fontSize: '0.75rem', letterSpacing: '0.26em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '1rem' }}>
+          Log Today
+        </div>
+        {movement.map((item) => {
+          const isLogged = item.id in activityLog
+          const info = getActivityInfo(item.id)
+          const unitLabel = info?.type === 'distance' ? 'mi' : 'min'
+          const loggedAmount = activityLog[item.id]
+          return (
+            <div
+              key={item.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                minHeight: '44px',
+                paddingLeft: isLogged ? '0.75rem' : '0',
+                borderLeft: isLogged ? '2px solid var(--red)' : '2px solid transparent',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <div style={{ flex: 1, fontSize: '0.85rem', color: isLogged ? 'var(--text)' : 'var(--text-2)', minWidth: 0 }}>
+                {ACTIVITY_LABEL[item.id] ?? item.id}
+              </div>
+              {isLogged ? (
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', flexShrink: 0 }}>
+                  {loggedAmount} {unitLabel}
+                </div>
+              ) : (
+                <>
+                  <input
+                    className="input-bare"
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={drafts[item.id] ?? ''}
+                    onChange={e => setDrafts(prev => ({ ...prev, [item.id]: e.target.value }))}
+                    style={{ width: '56px', textAlign: 'right', fontSize: '0.85rem', padding: '0 0.25rem' }}
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', width: '20px', flexShrink: 0 }}>{unitLabel}</span>
+                  <button
+                    onClick={() => handleConfirm(item)}
+                    style={{
+                      background: 'none',
+                      border: '1px solid var(--border-mid)',
+                      color: 'var(--text-2)',
+                      width: '44px',
+                      height: '44px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      fontSize: '0.9rem',
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    ✓
+                  </button>
+                </>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
       <div className="note-box" style={{ marginTop: '1.5rem' }}>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
           This is the minimum. Go beyond if you have the will.

@@ -155,6 +155,46 @@ export type Database = {
           },
         ]
       }
+      activity_logs: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string
+          logged_date: string
+          activity_id: string
+          planned_amount: number
+          actual_amount: number
+          unit: string
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id: string
+          logged_date: string
+          activity_id: string
+          planned_amount: number
+          actual_amount: number
+          unit: string
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string
+          logged_date?: string
+          activity_id?: string
+          planned_amount?: number
+          actual_amount?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'activity_logs_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

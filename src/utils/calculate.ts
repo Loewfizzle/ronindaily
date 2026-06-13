@@ -27,6 +27,13 @@ const ACTIVITY_CONFIGS: Record<string, ActivityConfig> = {
   yoga:       { type: 'time',    rate: 4,   verb: '',       timeLabel: 'yoga'               },
 }
 
+/** Returns the calorie rate and type for an activity ID. */
+export function getActivityInfo(id: string): { type: 'distance' | 'time'; rate: number } | null {
+  const cfg = ACTIVITY_CONFIGS[id]
+  if (!cfg) return null
+  return { type: cfg.type, rate: cfg.rate }
+}
+
 /**
  * Formats a single activity prescription into a human-readable MovementItem.
  * Exported for use in Dashboard's dismiss/restore recalculation.
