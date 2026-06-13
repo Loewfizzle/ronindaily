@@ -125,6 +125,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [skipOpen, setSkipOpen]           = useState(false)
   const [skipConfirmed, setSkipConfirmed] = useState(false)
   const skipConfirmTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const logDebounceRef                    = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
   const [dismissed, setDismissed] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem(`ronin_dismissed_activities_${localDateStr()}`)
@@ -157,7 +158,10 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     localStorage.setItem(`ronin_dismissed_activities_${localDateStr()}`, JSON.stringify(dismissed))
   }, [dismissed])
 
-  useEffect(() => () => { if (skipConfirmTimerRef.current) clearTimeout(skipConfirmTimerRef.current) }, [])
+  useEffect(() => () => {
+    if (skipConfirmTimerRef.current) clearTimeout(skipConfirmTimerRef.current)
+    Object.values(logDebounceRef.current).forEach(clearTimeout)
+  }, [])
 
   useEffect(() => {
     const sync = () => {
@@ -342,27 +346,56 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const handleRestore = (id: string) => setDismissed(prev => prev.filter(d => d !== id))
   const handleResetDismissed = () => setDismissed([])
 
-  const handleLogActivity = useCallback(async (id: string, amount: number) => {
+  const handleLogActivity = useCallback((id: string, amount: number) => {
     const today = localDateStr()
     setActivityLog(prev => {
       const next = { ...prev, [id]: amount }
       localStorage.setItem(`ronin_activity_log_${today}`, JSON.stringify(next))
       return next
     })
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user || !planRef.current) return
-      const item = planRef.current.movement.find(m => m.id === id)
-      const info = getActivityInfo(id)
-      if (!info) return
-      const plannedCal = item?.cal ?? 0
-      const plannedAmount = Math.round(plannedCal / info.rate * 10) / 10
-      const unit = info.type === 'distance' ? 'miles' : 'minutes'
-      await supabase.from('activity_logs').upsert(
-        { user_id: user.id, logged_date: today, activity_id: id, planned_amount: plannedAmount, actual_amount: amount, unit },
-        { onConflict: 'user_id,logged_date,activity_id' },
-      )
-    } catch { /* offline — localStorage cache is source of truth */ }
+    // Debounce Supabase write — localStorage update above is immediate for real-time recalc
+    if (logDebounceRef.current[id]) clearTimeout(logDebounceRef.current[id])
+    logDebounceRef.current[id] = setTimeout(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user || !planRef.current) return
+        const item = planRef.current.movement.find(m => m.id === id)
+        const info = getActivityInfo(id)
+        if (!info) return
+        const plannedCal = item?.cal ?? 0
+        const plannedAmount = Math.round(plannedCal / info.rate * 10) / 10
+        const actUnit = info.type === 'distance' ? 'miles' : 'minutes'
+        await supabase.from('activity_logs').upsert(
+          { user_id: user.id, logged_date: today, activity_id: id, planned_amount: plannedAmount, actual_amount: amount, unit: actUnit },
+          { onConflict: 'user_id,logged_date,activity_id' },
+        )
+      } catch { /* offline — localStorage cache is source of truth */ }
+    }, 1000)
+  }, [])
+
+  const handleUnlogActivity = useCallback((id: string) => {
+    const today = localDateStr()
+    if (logDebounceRef.current[id]) {
+      clearTimeout(logDebounceRef.current[id])
+      delete logDebounceRef.current[id]
+    }
+    setActivityLog(prev => {
+      const next = { ...prev }
+      delete next[id]
+      localStorage.setItem(`ronin_activity_log_${today}`, JSON.stringify(next))
+      return next
+    });
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        await supabase.from('activity_logs')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('logged_date', today)
+          .eq('activity_id', id)
+      } catch { /* offline */ }
+    })()
   }, [])
 
   const handleBadgeDismiss = useCallback(() => {
@@ -617,7 +650,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       </BottomSheet>
 
       <BottomSheet open={sheet === 'movement'} onClose={() => setSheet(null)} title="Movement">
-        <MovementDetail movement={movement} cal={movementCal} activityLog={activityLog} onLog={handleLogActivity} />
+        <MovementDetail movement={movement} cal={movementCal} activityLog={activityLog} onLog={handleLogActivity} onUnlog={handleUnlogActivity} />
       </BottomSheet>
 
       <BottomSheet open={sheet === 'progress'} onClose={() => setSheet(null)} title="Progress">
@@ -849,20 +882,48 @@ function FoodDetail({ data }: FoodDetailProps) {
   )
 }
 
-function MovementDetail({ movement, cal, activityLog, onLog }: {
+function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
   movement: MovementItem[]
   cal: number
   activityLog: Record<string, number>
   onLog: (id: string, amount: number) => void
+  onUnlog: (id: string) => void
 }) {
-  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  // Initialise from activityLog (safe: BottomSheet remounts on open so this always reflects current data)
+  const [drafts, setDrafts] = useState<Record<string, string>>(() => {
+    const d: Record<string, string> = {}
+    for (const [id, amount] of Object.entries(activityLog)) d[id] = String(amount)
+    return d
+  })
+  const [confirmed, setConfirmed] = useState<Set<string>>(() => new Set(Object.keys(activityLog)))
 
-  const handleConfirm = (item: MovementItem) => {
-    const raw = drafts[item.id] ?? ''
-    const amount = parseFloat(raw)
-    if (isNaN(amount) || amount <= 0) return
-    onLog(item.id, amount)
-    setDrafts(prev => ({ ...prev, [item.id]: '' }))
+  const handleChange = (id: string, raw: string) => {
+    setDrafts(prev => ({ ...prev, [id]: raw }))
+    if (confirmed.has(id)) {
+      const amount = parseFloat(raw)
+      if (!raw.trim() || isNaN(amount) || amount <= 0) {
+        // Input cleared — un-confirm and remove log entry
+        setConfirmed(prev => { const next = new Set(prev); next.delete(id); return next })
+        onUnlog(id)
+      } else {
+        // Already confirmed — update logged amount in real-time
+        onLog(id, amount)
+      }
+    }
+  }
+
+  const handleCheckmark = (item: MovementItem) => {
+    if (confirmed.has(item.id)) {
+      // Toggle off
+      setConfirmed(prev => { const next = new Set(prev); next.delete(item.id); return next })
+      onUnlog(item.id)
+    } else {
+      // Confirm if valid
+      const amount = parseFloat(drafts[item.id] ?? '')
+      if (isNaN(amount) || amount <= 0) return
+      setConfirmed(prev => new Set([...prev, item.id]))
+      onLog(item.id, amount)
+    }
   }
 
   return (
@@ -888,10 +949,9 @@ function MovementDetail({ movement, cal, activityLog, onLog }: {
           Log Today
         </div>
         {movement.map((item) => {
-          const isLogged = item.id in activityLog
+          const isConfirmed = confirmed.has(item.id)
           const info = getActivityInfo(item.id)
           const unitLabel = info?.type === 'distance' ? 'mi' : 'min'
-          const loggedAmount = activityLog[item.id]
           return (
             <div
               key={item.id}
@@ -900,51 +960,45 @@ function MovementDetail({ movement, cal, activityLog, onLog }: {
                 alignItems: 'center',
                 gap: '0.75rem',
                 minHeight: '44px',
-                paddingLeft: isLogged ? '0.75rem' : '0',
-                borderLeft: isLogged ? '2px solid var(--red)' : '2px solid transparent',
+                paddingLeft: isConfirmed ? '0.75rem' : '0',
+                borderLeft: isConfirmed ? '2px solid var(--red)' : '2px solid transparent',
                 marginBottom: '0.5rem',
               }}
             >
-              <div style={{ flex: 1, fontSize: '0.85rem', color: isLogged ? 'var(--text)' : 'var(--text-2)', minWidth: 0 }}>
+              <div style={{ flex: 1, fontSize: '0.85rem', color: isConfirmed ? 'var(--text)' : 'var(--text-2)', minWidth: 0 }}>
                 {ACTIVITY_LABEL[item.id] ?? item.id}
               </div>
-              {isLogged ? (
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', flexShrink: 0 }}>
-                  {loggedAmount} {unitLabel}
-                </div>
-              ) : (
-                <>
-                  <input
-                    className="input-bare"
-                    type="number"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={drafts[item.id] ?? ''}
-                    onChange={e => setDrafts(prev => ({ ...prev, [item.id]: e.target.value }))}
-                    style={{ width: '56px', textAlign: 'right', fontSize: '0.85rem', padding: '0 0.25rem' }}
-                  />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', width: '20px', flexShrink: 0 }}>{unitLabel}</span>
-                  <button
-                    onClick={() => handleConfirm(item)}
-                    style={{
-                      background: 'none',
-                      border: '1px solid var(--border-mid)',
-                      color: 'var(--text-2)',
-                      width: '44px',
-                      height: '44px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      fontSize: '0.9rem',
-                      fontFamily: 'Inter, sans-serif',
-                    }}
-                  >
-                    ✓
-                  </button>
-                </>
-              )}
+              <input
+                className="input-bare"
+                type="number"
+                inputMode="decimal"
+                placeholder="0"
+                value={drafts[item.id] ?? ''}
+                onChange={e => handleChange(item.id, e.target.value)}
+                style={{ width: '56px', textAlign: 'right', fontSize: '0.85rem', padding: '0 0.25rem' }}
+              />
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', width: '20px', flexShrink: 0 }}>{unitLabel}</span>
+              <button
+                onClick={() => handleCheckmark(item)}
+                style={{
+                  background: isConfirmed ? 'var(--red)' : 'none',
+                  border: isConfirmed ? 'none' : '1px solid var(--border-mid)',
+                  color: isConfirmed ? '#ffffff' : 'var(--text-3)',
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  fontSize: '0.9rem',
+                  fontFamily: 'Inter, sans-serif',
+                  padding: 0,
+                }}
+              >
+                ✓
+              </button>
             </div>
           )
         })}
