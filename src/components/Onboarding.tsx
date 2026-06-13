@@ -181,9 +181,9 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                   value={form.weightLbs}
                   onChange={(e) => {
                     set('weightLbs', e.target.value)
-                    if (e.target.value.length >= 3) advance(unit === 'imperial' ? heightFtRef : heightCmRef)
+                    if (e.target.value.length >= 3) advance(goalRef)
                   }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(unit === 'imperial' ? heightFtRef : heightCmRef) } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(goalRef) } }}
                   style={{ width: '5rem' }}
                 />
                 <span className="onboarding-unit-label" style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
@@ -204,9 +204,9 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                   value={form.goalWeightLbs}
                   onChange={(e) => {
                     set('goalWeightLbs', e.target.value)
-                    if (e.target.value.length >= 3) advance(timelineRef)
+                    if (e.target.value.length >= 3) advance(unit === 'imperial' ? heightFtRef : heightCmRef)
                   }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(timelineRef) } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(unit === 'imperial' ? heightFtRef : heightCmRef) } }}
                   style={{ width: '5rem' }}
                 />
                 <span className="onboarding-unit-label" style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
@@ -297,9 +297,9 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                   value={form.age}
                   onChange={(e) => {
                     set('age', e.target.value)
-                    if (e.target.value.length >= 2) advance(goalRef)
+                    if (e.target.value.length >= 2) advance(timelineRef)
                   }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(goalRef) } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(timelineRef) } }}
                   style={{ width: '4rem' }}
                 />
                 <span className="onboarding-unit-label" style={S.unitLabel}>years</span>
