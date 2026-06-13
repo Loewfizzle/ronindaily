@@ -207,7 +207,7 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
           </p>
           <div
             style={{
-              fontSize: '0.65rem',
+              fontSize: '0.75rem',
               letterSpacing: '0.3em',
               color: 'var(--text-3)',
               textTransform: 'uppercase',

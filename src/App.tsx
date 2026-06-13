@@ -102,7 +102,7 @@ function LoginScreen({ connectionError }: LoginScreenProps) {
 
           <div style={{ width: '100%', maxWidth: '320px', display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.5rem 0' }}>
             <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-            <span style={{ fontSize: '0.6rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase' }}>or</span>
+            <span style={{ fontSize: '0.75rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase' }}>or</span>
             <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
           </div>
 
@@ -238,7 +238,7 @@ export default function App() {
         // Transient null session (token refresh failure etc.) — show landing only
         // for brand-new visitors who have never committed to a mission.
         setUser(null)
-        setScreen(localStorage.getItem('ronin_committed') ? 'login' : 'landing')
+        setScreen(localStorage.getItem('ronin_committed') || localStorage.getItem('ronin_start') ? 'login' : 'landing')
         return
       }
       setUser(session.user)

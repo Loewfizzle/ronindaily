@@ -248,6 +248,9 @@ Respond with ONLY raw JSON — no markdown fences, no backticks, no text before 
     if (s0 === -1 || e0 <= s0) throw new Error('No JSON in response')
     const parsed = JSON.parse(raw.slice(s0, e0 + 1)) as { days: DayPlan[] }
     parsedDays = parsed.days
+    if (!Array.isArray(parsedDays) || parsedDays.length === 0) {
+      throw new Error('Invalid response structure')
+    }
   } catch (e) {
     console.error('[meal-plan] Parse or network error:', e)
     return new Response(JSON.stringify({ error: 'Failed to generate meal plan' }), {

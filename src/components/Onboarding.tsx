@@ -492,7 +492,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                     onClick={() => toggleActivity(id)}
                   >
                     <span style={{ lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
-                    <span style={{ fontSize: '0.65rem', letterSpacing: '0.06em', lineHeight: 1.2 }}>{name}</span>
+                    <span style={{ fontSize: '0.75rem', letterSpacing: '0.06em', lineHeight: 1.2 }}>{name}</span>
                   </button>
                 ))}
               </div>

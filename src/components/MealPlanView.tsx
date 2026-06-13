@@ -93,8 +93,10 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
 
   const calorieTargetRef = useRef(calorieTarget)
   const unitRef          = useRef(unit)
+  const mealPlanRef      = useRef<MealPlanData | null>(null)
   calorieTargetRef.current = calorieTarget
   unitRef.current          = unit
+  mealPlanRef.current      = mealPlan
 
   const doGenerate = useCallback(async (prefs: MealPrefs) => {
     setScreen('loading')
@@ -139,6 +141,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
       const data = await res.json() as { days: DayPlan[] }
       if (!data.days?.[0]) throw new Error('Empty response')
       const newDay: DayPlan = { ...data.days[0], day: dayNum }
+      newDay.totalCalories = calcDayTotal(newDay)
       setMealPlan(prev => {
         if (!prev) return prev
         const updated: MealPlanData = {
@@ -160,7 +163,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
     setRegenSlots(prev => new Set([...prev, key]))
     try {
       const prefs = loadSavedPrefs()
-      const dayData = loadCachedPlan()?.days.find(d => d.day === dayNum)
+      const dayData = mealPlanRef.current?.days.find(d => d.day === dayNum)
       if (!dayData) throw new Error('Day not found')
 
       const res = await fetch('/api/meal-plan', {
@@ -202,7 +205,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
       setBudget(savedPrefs.budget)
       setRestrictions(savedPrefs.restrictions)
       setEquipment(savedPrefs.equipment)
-      setDislikes(savedPrefs.dislikes)
+      setDislikes(savedPrefs.dislikes ?? '')
       setDescription(savedPrefs.description ?? '')
 
       const cached = loadCachedPlan()

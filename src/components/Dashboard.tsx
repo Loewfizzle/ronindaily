@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import BottomSheet from './BottomSheet'
 import SettingsSheet from './SettingsSheet'
 import CheckinSheet from './CheckinSheet'
@@ -110,6 +110,7 @@ function FooterContent({
 }
 
 export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connectionWarning }: DashboardProps) {
+  const [refreshKey, setRefreshKey]      = useState(0)
   const [sheet, setSheet]               = useState<'food' | 'movement' | 'progress' | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [checkinOpen, setCheckinOpen]   = useState(false)
@@ -123,13 +124,14 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [selectedBadge, setSelectedBadge] = useState<EarnedBadge | null>(null)
   const [skipOpen, setSkipOpen]           = useState(false)
   const [skipConfirmed, setSkipConfirmed] = useState(false)
+  const skipConfirmTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [dismissed, setDismissed] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem(`ronin_dismissed_activities_${localDateStr()}`)
       return raw ? (JSON.parse(raw) as string[]) : []
     } catch { return [] }
   })
-  const plan = loadPlan()
+  const plan = useMemo(() => loadPlan(), [refreshKey])
   const planRef = useRef(plan)
   planRef.current = plan
 
@@ -149,6 +151,8 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     localStorage.setItem(`ronin_dismissed_activities_${localDateStr()}`, JSON.stringify(dismissed))
   }, [dismissed])
 
+  useEffect(() => () => { if (skipConfirmTimerRef.current) clearTimeout(skipConfirmTimerRef.current) }, [])
+
   useEffect(() => {
     const sync = () => {
       if (document.visibilityState !== 'visible') return
@@ -161,18 +165,22 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     return () => document.removeEventListener('visibilitychange', sync)
   }, [])
 
+  // Persist best progress whenever progressPct improves (not gated behind showCheckin).
+  useEffect(() => {
+    if (progressPct > parseFloat(localStorage.getItem('ronin_best_progress') || '0')) {
+      localStorage.setItem('ronin_best_progress', String(progressPct))
+    }
+  }, [progressPct])
+
   // Persist progress milestones as a side-effect, not in the render body.
   useEffect(() => {
     const p = planRef.current
     if (!p) return
-    if (showCheckin && progressPct > parseFloat(localStorage.getItem('ronin_best_progress') || '0')) {
-      localStorage.setItem('ronin_best_progress', String(progressPct))
-    }
     if (progressPct >= 100 && !localStorage.getItem('ronin_goal_reached')) {
       localStorage.setItem('ronin_goal_reached', 'true')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [progressPct, showCheckin])
+  }, [progressPct])
 
   useEffect(() => {
     async function logAndCalcStreak() {
@@ -311,7 +319,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       }
     } catch { /* offline — streak already reset locally */ }
     setSkipConfirmed(true)
-    setTimeout(() => setSkipConfirmed(false), 3000)
+    skipConfirmTimerRef.current = setTimeout(() => setSkipConfirmed(false), 3000)
   }
 
   const footerProps = { loggedDays, weekNumber, onShare: () => setShareOpen(true) }
@@ -325,7 +333,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         {/* Header: branding + settings */}
         <div className="dash-header">
           <div className="dash-brand">
-            <span className="font-jp dash-kanji">侍</span>
+            <span className="font-jp dash-kanji" style={{ animation: 'kanjiPulse 4s ease-in-out infinite' }}>侍</span>
             <div>
               <div className="dash-ronin">RONIN</div>
               <div className="dash-daily">DAILY</div>
@@ -547,7 +555,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       </BottomSheet>
 
       <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} streak={streak} plan={plan} />
-      <CheckinSheet open={checkinOpen} onClose={() => setCheckinOpen(false)} plan={plan} />
+      <CheckinSheet open={checkinOpen} onClose={() => setCheckinOpen(false)} plan={plan} onCheckin={() => setRefreshKey(k => k + 1)} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} onAdjustGoal={onAdjustGoal} onReset={onReset} onSignOut={onSignOut} />
       <MealPlanSheet open={mealPlanOpen} onClose={() => setMealPlanOpen(false)} calorieTarget={calorieTarget} unit={unit} />
 

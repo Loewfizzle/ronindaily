@@ -7,9 +7,10 @@ interface CheckinSheetProps {
   open: boolean
   onClose: () => void
   plan: PlanResult | null
+  onCheckin?: () => void
 }
 
-export default function CheckinSheet({ open, onClose, plan }: CheckinSheetProps) {
+export default function CheckinSheet({ open, onClose, plan, onCheckin }: CheckinSheetProps) {
   const [weight, setWeight] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -86,6 +87,7 @@ export default function CheckinSheet({ open, onClose, plan }: CheckinSheetProps)
     setSubmitting(false)
     setWeight('')
     setError(null)
+    onCheckin?.()
     onClose()
   }
 

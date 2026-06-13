@@ -167,7 +167,7 @@ const pageBase = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: PreparationScreenProps) {
-  const [step, setStep]           = useState<1|2|3|4>(1)
+  const [step, setStep]           = useState<1|2|3|4>(() => { const s = parseInt(sessionStorage.getItem('prep_step') || '1', 10); return (s >= 1 && s <= 4 ? s : 1) as 1|2|3|4 })
   const [direction, setDirection] = useState<'forward'|'back'>('forward')
   const [beginning, setBeginning] = useState(false)
   const [dishonorPhase, setDishonorPhase] = useState<'hidden' | 'showing' | 'hiding'>('hidden')
@@ -215,9 +215,11 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
     window.scrollTo({ top: 0, behavior: 'instant' })
     setDirection(dir)
     setStep(n)
+    sessionStorage.setItem('prep_step', String(n))
   }
 
   const triggerDishonor = () => {
+    if (dishonorPhase === 'hiding') return
     dishonorTimers.current.forEach(clearTimeout)
     dishonorTimers.current = []
     setDishonorPhase('showing')
@@ -232,6 +234,7 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
     dishonorTimers.current.forEach(clearTimeout)
     dishonorTimers.current = []
     setDishonorPhase('hidden')
+    sessionStorage.removeItem('prep_step')
     setTimeout(onBegin, 1000)
   }
 
