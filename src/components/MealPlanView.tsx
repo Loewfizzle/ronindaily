@@ -7,6 +7,7 @@ import { MEAL_SLOTS } from '../types'
 
 const BUDGET_OPTIONS: { id: MealPrefs['budget']; label: string }[] = [
   { id: 'raw_materials', label: 'Raw Materials' },
+  { id: 'no_cook',       label: 'No Cook'       },
   { id: 'budget',        label: 'Budget'        },
   { id: 'standard',      label: 'Standard'      },
   { id: 'flexible',      label: 'Flexible'      },
@@ -249,12 +250,13 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
 
       <div>
         <div className="field-label">Budget</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
           {BUDGET_OPTIONS.map(b => (
             <button
               key={b.id}
               className={`toggle-btn${budget === b.id ? ' active' : ''}`}
               onClick={() => setBudget(b.id)}
+              style={{ flex: '1 1 calc(50% - 2px)', minWidth: 'calc(50% - 2px)' }}
             >
               {b.label}
             </button>

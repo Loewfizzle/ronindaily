@@ -16,7 +16,7 @@ interface DayPlan {
 }
 
 interface MealPrefs {
-  budget?: 'raw_materials' | 'budget' | 'standard' | 'flexible'
+  budget?: 'raw_materials' | 'no_cook' | 'budget' | 'standard' | 'flexible'
   restrictions?: string[]
   equipment?: string[]
   dislikes?: string
@@ -42,6 +42,7 @@ function buildPrefsSection(prefs: MealPrefs | undefined): string {
 
   const budgetMap = {
     raw_materials: 'RAW MATERIALS TIER — absolute bare minimum cost foods only. Canned tuna, eggs, rice, oats, frozen vegetables, peanut butter, whole wheat bread, bananas, beans, lentils, cottage cheese. Everything under $50 for the week. No cooking required beyond basic preparation. Purely functional fuel — no cuisine, no variety for variety\'s sake, just the cheapest most calorie-efficient whole foods available at any grocery store.',
+    no_cook:       'NO COOK TIER — zero cooking required. Every single meal must require no stove, no oven, and no real preparation. Microwave-only items are allowed. Suggest generic food categories but always include a well-known brand example in parentheses after each item so the user can find it in any grocery store. Draw exclusively from items like these: canned soup (e.g. Campbell\'s, Progresso), packaged lunch kit (e.g. Lunchables), canned pasta (e.g. SpaghettiOs, Chef Boyardee), frozen meal under 5 minutes (e.g. Lean Cuisine, Healthy Choice), Greek yogurt cup (e.g. Chobani, Fage), protein bar (e.g. Kind, RXBar, Clif), rotisserie chicken (pre-cooked from store deli), canned tuna with crackers (e.g. Starkist pouch, Ritz), cottage cheese cup (e.g. Daisy, Good Culture), instant oatmeal packet (e.g. Quaker), deli meat and cheese slices (e.g. Oscar Mayer, Boar\'s Head), hard boiled eggs (pre-made from store), baby carrots and hummus (e.g. Hope, Sabra single serve). If any item would require a pan, pot, or oven it is NOT allowed. Always include the brand example in parentheses in the food item name field.',
     budget:        'BUDGET TIER — Use only affordable staple ingredients: rolled oats, eggs, canned beans, lentils, canned tuna, canned sardines, frozen vegetables (broccoli, spinach, mixed veg), chicken thighs, ground beef (80/20), rice, sweet potatoes, bananas, apples, peanut butter, whole milk, store-brand Greek yogurt. Prioritise cheap high-volume foods and repeat ingredients across days to keep the shopping list short and cheap.',
     standard:      'STANDARD TIER — Use common supermarket ingredients available at any grocery store: chicken breast, ground turkey, eggs, canned fish, fresh and frozen vegetables, seasonal fruits, brown rice, pasta, rolled oats, Greek yogurt, cottage cheese, milk, olive oil, cheddar cheese, whole wheat bread.',
     flexible:      'FLEXIBLE TIER — Any ingredients are acceptable including salmon, shrimp, steak, specialty produce, quinoa, almond butter, specialty cheeses, and premium items. Prioritise nutrition and variety.',
