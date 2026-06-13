@@ -335,7 +335,7 @@ input[type='number'] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.6rem 1.5rem;
+  padding: 2rem 1.5rem;
   border-bottom: 1px solid var(--border-mid);
 }
 
@@ -346,13 +346,13 @@ input[type='number'] {
 }
 
 .dash-kanji {
-  font-size: 2.2rem;
+  font-size: 3rem;
   color: var(--red);
   line-height: 1;
 }
 
 .dash-ronin {
-  font-size: 1rem;
+  font-size: 1.3rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   color: var(--text);
@@ -361,13 +361,22 @@ input[type='number'] {
 }
 
 .dash-daily {
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   font-weight: 300;
   letter-spacing: 0.6em;
   color: var(--text-2);
   text-transform: uppercase;
   line-height: 1.2;
   margin-top: 0.2rem;
+}
+
+.dash-day-number {
+  font-size: 3.5rem;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 0.4rem;
 }
 
 .dash-settings-btn {
@@ -457,9 +466,10 @@ input[type='number'] {
     gap: 1.1rem;
   }
 
-  .dash-kanji  { font-size: 2.8rem; }
-  .dash-ronin  { font-size: 1.1rem; }
-  .dash-daily  { font-size: 0.75rem; }
+  .dash-kanji      { font-size: 3.5rem; }
+  .dash-ronin      { font-size: 1.4rem; }
+  .dash-daily      { font-size: 0.9rem; }
+  .dash-day-number { font-size: 4rem; }
 
   /* "Mission Briefing" subtitle moves from date block to right column heading */
   .dash-mobile-subtitle  { display: none; }

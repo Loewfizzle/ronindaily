@@ -459,21 +459,22 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
         {/* Date + day heading */}
         <div style={{ padding: '1.4rem 1.5rem 0.75rem' }}>
-          <div style={{ fontSize: '0.85rem', letterSpacing: '0.12em', color: 'var(--text-2)', marginBottom: '0.2rem' }}>
-            {formatDate(date)} — DAY {dayNumber}
+          <div style={{ fontSize: '0.85rem', letterSpacing: '0.12em', color: 'var(--text-2)', marginBottom: '0.35rem' }}>
+            {formatDate(date)}
           </div>
+          <div className="dash-day-number">DAY {dayNumber}</div>
           {/* "Mission Briefing" shows here on mobile; on desktop it moves to the right column */}
-          <div className="dash-mobile-subtitle" style={{ fontSize: '0.75rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+          <div className="dash-mobile-subtitle" style={{ fontSize: '0.72rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
             Mission Briefing
           </div>
         </div>
 
         {/* Progress blade */}
-        <div style={{ padding: '0.5rem 1.5rem 1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>{wtDisplay(startWeight, unit)}</span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{wtDisplay(poundsToLose, unit)} · {daysLeft} days</span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>{wtDisplay(goalWeight, unit)}</span>
+        <div style={{ padding: '1rem 1.5rem 1.75rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.55rem' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>{wtDisplay(startWeight, unit)}</span>
+            <span style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{wtDisplay(poundsToLose, unit)} · {daysLeft} days</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>{wtDisplay(goalWeight, unit)}</span>
           </div>
           <div className="blade-wrap">
             <div className="blade-fill" style={{ width: `${progressPct}%` }} />
