@@ -142,17 +142,17 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
       <div className="onboarding-inner">
         <div style={S.logo}>
           <div className="font-jp onboarding-kanji" style={S.kanji}>侍</div>
-          <div style={S.wordmark}>Ronin Daily</div>
+          <div className="onboarding-wordmark" style={S.wordmark}>Ronin Daily</div>
         </div>
 
         <div style={S.divider}>
-          <p style={S.tagline}>
+          <p className="onboarding-tagline" style={S.tagline}>
             There are no shortcuts. You know this.<br />
             Provide your data. The mission follows.
           </p>
         </div>
 
-        <div style={S.fields}>
+        <div className="onboarding-fields" style={S.fields}>
           {/* Unit system */}
           <div>
             <div className="field-label">Units</div>
@@ -182,7 +182,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(unit === 'imperial' ? heightFtRef : heightCmRef) } }}
                   style={{ width: '5rem' }}
                 />
-                <span style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
+                <span className="onboarding-unit-label" style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
               </div>
               {errors.weightLbs && <div className="field-error">{errors.weightLbs}</div>}
             </div>
@@ -202,7 +202,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(timelineRef) } }}
                   style={{ width: '5rem' }}
                 />
-                <span style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
+                <span className="onboarding-unit-label" style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
               </div>
               {errors.goalWeightLbs && <div className="field-error">{errors.goalWeightLbs}</div>}
             </div>
@@ -226,7 +226,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(heightInRef) } }}
                     style={{ width: '3rem' }}
                   />
-                  <span style={S.unitLabel}>ft</span>
+                  <span className="onboarding-unit-label" style={S.unitLabel}>ft</span>
                 </div>
                 <div style={S.fieldRow}>
                   <input
@@ -241,7 +241,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(ageRef) } }}
                     style={{ width: '3rem' }}
                   />
-                  <span style={S.unitLabel}>in</span>
+                  <span className="onboarding-unit-label" style={S.unitLabel}>in</span>
                 </div>
               </div>
             ) : (
@@ -258,7 +258,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(ageRef) } }}
                   style={{ width: '5rem' }}
                 />
-                <span style={S.unitLabel}>cm</span>
+                <span className="onboarding-unit-label" style={S.unitLabel}>cm</span>
               </div>
             )}
             {(errors.heightFt || errors.heightCm) && <div className="field-error">Required</div>}
@@ -280,7 +280,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(goalRef) } }}
                 style={{ width: '4rem' }}
               />
-              <span style={S.unitLabel}>years</span>
+              <span className="onboarding-unit-label" style={S.unitLabel}>years</span>
             </div>
             {errors.age && <div className="field-error">{errors.age}</div>}
           </div>
@@ -290,7 +290,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
             <div className="field-label">Sex</div>
             <div style={S.sexRow}>
               {(['M', 'F'] as Sex[]).map((s) => (
-                <button key={s} style={S.sexBtn(form.sex === s)} onClick={() => set('sex', s)}>{s}</button>
+                <button key={s} className="onboarding-sex-btn" style={S.sexBtn(form.sex === s)} onClick={() => set('sex', s)}>{s}</button>
               ))}
             </div>
             {errors.sex && <div className="field-error">{errors.sex}</div>}
@@ -312,7 +312,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
                 style={{ width: '4rem' }}
               />
-              <span style={S.unitLabel}>weeks</span>
+              <span className="onboarding-unit-label" style={S.unitLabel}>weeks</span>
             </div>
             {errors.targetWeeks && <div className="field-error">{errors.targetWeeks}</div>}
           </div>

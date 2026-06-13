@@ -246,6 +246,56 @@ input[type='number'] {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   MOBILE OVERRIDES  ≤767px
+   Scoped to phones only — no effect on desktop or tablet.
+═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  /* Kanji logo */
+  .onboarding-kanji { font-size: 2.8rem !important; }
+
+  /* Wordmark */
+  .onboarding-wordmark { font-size: 0.82rem !important; }
+
+  /* Tagline */
+  .onboarding-tagline { font-size: 0.92rem !important; }
+
+  /* Field labels */
+  .field-label { font-size: 0.88rem; }
+
+  /* Inputs — bigger text, taller tap target */
+  .input-bare {
+    font-size: 1.35rem;
+    padding: 0.7rem 0;
+  }
+
+  /* Unit labels (lbs, ft, in, cm, years, weeks) */
+  .onboarding-unit-label { font-size: 0.9rem !important; padding-bottom: 0.6rem; }
+
+  /* Unit / sex toggle buttons */
+  .toggle-btn {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.8rem;
+  }
+
+  /* Sex buttons (M / F) */
+  .onboarding-sex-btn {
+    width: 5rem !important;
+    padding: 0.9rem 0 !important;
+    font-size: 0.88rem !important;
+  }
+
+  /* Commit button */
+  .commit-btn {
+    font-size: 0.88rem;
+    padding: 1.25rem;
+  }
+
+  /* Fields — more breathing room between rows */
+  .onboarding-fields { gap: 2.2rem !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    DESKTOP RESPONSIVE  ≥768px
    Mobile-first: everything above is the default (mobile) layout.
    Nothing below changes any mobile behaviour.
