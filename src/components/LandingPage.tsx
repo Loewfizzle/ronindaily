@@ -60,10 +60,16 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
           alignItems: 'center',
         }}
       >
-        {/* Kanji */}
+        {/* Hero kanji — font-jp only (no onboarding-kanji class to avoid its !important size override) */}
         <div
-          className="font-jp onboarding-kanji"
-          style={{ fontSize: '3rem', color: 'var(--red)', lineHeight: 1, marginBottom: '0.75rem' }}
+          className="font-jp"
+          style={{
+            fontSize: '5rem',
+            color: 'var(--red)',
+            lineHeight: 1,
+            marginBottom: '0.75rem',
+            animation: 'kanjiPulse 4s ease-in-out infinite',
+          }}
         >
           侍
         </div>
@@ -71,7 +77,7 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
         {/* Wordmark */}
         <div
           style={{
-            fontSize: '0.58rem',
+            fontSize: '1.1rem',
             letterSpacing: '0.44em',
             color: 'var(--text)',
             fontWeight: 500,
@@ -87,14 +93,14 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
         {/* Headline */}
         <div
           style={{
-            fontSize: 'clamp(1rem, 3.5vw, 1.5rem)',
+            fontSize: '1.8rem',
             fontWeight: 300,
-            letterSpacing: '0.2em',
+            letterSpacing: '0.12em',
             color: 'var(--text)',
             textTransform: 'uppercase',
             textAlign: 'center',
             margin: '2.5rem 0 2rem',
-            lineHeight: 1.5,
+            lineHeight: 1.4,
           }}
         >
           This app helps you lose weight.
@@ -111,9 +117,9 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
             <div
               key={i}
               style={{
-                fontSize: '0.88rem',
+                fontSize: '1.05rem',
                 color: 'var(--text-2)',
-                lineHeight: 2.2,
+                lineHeight: 2.0,
                 textAlign: 'center',
               }}
             >
@@ -138,16 +144,23 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
                 textAlign: 'center',
               }}
             >
+              {/* Pillar kanji — no onboarding-kanji class; animation applied inline */}
               <div
                 className="font-jp"
-                style={{ fontSize: '2.2rem', color: 'var(--red)', lineHeight: 1, marginBottom: '0.65rem', animation: 'kanjiPulse 4s ease-in-out infinite' }}
+                style={{
+                  fontSize: '3.5rem',
+                  color: 'var(--red)',
+                  lineHeight: 1,
+                  marginBottom: '0.65rem',
+                  animation: 'kanjiPulse 4s ease-in-out infinite',
+                }}
               >
                 {kanji}
               </div>
               <div
                 style={{
-                  fontSize: '0.52rem',
-                  letterSpacing: '0.34em',
+                  fontSize: '0.9rem',
+                  letterSpacing: '0.3em',
                   color: 'var(--gold)',
                   textTransform: 'uppercase',
                   marginBottom: '0.85rem',
@@ -155,7 +168,13 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
               >
                 {label}
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-2)', lineHeight: 1.8 }}>
+              <div
+                style={{
+                  fontSize: '0.95rem',
+                  color: 'var(--text-2)',
+                  lineHeight: 1.75,
+                }}
+              >
                 {text}
               </div>
             </div>
@@ -164,9 +183,13 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
 
         <Divider />
 
-        {/* CTA */}
+        {/* CTA — inline font-size overrides commit-btn class value */}
         <div style={{ width: '100%', marginTop: '2.75rem' }}>
-          <button className="commit-btn" onClick={onBegin}>
+          <button
+            className="commit-btn"
+            onClick={onBegin}
+            style={{ fontSize: '1rem' }}
+          >
             Begin Your Mission
           </button>
         </div>
