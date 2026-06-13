@@ -134,6 +134,7 @@ export function calculatePlan(profile, startDate = new Date()) {
     : 0
 
   return {
+    unit,
     unsustainable,
     realisticEndDate,
 

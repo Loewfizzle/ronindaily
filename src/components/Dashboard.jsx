@@ -17,10 +17,25 @@ function loadPlan() {
     const startRaw  = localStorage.getItem('ronin_start')
     const startDate = startRaw ? new Date(startRaw) : new Date()
     if (!profile) return null
+    if (!profile.sex || !profile.weightLbs || !profile.age || !profile.targetWeeks) return null
     return calculatePlan(profile, startDate)
   } catch {
     return null
   }
+}
+
+function wtDisplay(lbs, unit) {
+  if (unit === 'metric') return `${(lbs / 2.20462).toFixed(1)} kg`
+  return `${lbs} lbs`
+}
+
+function wtVal(lbs, unit) {
+  return unit === 'metric' ? (lbs / 2.20462).toFixed(1) : String(lbs)
+}
+
+function paceDisplay(pace, unit) {
+  if (unit === 'metric') return `${(pace / 2.20462).toFixed(2)} kg/wk`
+  return `${pace} lbs/wk`
 }
 
 export default function Dashboard({ onReset, onAdjustGoal }) {
@@ -43,6 +58,7 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
   }
 
   const {
+    unit,
     unsustainable, realisticEndDate,
     startWeight, currentWeight, goalWeight, poundsToLose,
     date, dayNumber, daysLeft, totalDays, weekNumber,
@@ -149,11 +165,11 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
       {/* Progress blade */}
       <div style={{ padding: '0.5rem 1.5rem 1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-2)' }}>{startWeight} lbs</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-2)' }}>{wtDisplay(startWeight, unit)}</span>
           <span style={{ fontSize: '0.7rem', color: 'var(--text)' }}>
-            {poundsToLose} lbs · {daysLeft} days
+            {wtDisplay(poundsToLose, unit)} · {daysLeft} days
           </span>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-2)' }}>{goalWeight} lbs</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-2)' }}>{wtDisplay(goalWeight, unit)}</span>
         </div>
         <div className="blade-wrap">
           <div className="blade-fill" style={{ width: `${progressPct}%` }} />
@@ -240,7 +256,7 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
             </span>
           </div>
           <div style={{ fontSize: '0.65rem', color: 'var(--text-2)' }}>
-            Deficit: {dailyDeficit} cal below maintenance.
+            Deficit: {(maintenance - calorieTarget).toLocaleString()} cal below maintenance.
           </div>
         </div>
 
@@ -263,7 +279,7 @@ export default function Dashboard({ onReset, onAdjustGoal }) {
         <div className="mission-block" onClick={() => setSheet('progress')}>
           <BlockHeader label="Progress" />
           <div style={{ display: 'flex', gap: '2rem' }}>
-            <Stat label="Remaining" value={`${poundsToLose}`} unit="lbs" />
+            <Stat label="Remaining" value={wtVal(poundsToLose, unit)} unit={unit === 'metric' ? 'kg' : 'lbs'} />
             <Stat label="Days Left" value={`${daysLeft}`} />
             <Stat label="Streak"    value={`${streak}`} />
           </div>
@@ -364,7 +380,7 @@ function FoodDetail({ data }) {
           </span>
         </div>
         <div style={{ fontSize: '0.68rem', color: 'var(--text-2)' }}>
-          Maintenance: {data.maintenance.toLocaleString()} cal — you are {data.deficit} below.
+          Maintenance: {data.maintenance.toLocaleString()} cal — you are {(data.maintenance - data.target).toLocaleString()} below.
         </div>
       </div>
 
@@ -448,15 +464,15 @@ function MovementDetail({ movement, cal }) {
 }
 
 function ProgressDetail({ plan }) {
-  const { startWeight, currentWeight, goalWeight, poundsToLose, daysLeft, pacePerWeek } = plan
+  const { unit, startWeight, currentWeight, goalWeight, poundsToLose, daysLeft, pacePerWeek } = plan
 
   const stats = [
-    { label: 'Start',     value: `${startWeight} lbs`   },
-    { label: 'Current',   value: `${currentWeight} lbs`  },
-    { label: 'Goal',      value: `${goalWeight} lbs`     },
-    { label: 'Remaining', value: `${poundsToLose} lbs`   },
-    { label: 'Days Left', value: daysLeft                 },
-    { label: 'Pace',      value: `${pacePerWeek} lbs/wk` },
+    { label: 'Start',     value: wtDisplay(startWeight, unit)   },
+    { label: 'Current',   value: wtDisplay(currentWeight, unit)  },
+    { label: 'Goal',      value: wtDisplay(goalWeight, unit)     },
+    { label: 'Remaining', value: wtDisplay(poundsToLose, unit)   },
+    { label: 'Days Left', value: daysLeft                        },
+    { label: 'Pace',      value: paceDisplay(pacePerWeek, unit)  },
   ]
 
   return (
