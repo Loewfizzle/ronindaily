@@ -396,6 +396,10 @@ input[type='number'] {
   display: flex !important;
 }
 
+/* Mobile: badge row — hidden in left column, shown in right column */
+.badge-row-desktop { display: none !important; }
+.badge-row-mobile  { display: block !important; }
+
 /* ── Dashboard desktop layout ── */
 @media (min-width: 768px) {
   .dash-root {
@@ -461,6 +465,10 @@ input[type='number'] {
   /* Swap footer visibility */
   .dash-footer-desktop { display: flex !important; }
   .dash-footer-mobile  { display: none !important; }
+
+  /* Swap badge row visibility */
+  .badge-row-desktop { display: block !important; }
+  .badge-row-mobile  { display: none !important; }
 
   /* Mission blocks stack naturally on desktop — no space-between spreading */
   .dash-mission-blocks { justify-content: flex-start !important; }
@@ -666,7 +674,7 @@ input[type='number'] {
 .badge-countdown-bar {
   height: 100%;
   background: var(--red);
-  animation: badgeCountdown 6s linear forwards;
+  animation: badgeCountdown 12s linear forwards;
 }
 
 @keyframes badgeFadeIn {

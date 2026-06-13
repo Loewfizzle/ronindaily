@@ -17,6 +17,16 @@ export const BADGE_DEFS: BadgeDef[] = [
   { id: 'first_meal_plan', name: 'Prepared',         flavor: 'A warrior prepares before battle.' },
 ]
 
+export const BADGE_KANJI: Record<string, string> = {
+  streak_7:        '始',
+  streak_30:       '侍',
+  streak_50:       '律',
+  streak_100:      '鋼',
+  first_checkin:   '誠',
+  goal_reached:    '完',
+  first_meal_plan: '備',
+}
+
 export function getBadgeDef(id: string): BadgeDef | undefined {
   return BADGE_DEFS.find(b => b.id === id)
 }

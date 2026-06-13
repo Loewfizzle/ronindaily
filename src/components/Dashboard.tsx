@@ -5,11 +5,17 @@ import CheckinSheet from './CheckinSheet'
 import ShareSheet from './ShareSheet'
 import MealPlanSheet from './MealPlanSheet'
 import BadgeBanner from './BadgeBanner'
+import BadgeDetailSheet from './BadgeDetailSheet'
 import { calculatePlan } from '../utils/calculate'
-import { checkAndAwardBadges } from '../utils/badges'
+import { checkAndAwardBadges, BADGE_KANJI } from '../utils/badges'
 import { supabase } from '../lib/supabase'
 import type { PlanResult, Meal, UnitSystem } from '../types'
 import type { BadgeDef } from '../utils/badges'
+
+interface EarnedBadge {
+  badge_id: string
+  earned_at: string
+}
 
 function formatDate(d: Date): string {
   const day   = d.getDate()
@@ -107,6 +113,8 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [loggedDays, setLoggedDays]     = useState<Set<string>>(new Set())
   const [badgeQueue, setBadgeQueue]     = useState<BadgeDef[]>([])
   const [activeBadge, setActiveBadge]   = useState<BadgeDef | null>(null)
+  const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([])
+  const [selectedBadge, setSelectedBadge] = useState<EarnedBadge | null>(null)
   const plan = loadPlan()
   const planRef = useRef(plan)
   planRef.current = plan
@@ -175,6 +183,13 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             setActiveBadge(newBadges[0])
           }
         }
+
+        const { data: allBadges } = await supabase
+          .from('badges')
+          .select('badge_id, earned_at')
+          .eq('user_id', user.id)
+          .order('earned_at', { ascending: true })
+        if (allBadges) setEarnedBadges(allBadges)
       } catch {
         // Offline — keep localStorage streak, pips stay empty
       }
@@ -306,6 +321,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         {/* Spacer — on desktop pushes footer to bottom of left column */}
         <div className="dash-left-spacer" />
 
+        {earnedBadges.length > 0 && (
+          <div className="badge-row-desktop">
+            <BadgeRow badges={earnedBadges} onSelect={setSelectedBadge} />
+          </div>
+        )}
+
         {/* Footer — desktop only (hidden on mobile) */}
         <div className="dash-footer dash-footer-desktop" style={{ padding: '1rem 1.5rem 0', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FooterContent {...footerProps} />
@@ -357,6 +378,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           <MealPlanBlock calorieTarget={calorieTarget} onOpen={() => setMealPlanOpen(true)} />
         </div>
 
+        {earnedBadges.length > 0 && (
+          <div className="badge-row-mobile">
+            <BadgeRow badges={earnedBadges} onSelect={setSelectedBadge} />
+          </div>
+        )}
+
         {/* Footer — mobile only (hidden on desktop) */}
         <div className="dash-footer dash-footer-mobile" style={{ padding: '1rem 1.5rem 0', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FooterContent {...footerProps} />
@@ -381,12 +408,55 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} onAdjustGoal={onAdjustGoal} onReset={onReset} onSignOut={onSignOut} />
       <MealPlanSheet open={mealPlanOpen} onClose={() => setMealPlanOpen(false)} calorieTarget={calorieTarget} unit={unit} />
 
+      <BadgeDetailSheet badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
       <BadgeBanner badge={activeBadge} onDismiss={handleBadgeDismiss} />
     </div>
   )
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
+
+function BadgeRow({
+  badges,
+  onSelect,
+}: {
+  badges: EarnedBadge[]
+  onSelect: (b: EarnedBadge) => void
+}) {
+  return (
+    <div style={{
+      display: 'flex',
+      gap: '0.5rem',
+      overflowX: 'auto',
+      padding: '0.75rem 1.5rem',
+      scrollbarWidth: 'none',
+    }}>
+      {badges.map(b => (
+        <button
+          key={b.badge_id}
+          onClick={() => onSelect(b)}
+          style={{
+            width: '44px',
+            height: '44px',
+            flexShrink: 0,
+            background: 'var(--elevated)',
+            border: '1px solid var(--red)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          <span className="font-jp" style={{ fontSize: '1.1rem', color: 'var(--red)', lineHeight: 1 }}>
+            {BADGE_KANJI[b.badge_id] ?? '侍'}
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
 
 function MealPlanBlock({ calorieTarget, onOpen }: { calorieTarget: number; onOpen: () => void }) {
   const cached = (() => {

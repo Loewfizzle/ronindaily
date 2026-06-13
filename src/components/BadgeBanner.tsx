@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react'
 import type { BadgeDef } from '../utils/badges'
+import { BADGE_KANJI } from '../utils/badges'
 
 interface BadgeBannerProps {
   badge: BadgeDef | null
   onDismiss: () => void
 }
 
-const AUTO_DISMISS_MS = 6000
+const AUTO_DISMISS_MS = 12000
 
 export default function BadgeBanner({ badge, onDismiss }: BadgeBannerProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -38,7 +39,7 @@ export default function BadgeBanner({ badge, onDismiss }: BadgeBannerProps) {
 
         <div className="badge-rank-label">Rank Unlocked</div>
 
-        <div className="font-jp badge-kanji">侍</div>
+        <div className="font-jp badge-kanji">{BADGE_KANJI[badge.id] ?? '侍'}</div>
 
         <div className="badge-divider" />
 
