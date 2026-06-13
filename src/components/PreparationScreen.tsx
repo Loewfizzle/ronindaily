@@ -151,33 +151,13 @@ interface PreparationScreenProps {
   onReset: () => void
 }
 
-// ── Shared nav styles ─────────────────────────────────────────────────────────
+// ── Shared page style (mobile base — desktop overrides via .prep-page class) ──
 
-const backBtnStyle: React.CSSProperties = {
-  background: 'none', border: 'none', color: 'var(--text-3)',
-  fontSize: '0.72rem', letterSpacing: '0.18em', cursor: 'pointer',
-  padding: 0, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase',
-  alignSelf: 'flex-start',
-}
-
-const stepHeaderStyle: React.CSSProperties = {
-  fontSize: '0.65rem', letterSpacing: '0.36em', color: 'var(--text-2)',
-  textTransform: 'uppercase', marginBottom: '1.75rem',
-}
-
-const advanceBtnStyle: React.CSSProperties = {
-  width: '100%', padding: '1rem', background: 'transparent',
-  border: '1px solid var(--border-mid)', color: 'var(--text-2)',
-  fontSize: '0.7rem', letterSpacing: '0.22em', textTransform: 'uppercase',
-  fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-  transition: 'border-color 0.15s ease, color 0.15s ease',
-}
-
-const stepPadding: React.CSSProperties = {
+const pageBase = {
   minHeight: '100svh',
   background: 'var(--bg)',
   display: 'flex',
-  flexDirection: 'column',
+  flexDirection: 'column' as const,
   padding: '0 1.5rem',
   paddingTop: 'max(3rem, env(safe-area-inset-top))',
   paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))',
@@ -186,15 +166,13 @@ const stepPadding: React.CSSProperties = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function PreparationScreen({ onBegin, onReset }: PreparationScreenProps) {
-  const [step, setStep]         = useState<1|2|3|4>(1)
-  const [direction, setDirection] = useState<'forward'|'back'>('forward')
-  const [beginning, setBeginning] = useState(false)
-  const [dishonorKey, setDishonorKey]   = useState(0)
+  const [step, setStep]               = useState<1|2|3|4>(1)
+  const [direction, setDirection]     = useState<'forward'|'back'>('forward')
+  const [beginning, setBeginning]     = useState(false)
+  const [dishonorKey, setDishonorKey] = useState(0)
   const [dishonorVisible, setDishonorVisible] = useState(false)
   const dishonorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Cancel any pending dishonor navigation callback when the component unmounts
-  // (e.g. user clicks Begin before the 2.2s step-1 redirect fires).
   useEffect(() => () => {
     if (dishonorTimeoutRef.current !== null) clearTimeout(dishonorTimeoutRef.current)
   }, [])
@@ -265,7 +243,7 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
   return (
     <div style={{ position: 'relative', background: 'var(--bg)', overflowX: 'hidden' }}>
 
-      {/* Dishonor message — fixed centered overlay, pointer-events off so nothing is blocked */}
+      {/* Dishonor overlay */}
       {dishonorVisible && (
         <div
           key={dishonorKey}
@@ -283,23 +261,19 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
         </div>
       )}
 
-      {/* Animated step content */}
+      {/* Animated step wrapper */}
       <div key={step} style={{ animation: stepAnim }}>
 
         {/* ── STEP 1 — MISSION PARAMETERS ───────────────────────────────── */}
         {step === 1 && (
-          <div style={{
-            position: 'relative',
-            minHeight: '100svh',
-            background: 'var(--bg)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '0 1.5rem',
-            paddingTop: 'max(4rem, env(safe-area-inset-top))',
-            paddingBottom: 'max(2rem, env(safe-area-inset-bottom))',
-          }}>
-
+          <div
+            className="prep-page"
+            style={{
+              ...pageBase,
+              position: 'relative',
+              paddingTop: 'max(4rem, env(safe-area-inset-top))',
+            }}
+          >
             {/* Koi ghost */}
             <div style={{
               position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
@@ -317,19 +291,43 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
               </div>
             </div>
 
-            {/* Content */}
-            <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', flex: 1 }}>
-
-              <div className="font-jp" style={{ fontSize: '4rem', color: 'var(--red)', lineHeight: 1, marginBottom: '1.5rem' }}>
+            {/* Logo — above the card */}
+            <div
+              className="prep-logo"
+              style={{ position: 'relative', zIndex: 1, textAlign: 'center', marginBottom: '2rem' }}
+            >
+              <div
+                className="font-jp"
+                style={{
+                  fontSize: '5rem', color: 'var(--red)', lineHeight: 1, marginBottom: '0.75rem',
+                  animation: 'kanjiPulse 4s ease-in-out infinite',
+                }}
+              >
                 備
               </div>
+              <div style={{
+                fontSize: '1.1rem', letterSpacing: '0.44em', color: 'var(--text)',
+                fontWeight: 500, textTransform: 'uppercase', marginBottom: '1.5rem',
+              }}>
+                Ronin Daily
+              </div>
+              <div style={{ width: '100%', height: '1px', background: 'var(--red)', opacity: 0.35 }} />
+            </div>
 
-              <div style={{ fontSize: '0.72rem', letterSpacing: '0.32em', color: 'var(--text-2)', textTransform: 'uppercase', marginBottom: '2rem' }}>
+            {/* Card */}
+            <div
+              className="prep-card"
+              style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+            >
+              <div style={{
+                fontSize: '0.85rem', letterSpacing: '0.22em', color: 'var(--text-2)',
+                textTransform: 'uppercase', marginTop: '1.5rem', marginBottom: '1.5rem',
+              }}>
                 Your Mission Is Set
               </div>
 
               <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                <div style={{ fontSize: '1.05rem', color: 'var(--text)', lineHeight: 1.9, letterSpacing: '0.02em' }}>
+                <div style={{ fontSize: '1.1rem', color: 'var(--text)', lineHeight: 1.9, letterSpacing: '0.02em' }}>
                   Lose {loseDisplay}.<br />
                   {targetWeeks} weeks.&nbsp; {calorieTarget.toLocaleString()} cal/day.
                 </div>
@@ -337,18 +335,28 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
 
               <div style={{ width: '100%', maxWidth: '320px', borderTop: '1px solid var(--border)', marginBottom: '2rem' }} />
 
-              <div style={{ fontSize: '0.88rem', color: 'var(--text-2)', textAlign: 'center', maxWidth: '300px', lineHeight: 1.75, marginBottom: '1.5rem', letterSpacing: '0.02em' }}>
+              <div style={{
+                fontSize: '1rem', color: 'var(--text-2)', textAlign: 'center',
+                maxWidth: '300px', lineHeight: 1.75, marginBottom: '1.5rem',
+                letterSpacing: '0.02em', fontStyle: 'italic',
+              }}>
                 A warrior prepares before battle, not during it.
               </div>
 
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-3)', textAlign: 'center', maxWidth: '280px', lineHeight: 1.85, marginBottom: '2.5rem' }}>
+              <div style={{
+                fontSize: '0.9rem', color: 'var(--text-2)', textAlign: 'center',
+                maxWidth: '280px', lineHeight: 1.85, marginBottom: '2.5rem',
+              }}>
                 Your mission begins when you are ready. Review your plan. Gather what you need. Return when prepared.
               </div>
 
-              <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '400px', marginBottom: '3.5rem' }}>
+              <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '400px', marginBottom: '3rem' }}>
                 {statBlocks.map(({ label, value }) => (
                   <div key={label} style={{ flex: 1, background: 'var(--elevated)', padding: '1rem 0.75rem', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.65rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.45rem' }}>
+                    <div style={{
+                      fontSize: '0.7rem', letterSpacing: '0.22em', color: 'var(--text)',
+                      textTransform: 'uppercase', marginBottom: '0.45rem',
+                    }}>
                       {label}
                     </div>
                     <div style={{ fontSize: '1rem', fontWeight: 300, color: 'var(--text)', letterSpacing: '0.01em' }}>
@@ -358,113 +366,163 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
                 ))}
               </div>
 
-              <div style={{ flex: 1 }} />
-
               <div style={{ width: '100%', maxWidth: '480px' }}>
-                <button className="commit-btn" onClick={() => go(2, 'forward')} disabled={beginning}>
+                <button type="button" className="commit-btn" onClick={() => go(2, 'forward')} disabled={beginning}>
                   Review Meal Plan →
                 </button>
               </div>
 
               <div style={{ marginTop: '1.75rem', paddingBottom: '0.5rem' }}>
                 <button
+                  type="button"
                   onClick={() => showDishonor()}
                   style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
                 >
                   I am not ready.
                 </button>
               </div>
-
             </div>
           </div>
         )}
 
         {/* ── STEP 2 — MEAL PLAN ────────────────────────────────────────── */}
         {step === 2 && (
-          <div style={stepPadding}>
-            <button style={backBtnStyle} onClick={() => go(1, 'back')}>← Back</button>
-            <div style={{ ...stepHeaderStyle, marginTop: '1.75rem' }}>Mission Rations</div>
-            <MealPlanView
-              calorieTarget={calorieTarget}
-              unit={unit}
-              readyFooter={
-                <div style={{ marginTop: '1.5rem' }}>
-                  <button style={advanceBtnStyle} onClick={() => go(3, 'forward')}>
-                    Build Grocery List →
-                  </button>
-                </div>
-              }
-            />
+          <div className="prep-page" style={pageBase}>
+            <div className="prep-card" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <button
+                  type="button"
+                  className="commit-btn"
+                  style={{ width: 'auto', padding: '0.6rem 1.5rem' }}
+                  onClick={() => go(1, 'back')}
+                >
+                  ← Back
+                </button>
+              </div>
+              <div style={{
+                fontSize: '0.65rem', letterSpacing: '0.36em', color: 'var(--text)',
+                textTransform: 'uppercase', marginBottom: '1.75rem',
+              }}>
+                Mission Rations
+              </div>
+              <MealPlanView
+                calorieTarget={calorieTarget}
+                unit={unit}
+                readyFooter={
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <button type="button" className="commit-btn" onClick={() => go(3, 'forward')}>
+                      Build Grocery List →
+                    </button>
+                  </div>
+                }
+              />
+            </div>
           </div>
         )}
 
         {/* ── STEP 3 — GROCERY LIST ─────────────────────────────────────── */}
         {step === 3 && (
-          <div style={stepPadding}>
-            <button style={backBtnStyle} onClick={() => go(2, 'back')}>← Back</button>
-            <div style={{ ...stepHeaderStyle, marginTop: '1.75rem' }}>Supply Run</div>
-            <GroceryListView
-              readyFooter={
-                <div style={{ marginTop: '1.5rem' }}>
-                  <button className="commit-btn" onClick={() => go(4, 'forward')}>
-                    I Have Everything. I Am Ready. →
-                  </button>
-                </div>
-              }
-            />
+          <div className="prep-page" style={pageBase}>
+            <div className="prep-card" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <button
+                  type="button"
+                  className="commit-btn"
+                  style={{ width: 'auto', padding: '0.6rem 1.5rem' }}
+                  onClick={() => go(2, 'back')}
+                >
+                  ← Back
+                </button>
+              </div>
+              <div style={{
+                fontSize: '0.65rem', letterSpacing: '0.36em', color: 'var(--text)',
+                textTransform: 'uppercase', marginBottom: '1.75rem',
+              }}>
+                Supply Run
+              </div>
+              <GroceryListView
+                readyFooter={
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <button type="button" className="commit-btn" onClick={() => go(4, 'forward')}>
+                      I Have Everything. I Am Ready. →
+                    </button>
+                  </div>
+                }
+              />
+            </div>
           </div>
         )}
 
         {/* ── STEP 4 — FINAL COMMITMENT ─────────────────────────────────── */}
         {step === 4 && (
-          <div style={{
-            minHeight: '100svh',
-            background: 'var(--bg)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0 1.5rem',
-            paddingTop: 'max(4rem, env(safe-area-inset-top))',
-            paddingBottom: 'max(3rem, env(safe-area-inset-bottom))',
-            opacity: beginning ? 0 : 1,
-            transition: beginning ? 'opacity 0.8s ease' : 'none',
-          }}>
+          <div
+            className="prep-page"
+            style={{
+              ...pageBase,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingTop: 'max(4rem, env(safe-area-inset-top))',
+              paddingBottom: 'max(3rem, env(safe-area-inset-bottom))',
+              opacity: beginning ? 0 : 1,
+              transition: beginning ? 'opacity 0.8s ease' : 'none',
+            }}
+          >
+            <div
+              className="prep-card"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+            >
+              <div style={{ alignSelf: 'flex-start', marginBottom: '2.5rem' }}>
+                <button
+                  type="button"
+                  className="commit-btn"
+                  style={{ width: 'auto', padding: '0.6rem 1.5rem' }}
+                  onClick={() => go(3, 'back')}
+                >
+                  ← Back
+                </button>
+              </div>
 
-            <button style={{ ...backBtnStyle, alignSelf: 'flex-start', marginBottom: 'auto', position: 'absolute', top: 'max(2rem, env(safe-area-inset-top))', left: '1.5rem' }} onClick={() => go(3, 'back')}>
-              ← Back
-            </button>
-
-            <div className="font-jp" style={{ fontSize: '5rem', color: 'var(--red)', lineHeight: 1, marginBottom: '3rem' }}>
-              侍
-            </div>
-
-            <div style={{ fontSize: '1rem', color: 'var(--text-2)', textAlign: 'center', maxWidth: '280px', lineHeight: 2, letterSpacing: '0.04em', marginBottom: '4rem' }}>
-              Your mission begins now.<br />
-              There is no pause.<br />
-              There is no mercy.<br />
-              Only the work.
-            </div>
-
-            <div style={{ width: '100%', maxWidth: '480px' }}>
-              <button
-                className="commit-btn"
-                onClick={handleBeginClick}
-                disabled={beginning}
+              <div
+                className="font-jp"
+                style={{
+                  fontSize: '5rem', color: 'var(--red)', lineHeight: 1, marginBottom: '3rem',
+                  animation: 'kanjiPulse 4s ease-in-out infinite',
+                }}
               >
-                I Am Prepared. Begin.
-              </button>
-            </div>
+                侍
+              </div>
 
-            <div style={{ marginTop: '2rem' }}>
-              <button
-                onClick={() => showDishonor(() => go(1, 'back'))}
-                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
-              >
-                I am not ready.
-              </button>
-            </div>
+              <div style={{
+                fontSize: '1rem', color: 'var(--text-2)', textAlign: 'center',
+                maxWidth: '280px', lineHeight: 2, letterSpacing: '0.04em', marginBottom: '4rem',
+              }}>
+                Your mission begins now.<br />
+                There is no pause.<br />
+                There is no mercy.<br />
+                Only the work.
+              </div>
 
+              <div style={{ width: '100%', maxWidth: '480px' }}>
+                <button
+                  type="button"
+                  className="commit-btn"
+                  onClick={handleBeginClick}
+                  disabled={beginning}
+                >
+                  I Am Prepared. Begin.
+                </button>
+              </div>
+
+              <div style={{ marginTop: '2rem' }}>
+                <button
+                  type="button"
+                  onClick={() => showDishonor(() => go(1, 'back'))}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
+                >
+                  I am not ready.
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

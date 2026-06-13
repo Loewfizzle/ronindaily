@@ -591,6 +591,42 @@ input[type='number'] {
   }
 }
 
+/* ── Preparation screen layout ───────────────────────────────────────────── */
+
+/* Mobile base */
+.prep-logo {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.prep-card {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  /* Center children horizontally */
+  .prep-page {
+    align-items: center;
+  }
+
+  /* Logo above the card */
+  .prep-logo {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Card */
+  .prep-card {
+    max-width: 600px;
+    background: var(--surface);
+    border: 1px solid var(--border-mid);
+    padding: 3rem;
+    margin: 0 auto;
+    margin-bottom: 3rem;
+  }
+}
+
 /* ── Step slide transitions (preparation screen) ─────────────────────────── */
 
 @keyframes stepEnterRight {
