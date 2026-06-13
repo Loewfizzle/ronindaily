@@ -7,7 +7,7 @@ const EXERCISE_DEFICIT_SPLIT = 0.30
 const MIN_CAL_MALE = 1500
 const MIN_CAL_FEMALE = 1200
 
-const DEFAULT_ACTIVITIES = ['walk', 'resistance']
+export const DEFAULT_ACTIVITIES = ['walk', 'resistance']
 
 interface ActivityConfig {
   type: 'distance' | 'time'

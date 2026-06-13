@@ -1,13 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface MealPlanData {
-  days: unknown[]
-  calorieTarget: number
-  generatedAt: string
-}
+import type { MealPlanData } from '../types'
 
 interface GroceryItem {
   name: string

@@ -177,6 +177,11 @@ function clearLocal() {
   localStorage.removeItem('ronin_grocery_checked')
   localStorage.removeItem('ronin_best_progress')
   localStorage.removeItem('ronin_goal_reached')
+  localStorage.removeItem('ronin_skipped')
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i)
+    if (k?.startsWith('ronin_dismissed_activities_')) localStorage.removeItem(k)
+  }
 }
 
 function resolveScreen(): 'dashboard' | 'preparation' | 'onboarding' {
@@ -404,7 +409,7 @@ export default function App() {
   }
 
   if (screen === 'loading') return <LoadingScreen />
-  if (screen === 'landing') return <LandingPage onBegin={() => { localStorage.setItem('ronin_visited', 'true'); setScreen('login') }} />
+  if (screen === 'landing') return <LandingPage onBegin={() => setScreen('login')} />
   if (screen === 'login')   return <LoginScreen connectionError={connectionError} />
 
   return (

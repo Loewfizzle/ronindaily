@@ -335,7 +335,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
             <PrefsIcon />
           </button>
           <button
-            onClick={() => { const p = loadSavedPrefs(); if (p) doGenerate(p) }}
+            onClick={() => { const p = loadSavedPrefs(); if (p) doGenerate(p); else setScreen('prefs') }}
             aria-label="Regenerate meal plan"
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: '0.25rem', display: 'flex', alignItems: 'center', lineHeight: 1 }}
           >

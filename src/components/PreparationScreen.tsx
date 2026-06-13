@@ -251,6 +251,10 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
   const handleBeginClick = () => {
     if (beginning) return
     setBeginning(true)
+    if (dishonorTimeoutRef.current !== null) {
+      clearTimeout(dishonorTimeoutRef.current)
+      dishonorTimeoutRef.current = null
+    }
     setTimeout(onBegin, 1000)
   }
 

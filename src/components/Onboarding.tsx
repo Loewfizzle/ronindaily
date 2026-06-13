@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import type { UserProfile, UnitSystem, Sex } from '../types'
+import { DEFAULT_ACTIVITIES } from '../utils/calculate'
 
 const ACTIVITIES = [
   { id: 'walk',       emoji: '🚶', name: 'Walking'             },
@@ -118,7 +119,7 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
   const [activities, setActivities] = useState<string[]>(() => {
     if (initialProfile?.activities?.length) return initialProfile.activities
     if (saved?.activities?.length) return saved.activities
-    return ['walk', 'bodyweight']
+    return [...DEFAULT_ACTIVITIES]
   })
   const [errors, setErrors] = useState<FormErrors>({})
 

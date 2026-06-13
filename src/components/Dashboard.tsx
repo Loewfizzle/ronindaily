@@ -149,6 +149,18 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     localStorage.setItem(`ronin_dismissed_activities_${localDateStr()}`, JSON.stringify(dismissed))
   }, [dismissed])
 
+  useEffect(() => {
+    const sync = () => {
+      if (document.visibilityState !== 'visible') return
+      try {
+        const raw = localStorage.getItem(`ronin_dismissed_activities_${localDateStr()}`)
+        setDismissed(raw ? (JSON.parse(raw) as string[]) : [])
+      } catch { setDismissed([]) }
+    }
+    document.addEventListener('visibilitychange', sync)
+    return () => document.removeEventListener('visibilitychange', sync)
+  }, [])
+
   // Persist progress milestones as a side-effect, not in the render body.
   useEffect(() => {
     const p = planRef.current
@@ -157,12 +169,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       localStorage.setItem('ronin_best_progress', String(progressPct))
     }
     if (progressPct >= 100 && !localStorage.getItem('ronin_goal_reached')) {
-      localStorage.setItem('ronin_goal_reached', JSON.stringify({
-        achievedAt: new Date().toISOString(),
-        lostLbs: p.startWeight - p.currentWeight,
-        unit: p.unit,
-        totalDays: p.totalDays,
-      }))
+      localStorage.setItem('ronin_goal_reached', 'true')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressPct, showCheckin])
@@ -174,11 +181,17 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         if (!user) return
 
         const today = localDateStr()
+        const skippedDate = localStorage.getItem('ronin_skipped')
+        const skippedToday = skippedDate === today
 
-        await supabase.from('daily_logs').upsert(
-          { user_id: user.id, logged_date: today },
-          { onConflict: 'user_id,logged_date', ignoreDuplicates: true },
-        )
+        if (!skippedToday) {
+          await supabase.from('daily_logs').upsert(
+            { user_id: user.id, logged_date: today },
+            { onConflict: 'user_id,logged_date', ignoreDuplicates: true },
+          )
+        } else {
+          await supabase.from('daily_logs').delete().eq('user_id', user.id).eq('logged_date', today)
+        }
 
         const { data: logs } = await supabase
           .from('daily_logs')
@@ -206,19 +219,15 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           if (dateSet.has(ds)) last7.add(ds)
         }
 
-        setStreak(count)
-        setLoggedDays(last7)
-        localStorage.setItem('ronin_streak', String(count))
+        const finalStreak = skippedToday ? 0 : count
+        setStreak(finalStreak)
+        setLoggedDays(skippedToday ? new Set() : last7)
+        localStorage.setItem('ronin_streak', String(finalStreak))
 
         const currentPlan = planRef.current
         if (currentPlan) {
           const hasCheckedIn = parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10) > 0
-          const hasMealPlan = (() => {
-            try {
-              const m = JSON.parse(localStorage.getItem('ronin_meal_plan') || 'null') as { calorieTarget?: number } | null
-              return m?.calorieTarget === currentPlan.calorieTarget
-            } catch { return false }
-          })()
+          const hasMealPlan = localStorage.getItem('ronin_meal_plan') !== null
           const newBadges = await checkAndAwardBadges({
             userId: user.id,
             streak: count,
@@ -289,14 +298,16 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   }, [])
 
   const handleSkipConfirm = async () => {
+    const today = localDateStr()
     setSkipOpen(false)
     setStreak(0)
-    setLoggedDays(prev => { const n = new Set(prev); n.delete(localDateStr()); return n })
+    setLoggedDays(new Set())
     localStorage.setItem('ronin_streak', '0')
+    localStorage.setItem('ronin_skipped', today)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        await supabase.from('daily_logs').delete().eq('user_id', user.id).eq('logged_date', localDateStr())
+        await supabase.from('daily_logs').delete().eq('user_id', user.id).eq('logged_date', today)
       }
     } catch { /* offline — streak already reset locally */ }
     setSkipConfirmed(true)
