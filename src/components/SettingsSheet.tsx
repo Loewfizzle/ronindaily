@@ -18,8 +18,8 @@ const OPTIONS: SettingsOption[] = [
   {
     id: 'adjust',
     label: 'Adjust Goal',
-    desc: 'Change your numbers. Timeline resets to day one.',
-    confirm: 'Timeline resets to day one. This cannot be undone.',
+    desc: 'Change your numbers. Start date is preserved.',
+    confirm: 'Start date is preserved. Only your goal changes. This cannot be undone.',
   },
   {
     id: 'reset',

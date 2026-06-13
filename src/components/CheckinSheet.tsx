@@ -12,19 +12,25 @@ interface CheckinSheetProps {
 export default function CheckinSheet({ open, onClose, plan }: CheckinSheetProps) {
   const [weight, setWeight] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   if (!plan) return null
 
-  const profile    = JSON.parse(localStorage.getItem('ronin_profile') || '{}') as Record<string, string>
+  const profile = (() => {
+    try { return JSON.parse(localStorage.getItem('ronin_profile') || '{}') as Record<string, string> }
+    catch { return {} as Record<string, string> }
+  })()
   const unit       = profile.unit || 'imperial'
   const unitLabel  = unit === 'metric' ? 'kg' : 'lbs'
 
   // Original pace for comparison
-  const origStart  = parseFloat(profile.weightLbs   || '0')
-  const origGoal   = parseFloat(profile.goalWeightLbs || '0')
-  const totalWeeks = parseInt(profile.targetWeeks    || '1', 10)
-  const weeklyPace = (origStart - origGoal) / totalWeeks
-  const expectedNow = origStart - weeklyPace * plan.weekNumber
+  const origStart  = parseFloat(profile.weightLbs    || '')
+  const origGoal   = parseFloat(profile.goalWeightLbs || '')
+  const totalWeeks = parseInt(profile.targetWeeks    || '0', 10)
+  const weeklyPace = (!isNaN(origStart) && !isNaN(origGoal) && totalWeeks > 0)
+    ? (origStart - origGoal) / totalWeeks
+    : NaN
+  const expectedNow = !isNaN(weeklyPace) ? origStart - weeklyPace * plan.weekNumber : NaN
 
   // Last logged weight in user's unit
   const lastLogged = unit === 'metric'
@@ -40,7 +46,7 @@ export default function CheckinSheet({ open, onClose, plan }: CheckinSheetProps)
     return 'On pace. Continue.'
   }
 
-  const paceLine = weight !== '' && !isNaN(parsedW) ? getPaceLine(parsedW) : null
+  const paceLine = weight !== '' && !isNaN(parsedW) && !isNaN(expectedNow) ? getPaceLine(parsedW) : null
 
   const handleClose = () => {
     setWeight('')
@@ -49,27 +55,35 @@ export default function CheckinSheet({ open, onClose, plan }: CheckinSheetProps)
   }
 
   const handleConfirm = async () => {
+    if (submitting) return
     if (!weight || isNaN(parsedW) || parsedW <= 0) {
       setError('Enter a valid weight')
       return
     }
-    const stored = JSON.parse(localStorage.getItem('ronin_profile') || '{}') as Record<string, string>
-    stored.currentWeightLbs = String(parsedW)
-    localStorage.setItem('ronin_profile', JSON.stringify(stored))
+    setSubmitting(true)
+    let storedProfile: Record<string, string> = {}
+    try { storedProfile = JSON.parse(localStorage.getItem('ronin_profile') || '{}') as Record<string, string> }
+    catch { /* corrupt — still proceed with weight update */ }
+    storedProfile.currentWeightLbs = String(parsedW)
+    localStorage.setItem('ronin_profile', JSON.stringify(storedProfile))
     localStorage.setItem('ronin_last_checkin', String(plan.weekNumber))
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        await supabase.from('checkins').insert({
-          user_id: user.id,
-          week_number: plan.weekNumber,
-          weight: parsedW,
-          checked_in_at: new Date().toISOString(),
-        })
+        await supabase.from('checkins').upsert(
+          {
+            user_id: user.id,
+            week_number: plan.weekNumber,
+            weight: parsedW,
+            checked_in_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,week_number', ignoreDuplicates: false },
+        )
       }
     } catch { /* offline — localStorage cache is set */ }
 
+    setSubmitting(false)
     setWeight('')
     setError(null)
     onClose()
@@ -111,8 +125,8 @@ export default function CheckinSheet({ open, onClose, plan }: CheckinSheetProps)
           </div>
         </div>
 
-        <button className="commit-btn" onClick={handleConfirm}>
-          Confirm
+        <button className="commit-btn" onClick={handleConfirm} disabled={submitting} style={{ opacity: submitting ? 0.6 : 1 }}>
+          {submitting ? '...' : 'Confirm'}
         </button>
       </div>
     </BottomSheet>

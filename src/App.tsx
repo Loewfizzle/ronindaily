@@ -131,8 +131,8 @@ function profileToLocal(data: ProfileRow): UserProfile {
     heightIn: '',
   }
   if (data.unit === 'metric') {
-    profile.heightCm = String(data.height_cm)
-  } else {
+    profile.heightCm = data.height_cm > 0 ? String(data.height_cm) : ''
+  } else if (data.height_cm > 0) {
     const totalIn = Math.round(data.height_cm / 2.54)
     profile.heightFt = String(Math.floor(totalIn / 12))
     profile.heightIn = String(totalIn % 12)
@@ -172,6 +172,7 @@ function clearLocal() {
 
 function resolveScreen(): 'dashboard' | 'preparation' | 'onboarding' {
   if (!localStorage.getItem('ronin_committed')) return 'onboarding'
+  // null (legacy users who pre-date this flag) and 'true' both map to dashboard
   return localStorage.getItem('ronin_prepared') === 'false' ? 'preparation' : 'dashboard'
 }
 
@@ -334,7 +335,9 @@ export default function App() {
 
   const handleAdjustGoal = () => {
     const stored = localStorage.getItem('ronin_profile')
-    setInitialProfile(stored ? (JSON.parse(stored) as UserProfile) : null)
+    let parsed: UserProfile | null = null
+    try { parsed = stored ? (JSON.parse(stored) as UserProfile) : null } catch { /* corrupt data — start fresh */ }
+    setInitialProfile(parsed)
     localStorage.removeItem('ronin_committed')
     // ronin_start intentionally preserved — handleCommit uses its presence to detect goal adjustment
     setScreen('onboarding')
@@ -356,11 +359,10 @@ export default function App() {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut()
-    } catch {
-      clearLocal()
-      setUser(null)
-      setScreen('login')
-    }
+    } catch { /* ignore sign-out errors */ }
+    clearLocal()
+    setUser(null)
+    setScreen('login')
   }
 
   if (screen === 'loading') return <LoadingScreen />

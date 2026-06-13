@@ -42,7 +42,10 @@ function addDays(date: Date, n: number): Date {
 }
 
 function daysBetween(a: Date, b: Date): number {
-  return Math.round((b.getTime() - a.getTime()) / 86400000)
+  const msPerDay = 86400000
+  const aUtc = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())
+  const bUtc = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate())
+  return Math.round((bUtc - aUtc) / msPerDay)
 }
 
 /**
@@ -90,7 +93,10 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
 
   if (profile.currentWeightLbs != null) {
     const raw = parseFloat(profile.currentWeightLbs)
-    if (unit === 'imperial') {
+    if (isNaN(raw) || raw <= 0) {
+      currentWeightLbs = startWeightLbs
+      currentWeightKg  = startWeightKg
+    } else if (unit === 'imperial') {
       currentWeightLbs = raw
       currentWeightKg  = lbsToKg(raw)
     } else {
@@ -200,7 +206,6 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
     movement,
     movementCal: exerciseBurn,
 
-    streak: 1,
     pacePerWeek,
   }
 }

@@ -120,9 +120,11 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
     if (!form.age || isNaN(age) || age < 18 || age > 100) e.age = 'Ages 18–100'
     if (!form.sex) e.sex = 'Required'
     const goal = parseFloat(form.goalWeightLbs)
-    if (!form.goalWeightLbs || isNaN(goal) || goal < 50 || goal >= w) e.goalWeightLbs = 'Must be below current weight'
+    const minDiff = unit === 'metric' ? 0.5 : 1
+    if (!form.goalWeightLbs || isNaN(goal) || goal < 50 || w - goal < minDiff)
+      e.goalWeightLbs = unit === 'metric' ? 'Must be ≥ 0.5 kg less' : 'Must be ≥ 1 lb less'
     const weeks = parseInt(form.targetWeeks, 10)
-    if (!form.targetWeeks || isNaN(weeks) || weeks < 4) e.targetWeeks = 'Minimum 4 weeks'
+    if (!form.targetWeeks || isNaN(weeks) || weeks < 4 || weeks > 104) e.targetWeeks = '4–104 weeks'
     return e
   }
 

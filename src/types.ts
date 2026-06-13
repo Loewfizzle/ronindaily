@@ -52,7 +52,6 @@ export interface PlanResult {
   meals: Meal[]
   movement: string[]
   movementCal: number
-  streak: number
   pacePerWeek: number
 }
 

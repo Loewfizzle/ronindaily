@@ -18,10 +18,10 @@ function loadPlan(): PlanResult | null {
   try {
     const profile  = JSON.parse(localStorage.getItem('ronin_profile') || 'null')
     const startRaw = localStorage.getItem('ronin_start')
-    const startDate = startRaw ? new Date(startRaw) : new Date()
     if (!profile) return null
+    if (!startRaw) return null
     if (!profile.sex || !profile.weightLbs || !profile.age || !profile.targetWeeks) return null
-    return calculatePlan(profile, startDate)
+    return calculatePlan(profile, new Date(startRaw))
   } catch {
     return null
   }
@@ -38,7 +38,7 @@ function wtVal(lbs: number, unit: UnitSystem): string {
 
 function paceDisplay(pace: number, unit: UnitSystem): string {
   if (unit === 'metric') return `${(pace / 2.20462).toFixed(2)} kg/wk`
-  return `${pace} lbs/wk`
+  return `${pace.toFixed(1)} lbs/wk`
 }
 
 function localDateStr(d: Date = new Date()): string {
@@ -172,7 +172,8 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     meals, movement, movementCal,
   } = plan
 
-  const progressPct = Math.min(100, Math.max(1, ((startWeight - currentWeight) / (startWeight - goalWeight)) * 100))
+  const range = startWeight - goalWeight
+  const progressPct = range === 0 ? 100 : Math.min(100, Math.max(1, ((startWeight - currentWeight) / range) * 100))
   const lastCheckin  = parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10)
   const showCheckin  = dayNumber % 7 === 0 && lastCheckin !== weekNumber
 
