@@ -167,6 +167,7 @@ export default function MealPlanSheet({ open, onClose, calorieTarget, unit }: Me
         const updated: MealPlanData = {
           ...prev,
           days: prev.days.map(d => d.day === dayNum ? newDay : d),
+          generatedAt: new Date().toISOString(),  // invalidates grocery list cache
         }
         localStorage.setItem('ronin_meal_plan', JSON.stringify(updated))
         return updated
@@ -195,7 +196,7 @@ export default function MealPlanSheet({ open, onClose, calorieTarget, unit }: Me
       setDislikes(savedPrefs.dislikes)
 
       const cached = loadCachedPlan()
-      if (cached && cached.calorieTarget === calorieTargetRef.current) {
+      if (cached && cached.calorieTarget === calorieTargetRef.current && cached.days?.length > 0) {
         setMealPlan(cached)
         setScreen('ready')
       } else {
@@ -354,7 +355,7 @@ export default function MealPlanSheet({ open, onClose, calorieTarget, unit }: Me
                 <PrefsIcon />
               </button>
               <button
-                onClick={() => doGenerate({ budget, restrictions, equipment, dislikes })}
+                onClick={() => { const p = loadSavedPrefs(); if (p) doGenerate(p) }}
                 aria-label="Regenerate meal plan"
                 title="Generate a new plan"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: '0.25rem', display: 'flex', alignItems: 'center', lineHeight: 1 }}
@@ -408,7 +409,7 @@ export default function MealPlanSheet({ open, onClose, calorieTarget, unit }: Me
                         <div style={{ fontSize: '0.6rem', letterSpacing: '0.26em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
                           {slot}
                         </div>
-                        {day[slot].map((item, i) => (
+                        {(day[slot] ?? []).map((item, i) => (
                           <div
                             key={i}
                             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '0.45rem 0', borderBottom: '1px solid var(--border)', gap: '0.75rem' }}

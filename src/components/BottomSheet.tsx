@@ -7,11 +7,19 @@ interface BottomSheetProps {
   children: ReactNode
 }
 
+// Reference-counted scroll lock so nested sheets don't release the lock
+// when the inner one closes while the outer is still open.
+let openSheetCount = 0
+
 export default function BottomSheet({ open, onClose, title, children }: BottomSheetProps) {
   useEffect(() => {
     if (!open) return
+    openSheetCount++
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
+    return () => {
+      openSheetCount = Math.max(0, openSheetCount - 1)
+      if (openSheetCount === 0) document.body.style.overflow = ''
+    }
   }, [open])
 
   if (!open) return null

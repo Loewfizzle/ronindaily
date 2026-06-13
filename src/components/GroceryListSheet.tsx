@@ -119,6 +119,9 @@ export default function GroceryListSheet({ open, onClose, mealPlan }: GroceryLis
         throw new Error(d.error || `Server error (${res.status})`)
       }
       const data: GroceryListData = await res.json()
+      if (!data.sections?.length) {
+        throw new Error('AI returned an empty grocery list. Try regenerating the meal plan.')
+      }
       localStorage.setItem('ronin_grocery_list', JSON.stringify(data))
       localStorage.removeItem('ronin_grocery_checked')
       setSections(data.sections)
@@ -138,7 +141,11 @@ export default function GroceryListSheet({ open, onClose, mealPlan }: GroceryLis
     if (firedRef.current) return  // already handled this open cycle
     firedRef.current = true
 
-    if (!mealPlan) return
+    if (!mealPlan) {
+      setError('No meal plan available. Generate a meal plan first.')
+      setStatus('error')
+      return
+    }
 
     const cached = loadCachedList()
     if (cached && cached.mealPlanTimestamp === mealPlan.generatedAt) {

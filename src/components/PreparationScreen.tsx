@@ -3,16 +3,30 @@ import type { UserProfile } from '../types'
 
 interface PreparationScreenProps {
   onBegin: () => void
+  onReset: () => void
 }
 
-export default function PreparationScreen({ onBegin }: PreparationScreenProps) {
+export default function PreparationScreen({ onBegin, onReset }: PreparationScreenProps) {
   const profile = (() => {
     try { return JSON.parse(localStorage.getItem('ronin_profile') || 'null') as UserProfile | null }
     catch { return null }
   })()
 
   const plan = profile ? calculatePlan(profile, new Date()) : null
-  if (!plan) return null
+
+  if (!plan) {
+    return (
+      <div style={{ minHeight: '100svh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', gap: '1.5rem' }}>
+        <div className="font-jp" style={{ fontSize: '3rem', color: 'var(--red)', lineHeight: 1 }}>備</div>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-2)', textAlign: 'center', lineHeight: 1.75, maxWidth: '260px' }}>
+          Mission data could not be loaded. Start over to reconfigure.
+        </div>
+        <button className="commit-btn" style={{ maxWidth: '200px' }} onClick={onReset}>
+          Start Over
+        </button>
+      </div>
+    )
+  }
 
   const { unit, poundsToLose, calorieTarget } = plan
   const targetWeeks = parseInt(profile!.targetWeeks, 10)

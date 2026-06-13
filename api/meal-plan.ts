@@ -1,4 +1,4 @@
-export const config = { runtime: 'edge' }
+export const config = { runtime: 'edge', maxDuration: 30 }
 
 interface MealItem {
   name: string
@@ -154,6 +154,7 @@ Respond with ONLY raw JSON — no markdown fences, no backticks, no text before 
         max_tokens: 4096,
         messages: [{ role: 'user', content: prompt }],
       }),
+      signal: AbortSignal.timeout(25000),
     })
 
     if (!anthropicRes.ok) {

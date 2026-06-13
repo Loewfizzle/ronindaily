@@ -12,7 +12,7 @@ type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 function LoadingScreen() {
   return (
     <div style={{ minHeight: '100svh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <span className="font-jp" style={{ fontSize: '2.2rem', color: 'var(--red)', lineHeight: 1 }}>侍</span>
+      <span className="font-jp onboarding-kanji" style={{ fontSize: '2.2rem', color: 'var(--red)', lineHeight: 1 }}>侍</span>
     </div>
   )
 }
@@ -63,7 +63,7 @@ function LoginScreen({ connectionError }: LoginScreenProps) {
       justifyContent: 'center',
       padding: '2rem',
     }}>
-      <div className="font-jp" style={{ fontSize: '2.2rem', color: 'var(--red)', lineHeight: 1, marginBottom: '0.7rem' }}>
+      <div className="font-jp onboarding-kanji" style={{ fontSize: '2.2rem', color: 'var(--red)', lineHeight: 1, marginBottom: '0.7rem' }}>
         侍
       </div>
       <div style={{ fontSize: '0.63rem', letterSpacing: '0.38em', color: 'var(--text)', fontWeight: 500, textTransform: 'uppercase', marginBottom: '3rem' }}>
@@ -168,6 +168,10 @@ function clearLocal() {
   localStorage.removeItem('ronin_last_checkin')
   localStorage.removeItem('ronin_streak')
   localStorage.removeItem('ronin_prepared')
+  localStorage.removeItem('ronin_meal_plan')
+  localStorage.removeItem('ronin_meal_prefs')
+  localStorage.removeItem('ronin_grocery_list')
+  localStorage.removeItem('ronin_grocery_checked')
 }
 
 function resolveScreen(): 'dashboard' | 'preparation' | 'onboarding' {
@@ -374,7 +378,7 @@ export default function App() {
         <Onboarding onCommit={handleCommit} initialProfile={initialProfile} />
       )}
       {screen === 'preparation' && (
-        <PreparationScreen onBegin={handleBegin} />
+        <PreparationScreen onBegin={handleBegin} onReset={handleReset} />
       )}
       {screen === 'dashboard' && (
         <Dashboard
