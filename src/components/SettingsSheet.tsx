@@ -57,79 +57,71 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
     <BottomSheet open={open} onClose={handleClose} title="Settings">
       <div>
         {OPTIONS.map((opt, i) => (
-          <div
-            key={opt.id}
-            style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none', padding: '1.1rem 0' }}
-          >
-            <div style={{ fontSize: '0.82rem', color: 'var(--text)', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>
-              {opt.label}
+          confirming === opt.id ? (
+            // Confirm state — cannot be a <button> (would contain buttons inside)
+            <div
+              key={opt.id}
+              style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none', padding: '1.25rem 0' }}
+            >
+              <div style={{ fontSize: '0.82rem', color: 'var(--text)', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>
+                {opt.label}
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 1rem' }}>
+                {opt.confirm}
+              </p>
+              <button className="commit-btn" onClick={handleConfirm}>
+                Confirm
+              </button>
+              <button
+                onClick={() => setConfirming(null)}
+                style={{
+                  width: '100%',
+                  padding: '0.85rem',
+                  marginTop: '0.5rem',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-3)',
+                  fontSize: '0.72rem',
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Cancel
+              </button>
             </div>
-
-            {confirming === opt.id ? (
+          ) : (
+            // Normal state — entire row is the tap target
+            <button
+              key={opt.id}
+              onClick={() => setConfirming(opt.id)}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1rem',
+                width: '100%',
+                background: 'none',
+                border: 'none',
+                borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+                cursor: 'pointer',
+                padding: '1.25rem 0',
+                textAlign: 'left',
+                fontFamily: 'inherit',
+              }}
+            >
               <div>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.65, margin: '0 0 0.9rem' }}>
-                  {opt.confirm}
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                  <button
-                    onClick={handleConfirm}
-                    style={{
-                      padding: '0.5rem 1.25rem',
-                      background: 'var(--red)',
-                      color: 'var(--text)',
-                      border: 'none',
-                      borderRadius: 0,
-                      fontSize: '0.72rem',
-                      letterSpacing: '0.3em',
-                      fontWeight: 600,
-                      fontFamily: 'Inter, sans-serif',
-                      textTransform: 'uppercase',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    onClick={() => setConfirming(null)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-2)',
-                      fontSize: '0.72rem',
-                      letterSpacing: '0.1em',
-                      cursor: 'pointer',
-                      fontFamily: 'Inter, sans-serif',
-                      padding: 0,
-                    }}
-                  >
-                    cancel
-                  </button>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text)', letterSpacing: '0.06em', marginBottom: '0.35rem' }}>
+                  {opt.label}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
+                  {opt.desc}
                 </div>
               </div>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
-                  {opt.desc}
-                </span>
-                <button
-                  onClick={() => setConfirming(opt.id)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-3)',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    padding: 0,
-                    flexShrink: 0,
-                    lineHeight: 1,
-                  }}
-                >
-                  ›
-                </button>
-              </div>
-            )}
-          </div>
+              <span style={{ fontSize: '1.1rem', color: 'var(--text-3)', flexShrink: 0, lineHeight: 1 }}>›</span>
+            </button>
+          )
         ))}
       </div>
     </BottomSheet>

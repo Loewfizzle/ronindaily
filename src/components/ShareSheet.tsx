@@ -77,25 +77,36 @@ export default function ShareSheet({ open, onClose, streak, plan }: ShareSheetPr
           </div>
         </div>
 
-        {/* Actions */}
+        {/* Actions — entire row is the tap target */}
         {actions.map((opt, i) => (
-          <div
+          <button
             key={opt.label}
-            style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none', padding: '1.1rem 0' }}
+            onClick={opt.onClick}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '1rem',
+              width: '100%',
+              background: 'none',
+              border: 'none',
+              borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+              cursor: 'pointer',
+              padding: '1.25rem 0',
+              textAlign: 'left',
+              fontFamily: 'inherit',
+            }}
           >
-            <div style={{ fontSize: '0.82rem', color: 'var(--text)', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>
-              {opt.label}
+            <div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text)', letterSpacing: '0.06em', marginBottom: '0.35rem' }}>
+                {opt.label}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
+                {opt.desc}
+              </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>{opt.desc}</span>
-              <button
-                onClick={opt.onClick}
-                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit', padding: 0, flexShrink: 0, lineHeight: 1 }}
-              >
-                ›
-              </button>
-            </div>
-          </div>
+            <span style={{ fontSize: '1.1rem', color: 'var(--text-3)', flexShrink: 0, lineHeight: 1 }}>›</span>
+          </button>
         ))}
       </div>
     </BottomSheet>

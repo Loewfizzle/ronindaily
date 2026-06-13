@@ -63,8 +63,9 @@ export default function BottomSheet({ open, onClose, title, children }: BottomSh
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '1.5rem',
-              height: '1.5rem',
+              width: '44px',
+              height: '44px',
+              flexShrink: 0,
             }}
           >
             ×
