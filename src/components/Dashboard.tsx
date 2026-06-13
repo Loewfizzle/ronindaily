@@ -115,6 +115,8 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const activeBadge                     = badgeQueue[0] ?? null   // derived — no separate state needed
   const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([])
   const [selectedBadge, setSelectedBadge] = useState<EarnedBadge | null>(null)
+  const [skipOpen, setSkipOpen]           = useState(false)
+  const [skipConfirmed, setSkipConfirmed] = useState(false)
   const plan = loadPlan()
   const planRef = useRef(plan)
   planRef.current = plan
@@ -252,6 +254,21 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const handleBadgeDismiss = useCallback(() => {
     setBadgeQueue(prev => prev.slice(1))
   }, [])
+
+  const handleSkipConfirm = async () => {
+    setSkipOpen(false)
+    setStreak(0)
+    setLoggedDays(prev => { const n = new Set(prev); n.delete(localDateStr()); return n })
+    localStorage.setItem('ronin_streak', '0')
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from('daily_logs').delete().eq('user_id', user.id).eq('logged_date', localDateStr())
+      }
+    } catch { /* offline — streak already reset locally */ }
+    setSkipConfirmed(true)
+    setTimeout(() => setSkipConfirmed(false), 3000)
+  }
 
   const footerProps = { loggedDays, weekNumber, onShare: () => setShareOpen(true) }
 
@@ -410,6 +427,18 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         <div className="dash-footer dash-footer-mobile" style={{ padding: '1rem 1.5rem 0', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <FooterContent {...footerProps} />
         </div>
+
+        {/* Skip button — only day 2+ onward, subtle and below the fold */}
+        {dayNumber > 1 && (
+          <div style={{ textAlign: 'center', paddingTop: '0.85rem', paddingBottom: '0.5rem' }}>
+            <button
+              onClick={() => setSkipOpen(true)}
+              style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.65rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', opacity: 0.5 }}
+            >
+              I skipped today.
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Sheets ──────────────────────────────────────────────────── */}
@@ -432,6 +461,50 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
       <BadgeDetailSheet badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
       <BadgeBanner badge={activeBadge} onDismiss={handleBadgeDismiss} />
+
+      {/* ── Skip confirmation sheet ──────────────────────────────────── */}
+      {skipOpen && (
+        <div className="sheet-backdrop" onClick={() => setSkipOpen(false)}>
+          <div className="sheet-panel" onClick={e => e.stopPropagation()} style={{ padding: '0 1.5rem 2rem' }}>
+            <div style={{ width: '32px', height: '3px', background: 'var(--border-mid)', margin: '1.25rem auto 2.5rem', borderRadius: '2px' }} />
+            <div style={{ fontSize: '1.35rem', fontWeight: 300, color: 'var(--text)', letterSpacing: '0.02em', lineHeight: 1.3, marginBottom: '0.9rem' }}>
+              You have failed.
+            </div>
+            <div style={{ fontSize: '0.88rem', color: 'var(--text-2)', lineHeight: 1.85, marginBottom: '2.5rem' }}>
+              You have dishonored your name and your family.
+            </div>
+            <button className="commit-btn" onClick={handleSkipConfirm} style={{ marginBottom: '1.5rem' }}>
+              I Accept This Failure
+            </button>
+            <div style={{ textAlign: 'center' }}>
+              <button
+                onClick={() => setSkipOpen(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
+              >
+                I did not skip.
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Failure screen — 3 seconds, then returns to dashboard ────── */}
+      {skipConfirmed && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 300,
+          background: '#000',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '2rem',
+        }}>
+          <div style={{
+            fontSize: '0.78rem', color: '#ffffff',
+            letterSpacing: '0.3em', textTransform: 'uppercase',
+            textAlign: 'center', lineHeight: 2.6,
+          }}>
+            Streak reset.<br />Begin again tomorrow.
+          </div>
+        </div>
+      )}
     </div>
   )
 }
