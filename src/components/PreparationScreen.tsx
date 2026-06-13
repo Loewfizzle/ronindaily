@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { calculatePlan } from '../utils/calculate'
 import type { UserProfile } from '../types'
+import MealPlanView from './MealPlanView'
+import GroceryListView from './GroceryListView'
 
-interface PreparationScreenProps {
-  onBegin: () => void
-  onReset: () => void
-}
+// ── KoiFish ───────────────────────────────────────────────────────────────────
 
 function KoiFish() {
   return (
@@ -16,7 +15,6 @@ function KoiFish() {
       aria-hidden="true"
       style={{ color: 'var(--red)', width: '92vw', maxWidth: '700px', display: 'block' }}
     >
-      {/* Body — wide torpedo tapering to blunt head and narrow peduncle */}
       <path fill="currentColor" d="
         M 52,185
         C 52,160 62,130 86,112
@@ -30,8 +28,6 @@ function KoiFish() {
         C 62,240 52,210 52,185
         Z
       " />
-
-      {/* Upper caudal fin lobe — large dramatic upward sweep */}
       <path fill="currentColor" d="
         M 356,172
         C 382,144 418,110 454,82
@@ -41,8 +37,6 @@ function KoiFish() {
         C 374,182 362,180 356,178
         Z
       " />
-
-      {/* Lower caudal fin lobe — large dramatic downward sweep */}
       <path fill="currentColor" d="
         M 356,198
         C 382,226 418,260 454,288
@@ -52,8 +46,6 @@ function KoiFish() {
         C 374,188 362,190 356,192
         Z
       " />
-
-      {/* Dorsal fin — tall sail rising well above body */}
       <path fill="currentColor" d="
         M 88,112
         C 104,78 132,48 170,32
@@ -64,8 +56,6 @@ function KoiFish() {
         C 134,92 110,104 88,112
         Z
       " />
-
-      {/* Pectoral fin — large paddle-shaped fin below front of body */}
       <path fill="currentColor" d="
         M 110,196
         C 122,224 128,256 124,280
@@ -74,8 +64,6 @@ function KoiFish() {
         C 64,216 72,196 88,190
         Z
       " />
-
-      {/* Ventral / anal fin */}
       <path fill="currentColor" d="
         M 268,274
         C 278,296 280,318 270,326
@@ -83,8 +71,6 @@ function KoiFish() {
         C 236,284 240,274 252,272
         Z
       " />
-
-      {/* Upper caudal fin rays */}
       <g stroke="currentColor" strokeWidth="1.2" fill="none" opacity="0.5">
         <path d="M 362,168 C 386,142 416,108 452,78" />
         <path d="M 372,164 C 394,140 422,108 456,82" />
@@ -92,8 +78,6 @@ function KoiFish() {
         <path d="M 392,166 C 410,148 428,128 452,106" />
         <path d="M 400,170 C 414,154 428,136 446,116" />
       </g>
-
-      {/* Lower caudal fin rays */}
       <g stroke="currentColor" strokeWidth="1.2" fill="none" opacity="0.5">
         <path d="M 362,202 C 386,228 416,262 452,292" />
         <path d="M 372,206 C 394,230 422,262 456,288" />
@@ -101,8 +85,6 @@ function KoiFish() {
         <path d="M 392,204 C 410,222 428,242 452,264" />
         <path d="M 400,200 C 414,216 428,234 446,254" />
       </g>
-
-      {/* Dorsal fin rays */}
       <g stroke="currentColor" strokeWidth="1" fill="none" opacity="0.4">
         <path d="M 118,108 C 128,80 148,52 176,36" />
         <path d="M 148,96 C 158,70 176,46 202,34" />
@@ -113,72 +95,102 @@ function KoiFish() {
         <path d="M 290,92 C 296,76 306,66 322,62" />
         <path d="M 314,102 C 320,88 330,78 346,76" />
       </g>
-
-      {/* Scale arcs — 7 rows, overlapping brick pattern */}
       <g stroke="currentColor" strokeWidth="1.1" fill="none" opacity="0.7">
-        {/* Row 1 y=116 */}
         <path d="M 118,116 Q 130,100 142,116" /><path d="M 142,116 Q 154,100 166,116" />
         <path d="M 166,116 Q 178,100 190,116" /><path d="M 190,116 Q 202,100 214,116" />
         <path d="M 214,116 Q 226,100 238,116" /><path d="M 238,116 Q 250,100 262,116" />
         <path d="M 262,116 Q 274,100 286,116" /><path d="M 286,116 Q 298,100 310,116" />
-        {/* Row 2 y=140 offset */}
         <path d="M 104,140 Q 116,124 128,140" /><path d="M 128,140 Q 140,124 152,140" />
         <path d="M 152,140 Q 164,124 176,140" /><path d="M 176,140 Q 188,124 200,140" />
         <path d="M 200,140 Q 212,124 224,140" /><path d="M 224,140 Q 236,124 248,140" />
         <path d="M 248,140 Q 260,124 272,140" /><path d="M 272,140 Q 284,124 296,140" />
         <path d="M 296,140 Q 308,124 320,140" /><path d="M 320,140 Q 332,124 344,140" />
-        {/* Row 3 y=164 */}
         <path d="M 92,164 Q 104,148 116,164" /><path d="M 116,164 Q 128,148 140,164" />
         <path d="M 140,164 Q 152,148 164,164" /><path d="M 164,164 Q 176,148 188,164" />
         <path d="M 188,164 Q 200,148 212,164" /><path d="M 212,164 Q 224,148 236,164" />
         <path d="M 236,164 Q 248,148 260,164" /><path d="M 260,164 Q 272,148 284,164" />
         <path d="M 284,164 Q 296,148 308,164" /><path d="M 308,164 Q 320,148 332,164" />
         <path d="M 332,164 Q 344,148 356,164" />
-        {/* Row 4 y=188 offset */}
         <path d="M 92,188 Q 104,172 116,188" /><path d="M 116,188 Q 128,172 140,188" />
         <path d="M 140,188 Q 152,172 164,188" /><path d="M 164,188 Q 176,172 188,188" />
         <path d="M 188,188 Q 200,172 212,188" /><path d="M 212,188 Q 224,172 236,188" />
         <path d="M 236,188 Q 248,172 260,188" /><path d="M 260,188 Q 272,172 284,188" />
         <path d="M 284,188 Q 296,172 308,188" /><path d="M 308,188 Q 320,172 332,188" />
         <path d="M 332,188 Q 344,172 356,188" />
-        {/* Row 5 y=212 */}
         <path d="M 92,212 Q 104,196 116,212" /><path d="M 116,212 Q 128,196 140,212" />
         <path d="M 140,212 Q 152,196 164,212" /><path d="M 164,212 Q 176,196 188,212" />
         <path d="M 188,212 Q 200,196 212,212" /><path d="M 212,212 Q 224,196 236,212" />
         <path d="M 236,212 Q 248,196 260,212" /><path d="M 260,212 Q 272,196 284,212" />
         <path d="M 284,212 Q 296,196 308,212" /><path d="M 308,212 Q 320,196 332,212" />
         <path d="M 332,212 Q 344,196 356,212" />
-        {/* Row 6 y=236 offset */}
         <path d="M 100,236 Q 112,220 124,236" /><path d="M 124,236 Q 136,220 148,236" />
         <path d="M 148,236 Q 160,220 172,236" /><path d="M 172,236 Q 184,220 196,236" />
         <path d="M 196,236 Q 208,220 220,236" /><path d="M 220,236 Q 232,220 244,236" />
         <path d="M 244,236 Q 256,220 268,236" /><path d="M 268,236 Q 280,220 292,236" />
         <path d="M 292,236 Q 304,220 316,236" /><path d="M 316,236 Q 328,220 340,236" />
-        {/* Row 7 y=258 */}
         <path d="M 110,258 Q 122,242 134,258" /><path d="M 134,258 Q 146,242 158,258" />
         <path d="M 158,258 Q 170,242 182,258" /><path d="M 182,258 Q 194,242 206,258" />
         <path d="M 206,258 Q 218,242 230,258" /><path d="M 230,258 Q 242,242 254,258" />
         <path d="M 254,258 Q 266,242 278,258" /><path d="M 278,258 Q 290,242 302,258" />
         <path d="M 302,258 Q 314,242 326,258" />
       </g>
-
-      {/* Lateral line */}
       <path d="M 90,185 C 142,183 198,180 254,179 C 300,178 334,181 356,185"
             stroke="currentColor" strokeWidth="1" fill="none" opacity="0.35" strokeDasharray="5,3" />
-
-      {/* Eye */}
       <circle cx="76" cy="175" r="10" fill="currentColor" />
       <circle cx="73" cy="172" r="4" fill="currentColor" opacity="0.25" />
-
-      {/* Barbels */}
       <path d="M 52,179 C 32,164 16,150 6,140" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
       <path d="M 52,191 C 36,202 22,212 8,218" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
     </svg>
   )
 }
 
+// ── Props ─────────────────────────────────────────────────────────────────────
+
+interface PreparationScreenProps {
+  onBegin: () => void
+  onReset: () => void
+}
+
+// ── Shared nav styles ─────────────────────────────────────────────────────────
+
+const backBtnStyle: React.CSSProperties = {
+  background: 'none', border: 'none', color: 'var(--text-3)',
+  fontSize: '0.72rem', letterSpacing: '0.18em', cursor: 'pointer',
+  padding: 0, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase',
+  alignSelf: 'flex-start',
+}
+
+const stepHeaderStyle: React.CSSProperties = {
+  fontSize: '0.65rem', letterSpacing: '0.36em', color: 'var(--text-2)',
+  textTransform: 'uppercase', marginBottom: '1.75rem',
+}
+
+const advanceBtnStyle: React.CSSProperties = {
+  width: '100%', padding: '1rem', background: 'transparent',
+  border: '1px solid var(--border-mid)', color: 'var(--text-2)',
+  fontSize: '0.7rem', letterSpacing: '0.22em', textTransform: 'uppercase',
+  fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+  transition: 'border-color 0.15s ease, color 0.15s ease',
+}
+
+const stepPadding: React.CSSProperties = {
+  minHeight: '100svh',
+  background: 'var(--bg)',
+  display: 'flex',
+  flexDirection: 'column',
+  padding: '0 1.5rem',
+  paddingTop: 'max(3rem, env(safe-area-inset-top))',
+  paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))',
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function PreparationScreen({ onBegin, onReset }: PreparationScreenProps) {
+  const [step, setStep]         = useState<1|2|3|4>(1)
+  const [direction, setDirection] = useState<'forward'|'back'>('forward')
   const [beginning, setBeginning] = useState(false)
+  const [dishonorKey, setDishonorKey]   = useState(0)
+  const [dishonorVisible, setDishonorVisible] = useState(false)
 
   const profile = (() => {
     try { return JSON.parse(localStorage.getItem('ronin_profile') || 'null') as UserProfile | null }
@@ -201,11 +213,6 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
     )
   }
 
-  const handleBeginClick = () => {
-    setBeginning(true)
-    setTimeout(onBegin, 1000)
-  }
-
   const { unit, poundsToLose, calorieTarget } = plan
   const targetWeeks = parseInt(profile!.targetWeeks, 10)
 
@@ -219,107 +226,232 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
     { label: 'Start',        value: 'When you are ready' },
   ]
 
-  return (
-    <div style={{
-      position: 'relative',
-      minHeight: '100svh',
-      background: 'var(--bg)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: '0 1.5rem',
-      paddingTop: 'max(4rem, env(safe-area-inset-top))',
-      paddingBottom: 'max(2rem, env(safe-area-inset-bottom))',
-    }}>
+  const go = (n: 1|2|3|4, dir: 'forward'|'back') => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+    setDirection(dir)
+    setStep(n)
+  }
 
-      {/* Koi ghost — outer div owns the fade-out; animation lives on inner div to avoid cascade conflict */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: 'none',
-          opacity: beginning ? 0 : 1,
-          transition: beginning ? 'opacity 1s ease' : 'none',
-        }}
-      >
-        {/* Mid div — lower half of screen, pulse animation */}
+  const showDishonor = (onAfter?: () => void) => {
+    setDishonorKey(k => k + 1)
+    setDishonorVisible(true)
+    if (onAfter) setTimeout(onAfter, 2200)
+  }
+
+  const handleBeginClick = () => {
+    setBeginning(true)
+    setTimeout(onBegin, 1000)
+  }
+
+  const stepAnim = direction === 'forward'
+    ? 'stepEnterRight 0.3s ease'
+    : 'stepEnterLeft 0.3s ease'
+
+  return (
+    <div style={{ position: 'relative', background: 'var(--bg)', overflowX: 'hidden' }}>
+
+      {/* Dishonor message — fixed centered overlay, pointer-events off so nothing is blocked */}
+      {dishonorVisible && (
         <div
+          key={dishonorKey}
+          onAnimationEnd={() => setDishonorVisible(false)}
           style={{
-            position: 'absolute',
-            top: '50%',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            animation: 'koiPulse 8s ease-in-out infinite',
+            position: 'fixed', inset: 0, zIndex: 100,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            pointerEvents: 'none',
+            animation: 'dishonorFade 2.5s ease forwards',
           }}
         >
-          <div style={{ animation: 'koiSway 8s ease-in-out infinite' }}>
-            <KoiFish />
+          <div style={{ fontSize: '1rem', letterSpacing: '0.12em', color: 'var(--red-bright)', textAlign: 'center', padding: '0 2rem' }}>
+            You were never a ronin. Dishonor.
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Content layer above koi */}
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', flex: 1 }}>
+      {/* Animated step content */}
+      <div key={step} style={{ animation: stepAnim }}>
 
-        {/* Kanji — 備 means "prepare / ready" */}
-        <div className="font-jp" style={{ fontSize: '4rem', color: 'var(--red)', lineHeight: 1, marginBottom: '1.5rem' }}>
-          備
-        </div>
+        {/* ── STEP 1 — MISSION PARAMETERS ───────────────────────────────── */}
+        {step === 1 && (
+          <div style={{
+            position: 'relative',
+            minHeight: '100svh',
+            background: 'var(--bg)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '0 1.5rem',
+            paddingTop: 'max(4rem, env(safe-area-inset-top))',
+            paddingBottom: 'max(2rem, env(safe-area-inset-bottom))',
+          }}>
 
-        {/* Status label */}
-        <div style={{ fontSize: '0.72rem', letterSpacing: '0.32em', color: 'var(--text-2)', textTransform: 'uppercase', marginBottom: '2rem' }}>
-          Your Mission Is Set
-        </div>
-
-        {/* Goal — cold and factual */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ fontSize: '1.05rem', color: 'var(--text)', lineHeight: 1.9, letterSpacing: '0.02em' }}>
-            Lose {loseDisplay}.<br />
-            {targetWeeks} weeks.&nbsp; {calorieTarget.toLocaleString()} cal/day.
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div style={{ width: '100%', maxWidth: '320px', borderTop: '1px solid var(--border)', marginBottom: '2rem' }} />
-
-        {/* Brand statement */}
-        <div style={{ fontSize: '0.88rem', color: 'var(--text-2)', textAlign: 'center', maxWidth: '300px', lineHeight: 1.75, marginBottom: '1.5rem', letterSpacing: '0.02em' }}>
-          A warrior prepares before battle, not during it.
-        </div>
-
-        {/* Instruction */}
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-3)', textAlign: 'center', maxWidth: '280px', lineHeight: 1.85, marginBottom: '2.5rem' }}>
-          Your mission begins when you are ready. Review your plan. Gather what you need. Return when prepared.
-        </div>
-
-        {/* Stat blocks */}
-        <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '400px', marginBottom: '3.5rem' }}>
-          {statBlocks.map(({ label, value }) => (
-            <div key={label} style={{ flex: 1, background: 'var(--elevated)', padding: '1rem 0.75rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.65rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.45rem' }}>
-                {label}
-              </div>
-              <div style={{ fontSize: '1rem', fontWeight: 300, color: 'var(--text)', letterSpacing: '0.01em' }}>
-                {value}
+            {/* Koi ghost */}
+            <div style={{
+              position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+              opacity: beginning ? 0 : 1,
+              transition: beginning ? 'opacity 1s ease' : 'none',
+            }}>
+              <div style={{
+                position: 'absolute', top: '50%', left: 0, right: 0, bottom: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                animation: 'koiPulse 8s ease-in-out infinite',
+              }}>
+                <div style={{ animation: 'koiSway 8s ease-in-out infinite' }}>
+                  <KoiFish />
+                </div>
               </div>
             </div>
-          ))}
-        </div>
 
-        {/* Spacer pushes button to bottom */}
-        <div style={{ flex: 1 }} />
+            {/* Content */}
+            <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', flex: 1 }}>
 
-        {/* Begin */}
-        <div style={{ width: '100%', maxWidth: '480px' }}>
-          <button className="commit-btn" onClick={handleBeginClick} disabled={beginning}>
-            I am prepared. Begin.
-          </button>
-        </div>
+              <div className="font-jp" style={{ fontSize: '4rem', color: 'var(--red)', lineHeight: 1, marginBottom: '1.5rem' }}>
+                備
+              </div>
+
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.32em', color: 'var(--text-2)', textTransform: 'uppercase', marginBottom: '2rem' }}>
+                Your Mission Is Set
+              </div>
+
+              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <div style={{ fontSize: '1.05rem', color: 'var(--text)', lineHeight: 1.9, letterSpacing: '0.02em' }}>
+                  Lose {loseDisplay}.<br />
+                  {targetWeeks} weeks.&nbsp; {calorieTarget.toLocaleString()} cal/day.
+                </div>
+              </div>
+
+              <div style={{ width: '100%', maxWidth: '320px', borderTop: '1px solid var(--border)', marginBottom: '2rem' }} />
+
+              <div style={{ fontSize: '0.88rem', color: 'var(--text-2)', textAlign: 'center', maxWidth: '300px', lineHeight: 1.75, marginBottom: '1.5rem', letterSpacing: '0.02em' }}>
+                A warrior prepares before battle, not during it.
+              </div>
+
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-3)', textAlign: 'center', maxWidth: '280px', lineHeight: 1.85, marginBottom: '2.5rem' }}>
+                Your mission begins when you are ready. Review your plan. Gather what you need. Return when prepared.
+              </div>
+
+              <div style={{ display: 'flex', gap: '1px', width: '100%', maxWidth: '400px', marginBottom: '3.5rem' }}>
+                {statBlocks.map(({ label, value }) => (
+                  <div key={label} style={{ flex: 1, background: 'var(--elevated)', padding: '1rem 0.75rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.65rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.45rem' }}>
+                      {label}
+                    </div>
+                    <div style={{ fontSize: '1rem', fontWeight: 300, color: 'var(--text)', letterSpacing: '0.01em' }}>
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ flex: 1 }} />
+
+              <div style={{ width: '100%', maxWidth: '480px' }}>
+                <button className="commit-btn" onClick={() => go(2, 'forward')} disabled={beginning}>
+                  Review Meal Plan →
+                </button>
+              </div>
+
+              <div style={{ marginTop: '1.75rem', paddingBottom: '0.5rem' }}>
+                <button
+                  onClick={() => showDishonor()}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
+                >
+                  I am not ready.
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 2 — MEAL PLAN ────────────────────────────────────────── */}
+        {step === 2 && (
+          <div style={stepPadding}>
+            <button style={backBtnStyle} onClick={() => go(1, 'back')}>← Back</button>
+            <div style={{ ...stepHeaderStyle, marginTop: '1.75rem' }}>Mission Rations</div>
+            <MealPlanView
+              calorieTarget={calorieTarget}
+              unit={unit}
+              readyFooter={
+                <div style={{ marginTop: '1.5rem' }}>
+                  <button style={advanceBtnStyle} onClick={() => go(3, 'forward')}>
+                    Build Grocery List →
+                  </button>
+                </div>
+              }
+            />
+          </div>
+        )}
+
+        {/* ── STEP 3 — GROCERY LIST ─────────────────────────────────────── */}
+        {step === 3 && (
+          <div style={stepPadding}>
+            <button style={backBtnStyle} onClick={() => go(2, 'back')}>← Back</button>
+            <div style={{ ...stepHeaderStyle, marginTop: '1.75rem' }}>Supply Run</div>
+            <GroceryListView
+              readyFooter={
+                <div style={{ marginTop: '1.5rem' }}>
+                  <button className="commit-btn" onClick={() => go(4, 'forward')}>
+                    I Have Everything. I Am Ready. →
+                  </button>
+                </div>
+              }
+            />
+          </div>
+        )}
+
+        {/* ── STEP 4 — FINAL COMMITMENT ─────────────────────────────────── */}
+        {step === 4 && (
+          <div style={{
+            minHeight: '100svh',
+            background: 'var(--bg)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0 1.5rem',
+            paddingTop: 'max(4rem, env(safe-area-inset-top))',
+            paddingBottom: 'max(3rem, env(safe-area-inset-bottom))',
+            opacity: beginning ? 0 : 1,
+            transition: beginning ? 'opacity 0.8s ease' : 'none',
+          }}>
+
+            <button style={{ ...backBtnStyle, alignSelf: 'flex-start', marginBottom: 'auto', position: 'absolute', top: 'max(2rem, env(safe-area-inset-top))', left: '1.5rem' }} onClick={() => go(3, 'back')}>
+              ← Back
+            </button>
+
+            <div className="font-jp" style={{ fontSize: '5rem', color: 'var(--red)', lineHeight: 1, marginBottom: '3rem' }}>
+              侍
+            </div>
+
+            <div style={{ fontSize: '1rem', color: 'var(--text-2)', textAlign: 'center', maxWidth: '280px', lineHeight: 2, letterSpacing: '0.04em', marginBottom: '4rem' }}>
+              Your mission begins now.<br />
+              There is no pause.<br />
+              There is no mercy.<br />
+              Only the work.
+            </div>
+
+            <div style={{ width: '100%', maxWidth: '480px' }}>
+              <button
+                className="commit-btn"
+                onClick={handleBeginClick}
+                disabled={beginning}
+              >
+                I Am Prepared. Begin.
+              </button>
+            </div>
+
+            <div style={{ marginTop: '2rem' }}>
+              <button
+                onClick={() => showDishonor(() => go(1, 'back'))}
+                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
+              >
+                I am not ready.
+              </button>
+            </div>
+
+          </div>
+        )}
 
       </div>
     </div>

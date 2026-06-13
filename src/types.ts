@@ -80,3 +80,36 @@ export interface AuthState {
 export type ProfileRow  = Tables<'profiles'>
 export type CheckinRow  = Tables<'checkins'>
 export type DailyLogRow = Tables<'daily_logs'>
+
+// ── Meal plan ─────────────────────────────────────────────────────────────────
+
+export const MEAL_SLOTS = ['breakfast', 'lunch', 'dinner', 'snacks'] as const
+export type MealSlot = typeof MEAL_SLOTS[number]
+
+export interface MealItem {
+  name: string
+  portion: string
+  calories: number
+}
+
+export interface DayPlan {
+  day: number
+  breakfast: MealItem[]
+  lunch: MealItem[]
+  dinner: MealItem[]
+  snacks: MealItem[]
+  totalCalories: number
+}
+
+export interface MealPlanData {
+  days: DayPlan[]
+  calorieTarget: number
+  generatedAt: string
+}
+
+export interface MealPrefs {
+  budget: 'budget' | 'standard' | 'flexible'
+  restrictions: string[]
+  equipment: string[]
+  dislikes: string
+}

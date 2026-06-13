@@ -26,9 +26,14 @@ interface RequestBody {
   calorieTarget: number
   unit: string
   days?: number
-  dayNumber?: number  // set when regenerating a single day; tells Claude which day it is
+  dayNumber?: number
   prefs?: MealPrefs
+  // Slot regeneration mode
+  slotName?: 'breakfast' | 'lunch' | 'dinner' | 'snacks'
+  dayContext?: DayPlan
 }
+
+const SLOTS = ['breakfast', 'lunch', 'dinner', 'snacks'] as const
 
 function buildPrefsSection(prefs: MealPrefs | undefined): string {
   if (!prefs) return ''
@@ -80,7 +85,8 @@ export default async function handler(req: Request): Promise<Response> {
     })
   }
 
-  let calorieTarget: number, unit: string, days: number, dayNumber: number | undefined, prefs: MealPrefs | undefined
+  let calorieTarget: number, unit: string, days: number, dayNumber: number | undefined
+  let prefs: MealPrefs | undefined, slotName: string | undefined, dayCtx: DayPlan | undefined
   try {
     const body = await req.json() as RequestBody
     calorieTarget = body.calorieTarget
@@ -88,6 +94,8 @@ export default async function handler(req: Request): Promise<Response> {
     days          = body.days ?? 7
     dayNumber     = body.dayNumber
     prefs         = body.prefs
+    slotName      = body.slotName
+    dayCtx        = body.dayContext
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid request body' }), {
       status: 400,
@@ -115,13 +123,73 @@ export default async function handler(req: Request): Promise<Response> {
     ? 'metric units (grams, ml) — e.g. "150g chicken breast", "200ml whole milk"'
     : 'imperial units (oz, cups, tbsp, tsp, or count-based) — e.g. "6 oz chicken breast", "1/2 cup rolled oats", "2 large eggs"'
 
-  const dayContext = days === 1 && dayNumber
+  const prefsSection = buildPrefsSection(prefs)
+
+  // ── SLOT REGENERATION MODE ──────────────────────────────────────────────────
+  if (slotName && dayCtx) {
+    const otherSlots = SLOTS.filter(s => s !== slotName)
+    const otherCalTotal = otherSlots.reduce((sum, s) => {
+      return sum + (dayCtx[s] ?? []).reduce((acc: number, it: MealItem) => acc + it.calories, 0)
+    }, 0)
+    const slotCalTarget = Math.max(100, calorieTarget - otherCalTotal)
+
+    const contextLines = otherSlots.map(s => {
+      const items: MealItem[] = dayCtx[s] ?? []
+      if (!items.length) return `${s.toUpperCase()}: (none)`
+      return `${s.toUpperCase()}: ${items.map(i => `${i.name} (${i.portion})`).join(', ')}`
+    }).join('\n')
+
+    const slotPrompt = `You are a meal planning assistant. Regenerate ONLY the ${slotName.toUpperCase()} slot for one day of a 7-day meal plan.
+
+CALORIE TARGET for ${slotName}: ${slotCalTarget} calories (±50 cal acceptable).
+PORTIONS: Use ${portionSystem}.${prefsSection}
+
+EXISTING MEALS ALREADY PLANNED FOR THIS DAY — do not duplicate their main protein or primary ingredient:
+${contextLines}
+
+RULES:
+1. Specific real foods only — no vague category labels like "lean protein" or "complex carb".
+2. Every portion needs an exact number.
+3. Choose a clearly different main protein or primary ingredient from those already used today.
+4. 1–4 food items in this slot. Calories must sum to approximately ${slotCalTarget} (±50 cal).
+5. Standard supermarket ingredients only.
+
+Respond with ONLY raw JSON — no markdown, no backticks, no text outside the JSON:
+{"slot":[{"name":"string","portion":"string","calories":0}]}`
+
+    try {
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1024,
+          messages: [{ role: 'user', content: slotPrompt }],
+        }),
+        signal: AbortSignal.timeout(25000),
+      })
+      if (!anthropicRes.ok) {
+        console.error('[meal-plan] slot regen Anthropic error:', anthropicRes.status)
+        return new Response(JSON.stringify({ error: 'AI service unavailable' }), { status: 502, headers: { 'Content-Type': 'application/json' } })
+      }
+      const data = await anthropicRes.json() as { content: Array<{ type: string; text: string }> }
+      const raw = data.content?.[0]?.text ?? ''
+      const cleaned = raw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim()
+      const parsed = JSON.parse(cleaned) as { slot: MealItem[] }
+      return new Response(JSON.stringify({ slot: parsed.slot }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    } catch (e) {
+      console.error('[meal-plan] slot regen error:', e)
+      return new Response(JSON.stringify({ error: 'Failed to regenerate slot' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+    }
+  }
+
+  // ── FULL PLAN / SINGLE DAY REGEN MODE ───────────────────────────────────────
+
+  const dayNumContext = days === 1 && dayNumber
     ? ` This is day ${dayNumber} of a 7-day plan — generate only this single day.`
     : ''
 
-  const prefsSection = buildPrefsSection(prefs)
-
-  const prompt = `You are a meal planning assistant. Create a ${days}-day meal plan.${dayContext}
+  const prompt = `You are a meal planning assistant. Create a ${days}-day meal plan.${dayNumContext}
 
 CALORIE TARGET: ${calorieTarget} calories per day. Each day's totalCalories must be within ±50 calories of this target.
 PORTIONS: Use ${portionSystem} with exact amounts.${prefsSection}

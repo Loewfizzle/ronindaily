@@ -559,6 +559,30 @@ input[type='number'] {
   }
 }
 
+/* ── Step slide transitions (preparation screen) ─────────────────────────── */
+
+@keyframes stepEnterRight {
+  from { transform: translateX(32px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes stepEnterLeft {
+  from { transform: translateX(-32px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+@keyframes slotPulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1;   }
+}
+
+@keyframes dishonorFade {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* ── Koi fish watermark ───────────────────────────────────────────────────── */
 
 @keyframes koiPulse {
