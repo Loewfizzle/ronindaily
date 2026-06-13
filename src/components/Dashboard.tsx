@@ -112,12 +112,42 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [streak, setStreak]             = useState<number>(() => parseInt(localStorage.getItem('ronin_streak') || '1', 10))
   const [loggedDays, setLoggedDays]     = useState<Set<string>>(new Set())
   const [badgeQueue, setBadgeQueue]     = useState<BadgeDef[]>([])
-  const [activeBadge, setActiveBadge]   = useState<BadgeDef | null>(null)
+  const activeBadge                     = badgeQueue[0] ?? null   // derived — no separate state needed
   const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([])
   const [selectedBadge, setSelectedBadge] = useState<EarnedBadge | null>(null)
   const plan = loadPlan()
   const planRef = useRef(plan)
   planRef.current = plan
+
+  // Compute progress metrics before the early return so they are available to hooks below.
+  // (React requires all hooks to be called unconditionally, before any conditional return.)
+  const progressPct = (() => {
+    if (!plan) return 0
+    const range = plan.startWeight - plan.goalWeight
+    return range === 0 ? 100 : Math.min(100, Math.max(1, ((plan.startWeight - plan.currentWeight) / range) * 100))
+  })()
+  const lastCheckin  = parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10)
+  const showCheckin  = plan != null && plan.dayNumber % 7 === 0 && lastCheckin !== plan.weekNumber
+  const savedBest    = parseFloat(localStorage.getItem('ronin_best_progress') || '0')
+  const bestProgress = Math.max(progressPct, savedBest)
+
+  // Persist progress milestones as a side-effect, not in the render body.
+  useEffect(() => {
+    const p = planRef.current
+    if (!p) return
+    if (showCheckin && progressPct > parseFloat(localStorage.getItem('ronin_best_progress') || '0')) {
+      localStorage.setItem('ronin_best_progress', String(progressPct))
+    }
+    if (progressPct >= 100 && !localStorage.getItem('ronin_goal_reached')) {
+      localStorage.setItem('ronin_goal_reached', JSON.stringify({
+        achievedAt: new Date().toISOString(),
+        lostLbs: p.startWeight - p.currentWeight,
+        unit: p.unit,
+        totalDays: p.totalDays,
+      }))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progressPct, showCheckin])
 
   useEffect(() => {
     async function logAndCalcStreak() {
@@ -180,7 +210,6 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           })
           if (newBadges.length > 0) {
             setBadgeQueue(newBadges)
-            setActiveBadge(newBadges[0])
           }
         }
 
@@ -218,34 +247,10 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     meals, movement, movementCal,
   } = plan
 
-  const range = startWeight - goalWeight
-  const progressPct = range === 0 ? 100 : Math.min(100, Math.max(1, ((startWeight - currentWeight) / range) * 100))
-  const lastCheckin  = parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10)
-  const showCheckin  = dayNumber % 7 === 0 && lastCheckin !== weekNumber
-
-  // Best-progress tracking — only updates on check-in days to ignore daily fluctuation
-  const savedBest = parseFloat(localStorage.getItem('ronin_best_progress') || '0')
-  const bestProgress = Math.max(progressPct, savedBest)
-  if (showCheckin && progressPct > savedBest) {
-    localStorage.setItem('ronin_best_progress', String(progressPct))
-  }
-
-  // Permanent goal-reached record — set once, never cleared (not in clearLocal)
-  if (progressPct >= 100 && !localStorage.getItem('ronin_goal_reached')) {
-    localStorage.setItem('ronin_goal_reached', JSON.stringify({
-      achievedAt: new Date().toISOString(),
-      lostLbs: startWeight - currentWeight,
-      unit,
-      totalDays,
-    }))
-  }
+  // progressPct, lastCheckin, showCheckin, savedBest, bestProgress computed above the early return.
 
   const handleBadgeDismiss = useCallback(() => {
-    setBadgeQueue(prev => {
-      const next = prev.slice(1)
-      setActiveBadge(next[0] ?? null)
-      return next
-    })
+    setBadgeQueue(prev => prev.slice(1))
   }, [])
 
   const footerProps = { loggedDays, weekNumber, onShare: () => setShareOpen(true) }

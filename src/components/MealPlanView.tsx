@@ -404,7 +404,8 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
                           <button
                             onClick={() => doRegenerateSlot(day.day, slot)}
                             aria-label={`Regenerate ${slot} for day ${day.day}`}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: '0.2rem', display: 'flex', alignItems: 'center', lineHeight: 1, opacity: 0.6 }}
+                            disabled={anySlotRegen || isDayRegen}
+                            style={{ background: 'none', border: 'none', cursor: (anySlotRegen || isDayRegen) ? 'default' : 'pointer', color: 'var(--text-3)', padding: '0.2rem', display: 'flex', alignItems: 'center', lineHeight: 1, opacity: (anySlotRegen || isDayRegen) ? 0.2 : 0.6 }}
                           >
                             <RefreshIcon size={10} />
                           </button>

@@ -172,6 +172,8 @@ function clearLocal() {
   localStorage.removeItem('ronin_meal_prefs')
   localStorage.removeItem('ronin_grocery_list')
   localStorage.removeItem('ronin_grocery_checked')
+  localStorage.removeItem('ronin_best_progress')
+  localStorage.removeItem('ronin_goal_reached')
 }
 
 function resolveScreen(): 'dashboard' | 'preparation' | 'onboarding' {
@@ -194,11 +196,13 @@ export default function App() {
   useEffect(() => {
     let settled = false
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       settled = true
       setConnectionError(false)
       if (!session) {
-        clearLocal()
+        // Only wipe local data on an explicit sign-out — not on token refresh failures,
+        // network errors, or other transient null-session events.
+        if (event === 'SIGNED_OUT') clearLocal()
         setUser(null)
         setScreen('login')
         return
@@ -338,6 +342,10 @@ export default function App() {
   }
 
   const handleAdjustGoal = () => {
+    // Cancel any in-flight loadProfile — without this bump, a slow loadProfile response
+    // could complete after we navigate to onboarding, restore ronin_committed, and redirect
+    // the user away before they finish entering the new goal.
+    loadGen.current++
     const stored = localStorage.getItem('ronin_profile')
     let parsed: UserProfile | null = null
     try { parsed = stored ? (JSON.parse(stored) as UserProfile) : null } catch { /* corrupt data — start fresh */ }

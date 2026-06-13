@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { calculatePlan } from '../utils/calculate'
 import type { UserProfile } from '../types'
 import MealPlanView from './MealPlanView'
@@ -191,6 +191,13 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
   const [beginning, setBeginning] = useState(false)
   const [dishonorKey, setDishonorKey]   = useState(0)
   const [dishonorVisible, setDishonorVisible] = useState(false)
+  const dishonorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Cancel any pending dishonor navigation callback when the component unmounts
+  // (e.g. user clicks Begin before the 2.2s step-1 redirect fires).
+  useEffect(() => () => {
+    if (dishonorTimeoutRef.current !== null) clearTimeout(dishonorTimeoutRef.current)
+  }, [])
 
   const profile = (() => {
     try { return JSON.parse(localStorage.getItem('ronin_profile') || 'null') as UserProfile | null }
@@ -235,10 +242,14 @@ export default function PreparationScreen({ onBegin, onReset }: PreparationScree
   const showDishonor = (onAfter?: () => void) => {
     setDishonorKey(k => k + 1)
     setDishonorVisible(true)
-    if (onAfter) setTimeout(onAfter, 2200)
+    if (onAfter) {
+      if (dishonorTimeoutRef.current !== null) clearTimeout(dishonorTimeoutRef.current)
+      dishonorTimeoutRef.current = setTimeout(onAfter, 2200)
+    }
   }
 
   const handleBeginClick = () => {
+    if (beginning) return
     setBeginning(true)
     setTimeout(onBegin, 1000)
   }

@@ -127,8 +127,9 @@ Respond with ONLY raw JSON — no markdown fences, no text before or after. Sche
         headers: { 'Content-Type': 'application/json' },
       })
     }
-    const cleaned = raw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim()
-    const parsed = JSON.parse(cleaned) as { sections: Array<{ section: string; items: GroceryItem[] }> }
+    const s0 = raw.indexOf('{'), e0 = raw.lastIndexOf('}')
+    if (s0 === -1 || e0 <= s0) throw new Error('No JSON in response')
+    const parsed = JSON.parse(raw.slice(s0, e0 + 1)) as { sections: Array<{ section: string; items: GroceryItem[] }> }
     if (!Array.isArray(parsed.sections)) {
       console.error('[grocery-list] Unexpected response shape:', cleaned.slice(0, 200))
       return new Response(JSON.stringify({ error: 'Unexpected AI response format' }), {

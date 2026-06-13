@@ -129,7 +129,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (slotName && dayCtx) {
     const otherSlots = SLOTS.filter(s => s !== slotName)
     const otherCalTotal = otherSlots.reduce((sum, s) => {
-      return sum + (dayCtx[s] ?? []).reduce((acc: number, it: MealItem) => acc + it.calories, 0)
+      return sum + (dayCtx[s] ?? []).reduce((acc: number, it: MealItem) => acc + Number(it.calories), 0)
     }, 0)
     const slotCalTarget = Math.max(100, calorieTarget - otherCalTotal)
 
@@ -174,8 +174,9 @@ Respond with ONLY raw JSON — no markdown, no backticks, no text outside the JS
       }
       const data = await anthropicRes.json() as { content: Array<{ type: string; text: string }> }
       const raw = data.content?.[0]?.text ?? ''
-      const cleaned = raw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim()
-      const parsed = JSON.parse(cleaned) as { slot: MealItem[] }
+      const s0 = raw.indexOf('{'), e0 = raw.lastIndexOf('}')
+      if (s0 === -1 || e0 <= s0) throw new Error('No JSON in response')
+      const parsed = JSON.parse(raw.slice(s0, e0 + 1)) as { slot: MealItem[] }
       return new Response(JSON.stringify({ slot: parsed.slot }), { status: 200, headers: { 'Content-Type': 'application/json' } })
     } catch (e) {
       console.error('[meal-plan] slot regen error:', e)
@@ -236,8 +237,9 @@ Respond with ONLY raw JSON — no markdown fences, no backticks, no text before 
 
     const data = await anthropicRes.json() as { content: Array<{ type: string; text: string }> }
     const raw = data.content?.[0]?.text ?? ''
-    const cleaned = raw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim()
-    const parsed = JSON.parse(cleaned) as { days: DayPlan[] }
+    const s0 = raw.indexOf('{'), e0 = raw.lastIndexOf('}')
+    if (s0 === -1 || e0 <= s0) throw new Error('No JSON in response')
+    const parsed = JSON.parse(raw.slice(s0, e0 + 1)) as { days: DayPlan[] }
     parsedDays = parsed.days
   } catch (e) {
     console.error('[meal-plan] Parse or network error:', e)
