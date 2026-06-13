@@ -44,7 +44,7 @@ function localDateStr(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
+export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connectionWarning }) {
   const [sheet, setSheet] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [checkinOpen, setCheckinOpen] = useState(false)
@@ -216,6 +216,13 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
           </svg>
         </button>
       </div>
+
+      {/* Connection warning — shown when profile loaded from cache due to server failure */}
+      {connectionWarning && (
+        <div style={{ padding: '0.6rem 1.5rem 0', fontSize: '0.7rem', color: 'var(--red-bright)', letterSpacing: '0.04em' }}>
+          {connectionWarning}
+        </div>
+      )}
 
       {/* Date + heading */}
       <div style={{ padding: '1.4rem 1.5rem 0.75rem' }}>

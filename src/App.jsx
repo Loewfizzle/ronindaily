@@ -11,10 +11,19 @@ function LoadingScreen() {
   )
 }
 
-function LoginScreen({ onSignIn }) {
-  const [email, setEmail]   = useState('')
-  const [sent, setSent]     = useState(false)
-  const [error, setError]   = useState(null)
+function LoginScreen({ connectionError }) {
+  const [email, setEmail] = useState('')
+  const [sent, setSent]   = useState(false)
+  const [error, setError] = useState(null)
+
+  const handleGoogleSignIn = async () => {
+    setError(null)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
+    if (error) setError('Sign-in failed. Try again.')
+  }
 
   const handleEmailSubmit = async () => {
     const trimmed = email.trim()
@@ -23,12 +32,14 @@ function LoginScreen({ onSignIn }) {
       return
     }
     setError(null)
-    try {
-      await supabase.auth.signInWithOtp({
-        email: trimmed,
-        options: { emailRedirectTo: 'https://ronindaily.app' },
-      })
-    } catch { /* network error — fall through to sent state */ }
+    const { error } = await supabase.auth.signInWithOtp({
+      email: trimmed,
+      options: { emailRedirectTo: 'https://ronindaily.app' },
+    })
+    if (error) {
+      setError('Sign-in failed. Try again.')
+      return
+    }
     setSent(true)
   }
 
@@ -49,13 +60,19 @@ function LoginScreen({ onSignIn }) {
         Ronin Daily
       </div>
 
+      {connectionError && !sent && (
+        <div style={{ fontSize: '0.7rem', color: 'var(--red-bright)', marginBottom: '1.5rem', textAlign: 'center', letterSpacing: '0.04em' }}>
+          Could not reach the server. Check your connection.
+        </div>
+      )}
+
       {sent ? (
         <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', textAlign: 'center', maxWidth: '280px', margin: 0, lineHeight: 1.7 }}>
           Check your email. A sign-in link has been sent.
         </p>
       ) : (
         <>
-          <button onClick={onSignIn} className="commit-btn" style={{ width: '100%', maxWidth: '280px' }}>
+          <button onClick={handleGoogleSignIn} className="commit-btn" style={{ width: '100%', maxWidth: '280px' }}>
             Continue with Google
           </button>
 
@@ -146,12 +163,15 @@ export default function App() {
   const [screen, setScreen] = useState('loading')
   const [user, setUser] = useState(null)
   const [initialProfile, setInitialProfile] = useState(null)
+  const [connectionError, setConnectionError] = useState(false)
+  const [profileError, setProfileError] = useState(false)
 
   useEffect(() => {
     let settled = false
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       settled = true
+      setConnectionError(false)
       if (!session) {
         clearLocal()
         setUser(null)
@@ -162,10 +182,14 @@ export default function App() {
       loadProfile(session.user.id)
     })
 
-    // Fallback: if Supabase doesn't respond in 4s, use localStorage cache
+    // Fallback: if Supabase doesn't respond in 4s, use localStorage cache.
+    // Only surface the connection error when falling back to the login screen
+    // (no cached data to show means the user is actually blocked).
     const timer = setTimeout(() => {
       if (!settled) {
-        setScreen(localStorage.getItem('ronin_committed') ? 'dashboard' : 'login')
+        const hasCache = !!localStorage.getItem('ronin_committed')
+        if (!hasCache) setConnectionError(true)
+        setScreen(hasCache ? 'dashboard' : 'login')
       }
     }, 4000)
 
@@ -208,8 +232,10 @@ export default function App() {
         localStorage.setItem('ronin_profile', JSON.stringify(withCheckin))
       }
 
+      setProfileError(false)
       setScreen('dashboard')
     } catch {
+      setProfileError(true)
       setScreen(localStorage.getItem('ronin_committed') ? 'dashboard' : 'onboarding')
     }
   }
@@ -263,15 +289,8 @@ export default function App() {
     }
   }
 
-  const signInWithGoogle = () => {
-    supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    })
-  }
-
   if (screen === 'loading') return <LoadingScreen />
-  if (screen === 'login') return <LoginScreen onSignIn={signInWithGoogle} />
+  if (screen === 'login') return <LoginScreen connectionError={connectionError} />
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100svh' }}>
@@ -279,7 +298,12 @@ export default function App() {
         <Onboarding onCommit={handleCommit} initialProfile={initialProfile} />
       )}
       {screen === 'dashboard' && (
-        <Dashboard onReset={handleReset} onAdjustGoal={handleAdjustGoal} onSignOut={handleSignOut} />
+        <Dashboard
+          onReset={handleReset}
+          onAdjustGoal={handleAdjustGoal}
+          onSignOut={handleSignOut}
+          connectionWarning={profileError ? 'Could not reach the server. Showing saved data.' : null}
+        />
       )}
     </div>
   )
