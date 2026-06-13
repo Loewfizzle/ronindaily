@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import BottomSheet from './BottomSheet'
 import SettingsSheet from './SettingsSheet'
 import CheckinSheet from './CheckinSheet'
 import { calculatePlan } from '../utils/calculate'
+import { supabase } from '../lib/supabase'
 
 function formatDate(d) {
   const day   = d.getDate()
@@ -42,7 +43,65 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
   const [sheet, setSheet] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [checkinOpen, setCheckinOpen] = useState(false)
+  const [streak, setStreak] = useState(() => parseInt(localStorage.getItem('ronin_streak') || '1', 10))
+  const [loggedDays, setLoggedDays] = useState(new Set())
   const plan = loadPlan()
+
+  useEffect(() => {
+    async function logAndCalcStreak() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const today = new Date().toISOString().split('T')[0]
+
+        await supabase.from('daily_logs').upsert(
+          { user_id: user.id, logged_date: today },
+          { onConflict: 'user_id,logged_date', ignoreDuplicates: true }
+        )
+
+        const { data: logs } = await supabase
+          .from('daily_logs')
+          .select('logged_date')
+          .eq('user_id', user.id)
+          .order('logged_date', { ascending: false })
+          .limit(365)
+
+        if (!logs) return
+
+        const dateSet = new Set(logs.map(r => r.logged_date))
+
+        // Count consecutive days back from today
+        let count = 0
+        const cur = new Date()
+        while (true) {
+          const ds = cur.toISOString().split('T')[0]
+          if (dateSet.has(ds)) {
+            count++
+            cur.setDate(cur.getDate() - 1)
+          } else {
+            break
+          }
+        }
+
+        // Which of the last 7 days have entries
+        const last7 = new Set()
+        for (let i = 0; i < 7; i++) {
+          const d = new Date()
+          d.setDate(d.getDate() - i)
+          const ds = d.toISOString().split('T')[0]
+          if (dateSet.has(ds)) last7.add(ds)
+        }
+
+        setStreak(count)
+        setLoggedDays(last7)
+        localStorage.setItem('ronin_streak', String(count))
+      } catch {
+        // Offline — keep localStorage streak, pips stay empty
+      }
+    }
+    logAndCalcStreak()
+  }, [])
 
   if (!plan) {
     return (
@@ -63,7 +122,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
     startWeight, currentWeight, goalWeight, poundsToLose,
     date, dayNumber, daysLeft, totalDays, weekNumber,
     maintenance, dailyDeficit, calorieTarget, exerciseBurn,
-    meals, movement, movementCal, streak,
+    meals, movement, movementCal,
   } = plan
 
   const progressPct = Math.max(1, ((startWeight - currentWeight) / (startWeight - goalWeight)) * 100)
@@ -297,9 +356,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut }) {
         }}
       >
         <div style={{ display: 'flex', gap: '3px' }}>
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className={`pip${i < streak ? '' : ' empty'}`} />
-          ))}
+          {Array.from({ length: 7 }).map((_, i) => {
+            const d = new Date()
+            d.setDate(d.getDate() - (6 - i))
+            const ds = d.toISOString().split('T')[0]
+            return <div key={i} className={`pip${loggedDays.has(ds) ? '' : ' empty'}`} />
+          })}
         </div>
         <span style={{ fontSize: '0.65rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
           Week {weekNumber}
