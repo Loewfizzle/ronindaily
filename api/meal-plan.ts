@@ -16,10 +16,11 @@ interface DayPlan {
 }
 
 interface MealPrefs {
-  budget?: 'budget' | 'standard' | 'flexible'
+  budget?: 'raw_materials' | 'budget' | 'standard' | 'flexible'
   restrictions?: string[]
   equipment?: string[]
   dislikes?: string
+  description?: string
 }
 
 interface RequestBody {
@@ -40,9 +41,10 @@ function buildPrefsSection(prefs: MealPrefs | undefined): string {
   const parts: string[] = []
 
   const budgetMap = {
-    budget:   'BUDGET TIER — Use only affordable staple ingredients: rolled oats, eggs, canned beans, lentils, canned tuna, canned sardines, frozen vegetables (broccoli, spinach, mixed veg), chicken thighs, ground beef (80/20), rice, sweet potatoes, bananas, apples, peanut butter, whole milk, store-brand Greek yogurt. Prioritise cheap high-volume foods and repeat ingredients across days to keep the shopping list short and cheap.',
-    standard: 'STANDARD TIER — Use common supermarket ingredients available at any grocery store: chicken breast, ground turkey, eggs, canned fish, fresh and frozen vegetables, seasonal fruits, brown rice, pasta, rolled oats, Greek yogurt, cottage cheese, milk, olive oil, cheddar cheese, whole wheat bread.',
-    flexible: 'FLEXIBLE TIER — Any ingredients are acceptable including salmon, shrimp, steak, specialty produce, quinoa, almond butter, specialty cheeses, and premium items. Prioritise nutrition and variety.',
+    raw_materials: 'RAW MATERIALS TIER — absolute bare minimum cost foods only. Canned tuna, eggs, rice, oats, frozen vegetables, peanut butter, whole wheat bread, bananas, beans, lentils, cottage cheese. Everything under $50 for the week. No cooking required beyond basic preparation. Purely functional fuel — no cuisine, no variety for variety\'s sake, just the cheapest most calorie-efficient whole foods available at any grocery store.',
+    budget:        'BUDGET TIER — Use only affordable staple ingredients: rolled oats, eggs, canned beans, lentils, canned tuna, canned sardines, frozen vegetables (broccoli, spinach, mixed veg), chicken thighs, ground beef (80/20), rice, sweet potatoes, bananas, apples, peanut butter, whole milk, store-brand Greek yogurt. Prioritise cheap high-volume foods and repeat ingredients across days to keep the shopping list short and cheap.',
+    standard:      'STANDARD TIER — Use common supermarket ingredients available at any grocery store: chicken breast, ground turkey, eggs, canned fish, fresh and frozen vegetables, seasonal fruits, brown rice, pasta, rolled oats, Greek yogurt, cottage cheese, milk, olive oil, cheddar cheese, whole wheat bread.',
+    flexible:      'FLEXIBLE TIER — Any ingredients are acceptable including salmon, shrimp, steak, specialty produce, quinoa, almond butter, specialty cheeses, and premium items. Prioritise nutrition and variety.',
   }
   if (prefs.budget && budgetMap[prefs.budget]) parts.push(budgetMap[prefs.budget])
 
@@ -72,6 +74,10 @@ function buildPrefsSection(prefs: MealPrefs | undefined): string {
 
   if (prefs.dislikes?.trim()) {
     parts.push(`DISLIKED FOODS — never include these or dishes where they are a primary component: ${prefs.dislikes.trim()}`)
+  }
+
+  if (prefs.description?.trim()) {
+    parts.push(`USER PREFERENCE OVERRIDE — the user has described their ideal meals as follows. Respect these preferences above all other constraints except hard dietary restrictions and calorie targets:\n${prefs.description.trim()}`)
   }
 
   return parts.length > 0 ? '\n\n' + parts.join('\n\n') : ''

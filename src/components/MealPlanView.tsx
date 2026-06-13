@@ -5,6 +5,13 @@ import { MEAL_SLOTS } from '../types'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+const BUDGET_OPTIONS: { id: MealPrefs['budget']; label: string }[] = [
+  { id: 'raw_materials', label: 'Raw Materials' },
+  { id: 'budget',        label: 'Budget'        },
+  { id: 'standard',      label: 'Standard'      },
+  { id: 'flexible',      label: 'Flexible'      },
+]
+
 const RESTRICTION_OPTIONS = [
   { id: 'no_pork',     label: 'No Pork'     },
   { id: 'no_beef',     label: 'No Beef'     },
@@ -70,22 +77,23 @@ interface MealPlanViewProps {
 export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealPlanViewProps) {
   type Screen = 'prefs' | 'loading' | 'ready' | 'error'
 
-  const [screen, setScreen]       = useState<Screen>('prefs')
-  const [mealPlan, setMealPlan]   = useState<MealPlanData | null>(null)
-  const [openDay, setOpenDay]     = useState<number | null>(1)
-  const [error, setError]         = useState<string | null>(null)
-  const [regenDays, setRegenDays] = useState<Set<number>>(new Set())
-  const [regenSlots, setRegenSlots] = useState<Set<string>>(new Set()) // "${day}-${slot}"
+  const [screen, setScreen]         = useState<Screen>('prefs')
+  const [mealPlan, setMealPlan]     = useState<MealPlanData | null>(null)
+  const [openDay, setOpenDay]       = useState<number | null>(1)
+  const [error, setError]           = useState<string | null>(null)
+  const [regenDays, setRegenDays]   = useState<Set<number>>(new Set())
+  const [regenSlots, setRegenSlots] = useState<Set<string>>(new Set())
 
-  const [budget, setBudget]           = useState<'budget' | 'standard' | 'flexible'>('standard')
+  const [budget, setBudget]             = useState<MealPrefs['budget']>('standard')
   const [restrictions, setRestrictions] = useState<string[]>([])
-  const [equipment, setEquipment]     = useState<string[]>([])
-  const [dislikes, setDislikes]       = useState('')
+  const [equipment, setEquipment]       = useState<string[]>([])
+  const [dislikes, setDislikes]         = useState('')
+  const [description, setDescription]   = useState('')
 
   const calorieTargetRef = useRef(calorieTarget)
-  const unitRef = useRef(unit)
+  const unitRef          = useRef(unit)
   calorieTargetRef.current = calorieTarget
-  unitRef.current = unit
+  unitRef.current          = unit
 
   const doGenerate = useCallback(async (prefs: MealPrefs) => {
     setScreen('loading')
@@ -151,7 +159,6 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
     setRegenSlots(prev => new Set([...prev, key]))
     try {
       const prefs = loadSavedPrefs()
-      // Capture current day state synchronously before the async call
       const dayData = loadCachedPlan()?.days.find(d => d.day === dayNum)
       if (!dayData) throw new Error('Day not found')
 
@@ -188,8 +195,6 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
     }
   }, [])
 
-  // Initialise on mount (works for both BottomSheet and inline preparation screen usage,
-  // since BottomSheet unmounts children when closed, giving a clean mount each open).
   useEffect(() => {
     const savedPrefs = loadSavedPrefs()
     if (savedPrefs) {
@@ -197,6 +202,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
       setRestrictions(savedPrefs.restrictions)
       setEquipment(savedPrefs.equipment)
       setDislikes(savedPrefs.dislikes)
+      setDescription(savedPrefs.description ?? '')
 
       const cached = loadCachedPlan()
       if (cached && cached.calorieTarget === calorieTargetRef.current && cached.days?.length > 0) {
@@ -212,7 +218,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
   }, [])
 
   const handleSaveAndGenerate = () => {
-    const prefs: MealPrefs = { budget, restrictions, equipment, dislikes }
+    const prefs: MealPrefs = { budget, restrictions, equipment, dislikes, description }
     localStorage.setItem('ronin_meal_prefs', JSON.stringify(prefs))
     doGenerate(prefs)
   }
@@ -243,9 +249,15 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
 
       <div>
         <div className="field-label">Budget</div>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          {(['budget', 'standard', 'flexible'] as const).map(b => (
-            <button key={b} className={`toggle-btn${budget === b ? ' active' : ''}`} onClick={() => setBudget(b)}>{b}</button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+          {BUDGET_OPTIONS.map(b => (
+            <button
+              key={b.id}
+              className={`toggle-btn${budget === b.id ? ' active' : ''}`}
+              onClick={() => setBudget(b.id)}
+            >
+              {b.label}
+            </button>
           ))}
         </div>
       </div>
@@ -281,6 +293,18 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
           value={dislikes}
           onChange={e => setDislikes(e.target.value)}
           style={{ width: '100%' }}
+        />
+      </div>
+
+      <div>
+        <div className="field-label">Describe Your Ideal Meals</div>
+        <textarea
+          className="input-bare"
+          placeholder="e.g. I love Mexican food, I meal prep on Sundays, I skip breakfast most days, I want high protein..."
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          rows={3}
+          style={{ width: '100%', resize: 'vertical', lineHeight: 1.7, display: 'block', paddingTop: '0.5rem' }}
         />
       </div>
 
@@ -346,94 +370,148 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
 
       {/* Day accordion */}
       {mealPlan.days.map(day => {
-        const isOpen         = openDay === day.day
-        const isDayRegen     = regenDays.has(day.day)
-        const anySlotRegen   = Array.from(regenSlots).some(k => k.startsWith(`${day.day}-`))
+        const isOpen          = openDay === day.day
+        const isDayRegen      = regenDays.has(day.day)
+        const anySlotRegen    = Array.from(regenSlots).some(k => k.startsWith(`${day.day}-`))
         const disableDayRegen = isDayRegen || anySlotRegen
 
         return (
           <div key={day.day}>
-            {/* Day header row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 0', borderTop: '1px solid var(--border)' }}>
-              <span
-                onClick={() => setOpenDay(isOpen ? null : day.day)}
-                style={{ fontSize: '0.78rem', letterSpacing: '0.18em', color: isOpen ? 'var(--text)' : 'var(--text-2)', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none' }}
-              >
+            {/* Day header row — full row is clickable */}
+            <div
+              onClick={() => setOpenDay(isOpen ? null : day.day)}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '1.1rem 0', borderTop: '1px solid var(--border)',
+                cursor: 'pointer', userSelect: 'none',
+              }}
+            >
+              <span style={{
+                fontSize: '0.88rem', letterSpacing: '0.18em', textTransform: 'uppercase',
+                color: isOpen ? 'var(--text)' : 'var(--text-2)',
+                fontWeight: isOpen ? 500 : 300,
+              }}>
                 Day {day.day}
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', minWidth: '5.5rem', textAlign: 'right' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-2)', minWidth: '5.5rem', textAlign: 'right' }}>
                   {isDayRegen ? '—' : day.totalCalories.toLocaleString() + ' cal'}
                 </span>
                 <button
-                  onClick={() => { if (!disableDayRegen) doRegenerateDay(day.day) }}
+                  onClick={(e) => { e.stopPropagation(); if (!disableDayRegen) doRegenerateDay(day.day) }}
                   aria-label={`Regenerate day ${day.day}`}
                   disabled={disableDayRegen}
-                  style={{ background: 'none', border: 'none', cursor: disableDayRegen ? 'default' : 'pointer', color: 'var(--text-3)', padding: '0.15rem', display: 'flex', alignItems: 'center', opacity: disableDayRegen ? 0.3 : 1, lineHeight: 1 }}
+                  style={{
+                    background: 'none', border: 'none',
+                    cursor: disableDayRegen ? 'default' : 'pointer',
+                    color: 'var(--text-3)', padding: '0.2rem',
+                    display: 'flex', alignItems: 'center', lineHeight: 1,
+                    opacity: disableDayRegen ? 0.3 : 1,
+                  }}
                 >
-                  <RefreshIcon size={11} />
+                  <RefreshIcon size={12} />
                 </button>
-                <span
-                  onClick={() => setOpenDay(isOpen ? null : day.day)}
-                  style={{ fontSize: '0.85rem', color: 'var(--text-3)', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', cursor: 'pointer', userSelect: 'none' }}
-                >
+                <span style={{
+                  fontSize: '0.9rem', color: 'var(--text-3)', display: 'inline-block',
+                  transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease',
+                }}>
                   ›
                 </span>
               </div>
             </div>
 
-            {/* Day content — expanded */}
-            {isOpen && !isDayRegen && (
-              <div style={{ paddingBottom: '1.25rem' }}>
-                {MEAL_SLOTS.map((slot: MealSlot) => {
-                  const slotKey     = `${day.day}-${slot}`
-                  const isSlotRegen = regenSlots.has(slotKey)
+            {/* Expanded content */}
+            {isOpen && (
+              <div style={{
+                borderLeft: '2px solid var(--red)',
+                paddingLeft: '1rem',
+                paddingBottom: '1.5rem',
+                marginBottom: '0.25rem',
+              }}>
+                {isDayRegen ? (
+                  <div style={{ padding: '0.75rem 0 0.25rem', fontSize: '0.72rem', color: 'var(--text-3)', letterSpacing: '0.12em' }}>
+                    Regenerating...
+                  </div>
+                ) : (
+                  <>
+                    {MEAL_SLOTS.map((slot: MealSlot, slotIdx: number) => {
+                      const slotKey     = `${day.day}-${slot}`
+                      const isSlotRegen = regenSlots.has(slotKey)
+                      const items       = day[slot] ?? []
 
-                  return (
-                    <div key={slot} style={{ marginBottom: '1.1rem' }}>
-                      {/* Slot header */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <div style={{
-                          fontSize: '0.6rem', letterSpacing: '0.26em', textTransform: 'uppercase',
-                          color: 'var(--text-3)',
-                          animation: isSlotRegen ? 'slotPulse 1.2s ease-in-out infinite' : 'none',
-                        }}>
-                          {slot}
-                        </div>
-                        {!isSlotRegen && (
-                          <button
-                            onClick={() => doRegenerateSlot(day.day, slot)}
-                            aria-label={`Regenerate ${slot} for day ${day.day}`}
-                            disabled={anySlotRegen || isDayRegen}
-                            style={{ background: 'none', border: 'none', cursor: (anySlotRegen || isDayRegen) ? 'default' : 'pointer', color: 'var(--text-3)', padding: '0.2rem', display: 'flex', alignItems: 'center', lineHeight: 1, opacity: (anySlotRegen || isDayRegen) ? 0.2 : 0.6 }}
-                          >
-                            <RefreshIcon size={10} />
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Slot items — hidden while regenerating */}
-                      {!isSlotRegen && (day[slot] ?? []).map((item, i) => (
+                      return (
                         <div
-                          key={i}
-                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '0.45rem 0', borderBottom: '1px solid var(--border)', gap: '0.75rem' }}
+                          key={slot}
+                          style={{
+                            paddingTop: slotIdx > 0 ? '1.1rem' : '0.75rem',
+                            borderTop: slotIdx > 0 ? '1px solid var(--border)' : 'none',
+                          }}
                         >
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.35 }}>{item.name}</div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', marginTop: '0.1rem' }}>{item.portion}</div>
+                          {/* Slot header */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+                            <div style={{
+                              fontSize: '0.62rem', letterSpacing: '0.28em', textTransform: 'uppercase',
+                              color: 'var(--text)',
+                              animation: isSlotRegen ? 'slotPulse 1.2s ease-in-out infinite' : 'none',
+                            }}>
+                              {slot}
+                            </div>
+                            {!isSlotRegen && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); if (!(anySlotRegen || isDayRegen)) doRegenerateSlot(day.day, slot) }}
+                                aria-label={`Regenerate ${slot} for day ${day.day}`}
+                                disabled={anySlotRegen || isDayRegen}
+                                style={{
+                                  background: 'none', border: 'none',
+                                  cursor: (anySlotRegen || isDayRegen) ? 'default' : 'pointer',
+                                  color: 'var(--text-3)', padding: '0.2rem',
+                                  display: 'flex', alignItems: 'center', lineHeight: 1,
+                                  opacity: (anySlotRegen || isDayRegen) ? 0.2 : 0.75,
+                                }}
+                              >
+                                <RefreshIcon size={11} />
+                              </button>
+                            )}
                           </div>
-                          <span style={{ fontSize: '0.82rem', color: 'var(--text-2)', flexShrink: 0, paddingTop: '0.1rem' }}>{item.calories}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
 
-            {isOpen && isDayRegen && (
-              <div style={{ padding: '1rem 0 1.25rem', fontSize: '0.72rem', color: 'var(--text-3)', letterSpacing: '0.12em' }}>
-                Regenerating...
+                          {/* Slot items */}
+                          {!isSlotRegen && items.map((item, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                                padding: '0.6rem 0',
+                                borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
+                                gap: '1rem',
+                              }}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text)', lineHeight: 1.4 }}>{item.name}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', marginTop: '0.18rem', lineHeight: 1.3 }}>{item.portion}</div>
+                              </div>
+                              <span style={{ fontSize: '0.85rem', color: 'var(--text-2)', flexShrink: 0, paddingTop: '0.1rem' }}>
+                                {item.calories}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+
+                    {/* Day total */}
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      paddingTop: '0.85rem', marginTop: '0.85rem', borderTop: '1px solid var(--border-mid)',
+                    }}>
+                      <span style={{ fontSize: '0.62rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+                        Daily Total
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text)', fontWeight: 400 }}>
+                        {day.totalCalories.toLocaleString()} cal
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

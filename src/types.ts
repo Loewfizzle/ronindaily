@@ -115,8 +115,9 @@ export interface MealPlanData {
 }
 
 export interface MealPrefs {
-  budget: 'budget' | 'standard' | 'flexible'
+  budget: 'raw_materials' | 'budget' | 'standard' | 'flexible'
   restrictions: string[]
   equipment: string[]
   dislikes: string
+  description?: string
 }
