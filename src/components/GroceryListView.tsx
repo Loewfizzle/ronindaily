@@ -150,7 +150,7 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
   if (status === 'loading') return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0 3rem', gap: '1.5rem' }}>
       <div className="font-jp onboarding-kanji" style={{ fontSize: '2.8rem', color: 'var(--red)', lineHeight: 1 }}>侍</div>
-      <div style={{ fontSize: '0.7rem', letterSpacing: '0.24em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+      <div style={{ fontSize: '0.8rem', letterSpacing: '0.24em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
         Building your list...
       </div>
     </div>
@@ -175,13 +175,13 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
     <div>
       {/* Clear checks row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', letterSpacing: '0.08em' }}>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-3)', letterSpacing: '0.08em' }}>
           {checkedCount > 0 ? `${checkedCount} item${checkedCount === 1 ? '' : 's'} checked` : 'tap items to check off'}
         </div>
         {checkedCount > 0 && (
           <button
             onClick={clearChecks}
-            style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.68rem', letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
+            style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
           >
             Clear Checks
           </button>
@@ -191,7 +191,7 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
       {/* Sections */}
       {sections.map(section => (
         <div key={section.section} style={{ marginBottom: '1.75rem' }}>
-          <div style={{ fontSize: '0.6rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
+          <div style={{ fontSize: '0.75rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
             {section.section}
           </div>
           {section.items.map(item => {

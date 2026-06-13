@@ -72,7 +72,7 @@ export default function ShareSheet({ open, onClose, streak, plan }: ShareSheetPr
           <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
             {changeText}. Day {dayNumber} of {totalDays}.
           </div>
-          <div style={{ fontSize: '0.58rem', letterSpacing: '0.18em', color: 'var(--text-3)', textTransform: 'uppercase', marginTop: '0.35rem' }}>
+          <div style={{ fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--text-3)', textTransform: 'uppercase', marginTop: '0.35rem' }}>
             ronindaily.app
           </div>
         </div>

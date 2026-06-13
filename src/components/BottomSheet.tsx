@@ -45,7 +45,7 @@ export default function BottomSheet({ open, onClose, title, children }: BottomSh
           padding: '1rem 1.5rem',
           borderBottom: '1px solid var(--border)',
         }}>
-          <span style={{ fontSize: '0.58rem', letterSpacing: '0.28em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: '0.75rem', letterSpacing: '0.28em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
             {title}
           </span>
           <button

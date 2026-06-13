@@ -30,7 +30,7 @@ export default function MealPlanSheet({ open, onClose, calorieTarget, unit }: Me
                   background: 'transparent',
                   border: '1px solid var(--border-mid)',
                   color: 'var(--text-2)',
-                  fontSize: '0.7rem',
+                  fontSize: '0.8rem',
                   letterSpacing: '0.22em',
                   textTransform: 'uppercase',
                   fontFamily: 'Inter, sans-serif',

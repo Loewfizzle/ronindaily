@@ -242,7 +242,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
       {mealPlan && (
         <button
           onClick={() => setScreen('ready')}
-          style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0, textAlign: 'left', alignSelf: 'flex-start' }}
+          style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.8rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0, textAlign: 'left', alignSelf: 'flex-start' }}
         >
           ← back to plan
         </button>
@@ -321,7 +321,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
   if (screen === 'loading') return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0 3rem', gap: '1.5rem' }}>
       <div className="font-jp onboarding-kanji" style={{ fontSize: '2.8rem', color: 'var(--red)', lineHeight: 1 }}>侍</div>
-      <div style={{ fontSize: '0.7rem', letterSpacing: '0.24em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+      <div style={{ fontSize: '0.8rem', letterSpacing: '0.24em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
         Generating your plan...
       </div>
     </div>
@@ -335,7 +335,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
         {error || 'Failed to generate plan. Check your connection.'}
       </div>
       <button className="commit-btn" onClick={handleRetry} style={{ maxWidth: '180px' }}>Try Again</button>
-      <button onClick={() => setScreen('prefs')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0 }}>
+      <button onClick={() => setScreen('prefs')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.8rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0 }}>
         change preferences
       </button>
     </div>
@@ -349,7 +349,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
     <div>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div style={{ fontSize: '0.72rem', letterSpacing: '0.1em', color: 'var(--text-3)' }}>
+        <div style={{ fontSize: '0.8rem', letterSpacing: '0.1em', color: 'var(--text-3)' }}>
           7 days · {calorieTarget.toLocaleString()} cal/day
         </div>
         <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
@@ -431,7 +431,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
                 marginBottom: '0.25rem',
               }}>
                 {isDayRegen ? (
-                  <div style={{ padding: '0.75rem 0 0.25rem', fontSize: '0.72rem', color: 'var(--text-3)', letterSpacing: '0.12em' }}>
+                  <div style={{ padding: '0.75rem 0 0.25rem', fontSize: '0.8rem', color: 'var(--text-3)', letterSpacing: '0.12em' }}>
                     Regenerating...
                   </div>
                 ) : (
@@ -452,7 +452,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
                           {/* Slot header */}
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
                             <div style={{
-                              fontSize: '0.62rem', letterSpacing: '0.28em', textTransform: 'uppercase',
+                              fontSize: '0.75rem', letterSpacing: '0.28em', textTransform: 'uppercase',
                               color: 'var(--text)',
                               animation: isSlotRegen ? 'slotPulse 1.2s ease-in-out infinite' : 'none',
                             }}>
@@ -489,7 +489,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
                             >
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: '0.9rem', color: 'var(--text)', lineHeight: 1.4 }}>{item.name}</div>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', marginTop: '0.18rem', lineHeight: 1.3 }}>{item.portion}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.18rem', lineHeight: 1.3 }}>{item.portion}</div>
                               </div>
                               <span style={{ fontSize: '0.85rem', color: 'var(--text-2)', flexShrink: 0, paddingTop: '0.1rem' }}>
                                 {item.calories}
@@ -505,7 +505,7 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       paddingTop: '0.85rem', marginTop: '0.85rem', borderTop: '1px solid var(--border-mid)',
                     }}>
-                      <span style={{ fontSize: '0.62rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+                      <span style={{ fontSize: '0.75rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
                         Daily Total
                       </span>
                       <span style={{ fontSize: '0.85rem', color: 'var(--text)', fontWeight: 400 }}>

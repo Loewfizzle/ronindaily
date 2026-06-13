@@ -86,7 +86,7 @@ function GoalDetail({ badge }: { badge: EarnedBadge }) {
       )}
 
       <div style={{
-        fontSize: '0.58rem', letterSpacing: '0.3em',
+        fontSize: '0.75rem', letterSpacing: '0.3em',
         color: 'var(--text-3)', textTransform: 'uppercase',
       }}>
         {achievedDate}
@@ -138,7 +138,7 @@ function DefaultDetail({ badge }: { badge: EarnedBadge }) {
       </div>
 
       <div style={{
-        fontSize: '0.58rem', letterSpacing: '0.3em',
+        fontSize: '0.75rem', letterSpacing: '0.3em',
         color: 'var(--text-3)', textTransform: 'uppercase',
       }}>
         Earned {formatDate(badge.earned_at)}

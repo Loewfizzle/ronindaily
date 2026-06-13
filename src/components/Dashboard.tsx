@@ -90,7 +90,7 @@ function FooterContent({
         })}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <span style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: '0.75rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
           Week {weekNumber}
         </span>
         <button
@@ -256,7 +256,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   if (!plan) {
     return (
       <div style={{ minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-        <div style={{ fontSize: '0.7rem', color: 'var(--text-2)', letterSpacing: '0.1em' }}>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', letterSpacing: '0.1em' }}>
           No mission data found.{' '}
           <button onClick={onReset} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit', padding: 0 }}>
             Start over.
@@ -347,18 +347,18 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
         {/* Connection warning */}
         {connectionWarning && (
-          <div style={{ padding: '0.6rem 1.5rem 0', fontSize: '0.7rem', color: 'var(--red-bright)', letterSpacing: '0.04em' }}>
+          <div style={{ padding: '0.6rem 1.5rem 0', fontSize: '0.8rem', color: 'var(--red-bright)', letterSpacing: '0.04em' }}>
             {connectionWarning}
           </div>
         )}
 
         {/* Date + day heading */}
         <div style={{ padding: '1.4rem 1.5rem 0.75rem' }}>
-          <div style={{ fontSize: '0.78rem', letterSpacing: '0.12em', color: 'var(--text-2)', marginBottom: '0.2rem' }}>
+          <div style={{ fontSize: '0.85rem', letterSpacing: '0.12em', color: 'var(--text-2)', marginBottom: '0.2rem' }}>
             {formatDate(date)} — DAY {dayNumber}
           </div>
           {/* "Mission Briefing" shows here on mobile; on desktop it moves to the right column */}
-          <div className="dash-mobile-subtitle" style={{ fontSize: '0.72rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+          <div className="dash-mobile-subtitle" style={{ fontSize: '0.75rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
             Mission Briefing
           </div>
         </div>
@@ -380,7 +380,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         {/* Unsustainable warning */}
         {unsustainable && realisticEndDate && (
           <div style={{ margin: '0 1.5rem 1rem', padding: '0.9rem 1rem', borderLeft: '2px solid var(--red-bright)', background: 'var(--elevated)' }}>
-            <div style={{ fontSize: '0.72rem', letterSpacing: '0.18em', color: 'var(--red-bright)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+            <div style={{ fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--red-bright)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
               Timeline Not Realistic
             </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text)', lineHeight: 1.65, margin: 0 }}>
@@ -421,7 +421,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
         {/* "Mission Briefing" heading — desktop only */}
         <div className="dash-desktop-heading" style={{ padding: '1.4rem 1.5rem 0.75rem' }}>
-          <div style={{ fontSize: '0.72rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.75rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
             Mission Briefing
           </div>
         </div>
@@ -434,7 +434,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
               {calorieTarget.toLocaleString()}
               <span style={{ fontSize: '0.85rem', color: 'var(--text-2)', fontWeight: 400, marginLeft: '0.35rem' }}>cal</span>
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>
               Deficit: {(maintenance - calorieTarget).toLocaleString()} cal below maintenance.
             </div>
           </div>
@@ -452,7 +452,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
                       aria-label={`Dismiss ${ACTIVITY_LABEL[item.id] ?? item.id}`}
                       style={{
                         background: 'none', border: 'none', color: 'var(--text-3)',
-                        cursor: 'pointer', fontSize: '0.65rem',
+                        cursor: 'pointer', fontSize: '0.75rem',
                         minWidth: '44px', minHeight: '44px', flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         padding: '0 0.25rem',
@@ -473,7 +473,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
                     onClick={(e) => { e.stopPropagation(); handleRestore(item.id) }}
                     style={{
                       background: 'none', border: 'none', color: 'var(--text-3)',
-                      fontSize: '0.7rem', letterSpacing: '0.04em',
+                      fontSize: '0.8rem', letterSpacing: '0.04em',
                       cursor: 'pointer', padding: '0.4rem 0', textAlign: 'left',
                       minHeight: '44px', fontFamily: 'Inter, sans-serif', display: 'block',
                     }}
@@ -485,7 +485,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
                   onClick={(e) => { e.stopPropagation(); handleResetDismissed() }}
                   style={{
                     background: 'none', border: 'none', color: 'var(--text-3)',
-                    fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+                    fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase',
                     cursor: 'pointer', padding: '0.1rem 0', textAlign: 'left',
                     minHeight: '44px', fontFamily: 'Inter, sans-serif', display: 'block',
                   }}
@@ -494,7 +494,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
                 </button>
               </div>
             )}
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>{movementCal} cal burn required.</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>{movementCal} cal burn required.</div>
           </div>
 
           <div className="mission-block" onClick={() => setSheet('progress')}>
@@ -525,7 +525,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           <div style={{ textAlign: 'center', paddingTop: '0.85rem', paddingBottom: '0.5rem' }}>
             <button
               onClick={() => setSkipOpen(true)}
-              style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.65rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', opacity: 0.5 }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', opacity: 0.5 }}
             >
               I skipped today.
             </button>
@@ -571,7 +571,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             <div style={{ textAlign: 'center' }}>
               <button
                 onClick={() => setSkipOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.8rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
               >
                 I did not skip.
               </button>
@@ -589,7 +589,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           padding: '2rem',
         }}>
           <div style={{
-            fontSize: '0.78rem', color: '#ffffff',
+            fontSize: '0.85rem', color: '#ffffff',
             letterSpacing: '0.3em', textTransform: 'uppercase',
             textAlign: 'center', lineHeight: 2.6,
           }}>
@@ -696,12 +696,12 @@ function MealPlanBlock({ calorieTarget, onOpen }: { calorieTarget: number; onOpe
           <div style={{ fontSize: '2.2rem', fontWeight: 300, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--text)', marginBottom: '0.3rem' }}>
             7<span style={{ fontSize: '0.85rem', color: 'var(--text-2)', fontWeight: 400, marginLeft: '0.35rem' }}>days</span>
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>Weekly plan ready.</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>Weekly plan ready.</div>
         </>
       ) : (
         <>
           <div style={{ fontSize: '1.05rem', color: 'var(--text)', fontWeight: 400, marginBottom: '0.3rem' }}>Generate your week.</div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>AI meal plan for {calorieTarget.toLocaleString()} cal/day.</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>AI meal plan for {calorieTarget.toLocaleString()} cal/day.</div>
         </>
       )}
     </div>
@@ -726,7 +726,7 @@ interface StatProps {
 function Stat({ label, value, unit }: StatProps) {
   return (
     <div>
-      <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.15rem' }}>{label}</div>
+      <div style={{ fontSize: '0.75rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.15rem' }}>{label}</div>
       <div style={{ fontSize: '1.55rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>
         {value}
         {unit && <span style={{ fontSize: '0.75rem', color: 'var(--text-2)', marginLeft: '0.2rem' }}>{unit}</span>}
@@ -757,7 +757,7 @@ function FoodDetail({ data }: FoodDetailProps) {
             <span style={{ fontSize: '0.78rem', letterSpacing: '0.18em', color: 'var(--text-2)', textTransform: 'uppercase' }}>{meal.name}</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem' }}>
               <span style={{ fontSize: '1.2rem', fontWeight: 300, color: 'var(--text)' }}>{meal.cal}</span>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>cal</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>cal</span>
             </div>
           </div>
         ))}
@@ -812,7 +812,7 @@ function ProgressDetail({ plan }: { plan: PlanResult }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: 'var(--border)', marginBottom: '1.5rem' }}>
         {stats.map((s, i) => (
           <div key={i} style={{ background: 'var(--surface)', padding: '0.9rem 1rem' }}>
-            <div style={{ fontSize: '0.72rem', letterSpacing: '0.14em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>{s.label}</div>
+            <div style={{ fontSize: '0.75rem', letterSpacing: '0.14em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>{s.label}</div>
             <div style={{ fontSize: '1rem', fontWeight: 400, color: 'var(--text)' }}>{s.value}</div>
           </div>
         ))}
