@@ -1,4 +1,4 @@
-import BottomSheet from './BottomSheet'
+import FullSheet from './FullSheet'
 import GroceryListView from './GroceryListView'
 
 interface GroceryListSheetProps {
@@ -8,8 +8,8 @@ interface GroceryListSheetProps {
 
 export default function GroceryListSheet({ open, onClose }: GroceryListSheetProps) {
   return (
-    <BottomSheet open={open} onClose={onClose} title="Grocery List">
+    <FullSheet open={open} onClose={onClose} title="Grocery List">
       <GroceryListView />
-    </BottomSheet>
+    </FullSheet>
   )
 }

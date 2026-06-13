@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react'
 import type { ReactNode } from 'react'
 import type { UnitSystem, MealItem, DayPlan, MealPlanData, MealPrefs, MealSlot } from '../types'
 import { MEAL_SLOTS } from '../types'
@@ -65,7 +65,7 @@ function PrefsIcon() {
   )
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
+// ── Props & handle ────────────────────────────────────────────────────────────
 
 interface MealPlanViewProps {
   calorieTarget: number
@@ -73,9 +73,17 @@ interface MealPlanViewProps {
   readyFooter?: ReactNode
 }
 
+export interface MealPlanViewHandle {
+  goToPrefs: () => void
+  refresh: () => void
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealPlanViewProps) {
+const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function MealPlanView(
+  { calorieTarget, unit, readyFooter },
+  ref,
+) {
   type Screen = 'prefs' | 'loading' | 'ready' | 'error'
 
   const [screen, setScreen]         = useState<Screen>('prefs')
@@ -233,6 +241,11 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
     else setScreen('prefs')
   }
 
+  useImperativeHandle(ref, () => ({
+    goToPrefs: () => setScreen('prefs'),
+    refresh: () => { const p = loadSavedPrefs(); if (p) doGenerate(p); else setScreen('prefs') },
+  }), [doGenerate])
+
   const toggleRestriction = (id: string) =>
     setRestrictions(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   const toggleEquipment = (id: string) =>
@@ -350,27 +363,9 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div style={{ fontSize: '0.8rem', letterSpacing: '0.1em', color: 'var(--text-3)' }}>
-          7 days · {calorieTarget.toLocaleString()} cal/day
-        </div>
-        <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
-          <button
-            onClick={() => setScreen('prefs')}
-            aria-label="Change preferences"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: '0.25rem', display: 'flex', alignItems: 'center', lineHeight: 1 }}
-          >
-            <PrefsIcon />
-          </button>
-          <button
-            onClick={() => { const p = loadSavedPrefs(); if (p) doGenerate(p); else setScreen('prefs') }}
-            aria-label="Regenerate meal plan"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: '0.25rem', display: 'flex', alignItems: 'center', lineHeight: 1 }}
-          >
-            <RefreshIcon />
-          </button>
-        </div>
+      {/* Plan info line */}
+      <div style={{ fontSize: '0.8rem', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: '1.5rem' }}>
+        7 days · {calorieTarget.toLocaleString()} cal/day
       </div>
 
       {/* Day accordion */}
@@ -532,4 +527,6 @@ export default function MealPlanView({ calorieTarget, unit, readyFooter }: MealP
       {readyFooter}
     </div>
   )
-}
+})
+
+export default MealPlanView
