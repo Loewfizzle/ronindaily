@@ -29,11 +29,11 @@ function loadPlan(): PlanResult | null {
 
 function wtDisplay(lbs: number, unit: UnitSystem): string {
   if (unit === 'metric') return `${(lbs / 2.20462).toFixed(1)} kg`
-  return `${lbs} lbs`
+  return `${Math.round(lbs)} lbs`
 }
 
 function wtVal(lbs: number, unit: UnitSystem): string {
-  return unit === 'metric' ? (lbs / 2.20462).toFixed(1) : String(lbs)
+  return unit === 'metric' ? (lbs / 2.20462).toFixed(1) : String(Math.round(lbs))
 }
 
 function paceDisplay(pace: number, unit: UnitSystem): string {
@@ -83,7 +83,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
         if (!logs) return
 
-        const dateSet = new Set<string>((logs as Array<{ logged_date: string }>).map(r => r.logged_date))
+        const dateSet = new Set<string>(logs.map(r => r.logged_date))
 
         // Count consecutive days back from today (using local dates)
         let count = 0
@@ -133,7 +133,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     meals, movement, movementCal,
   } = plan
 
-  const progressPct = Math.max(1, ((startWeight - currentWeight) / (startWeight - goalWeight)) * 100)
+  const progressPct = Math.min(100, Math.max(1, ((startWeight - currentWeight) / (startWeight - goalWeight)) * 100))
   const lastCheckin = parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10)
   const showCheckin = dayNumber % 7 === 0 && lastCheckin !== weekNumber
 

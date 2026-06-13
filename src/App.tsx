@@ -3,7 +3,10 @@ import type { User } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import Onboarding from './components/Onboarding'
 import Dashboard from './components/Dashboard'
+import type { Database } from './types/database.types'
 import type { UserProfile, Screen, ProfileRow } from './types'
+
+type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 
 function LoadingScreen() {
   return (
@@ -136,19 +139,7 @@ function profileToLocal(data: ProfileRow): UserProfile {
   return profile
 }
 
-interface ProfileDbRow {
-  id: string
-  sex: string
-  unit: string
-  start_weight: number
-  goal_weight: number
-  height_cm: number
-  age: number
-  target_weeks: number
-  start_date: string
-}
-
-function profileToDb(profile: UserProfile, userId: string, startDate: Date): ProfileDbRow {
+function profileToDb(profile: UserProfile, userId: string, startDate: Date): ProfileInsert {
   let height_cm: number
   if (profile.unit === 'imperial') {
     const totalIn = parseFloat(profile.heightFt) * 12 + parseFloat(profile.heightIn || '0')
@@ -228,10 +219,10 @@ export default function App() {
         return
       }
 
-      const profile = profileToLocal(data as ProfileRow)
+      const profile = profileToLocal(data)
       localStorage.setItem('ronin_profile', JSON.stringify(profile))
       localStorage.setItem('ronin_committed', 'true')
-      const [sy, sm, sd] = (data as ProfileRow).start_date.split('-').map(Number)
+      const [sy, sm, sd] = data.start_date.split('-').map(Number)
       localStorage.setItem('ronin_start', new Date(sy, sm - 1, sd).toISOString())
 
       const { data: checkins } = await supabase
@@ -242,7 +233,7 @@ export default function App() {
         .limit(1)
 
       if (checkins && checkins.length > 0) {
-        const last = checkins[0] as { week_number: number; weight: number }
+        const last = checkins[0]
         localStorage.setItem('ronin_last_checkin', String(last.week_number))
         const withCheckin: UserProfile = { ...profile, currentWeightLbs: String(last.weight) }
         localStorage.setItem('ronin_profile', JSON.stringify(withCheckin))

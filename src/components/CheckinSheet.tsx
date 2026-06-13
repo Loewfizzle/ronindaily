@@ -29,7 +29,7 @@ export default function CheckinSheet({ open, onClose, plan }: CheckinSheetProps)
   // Last logged weight in user's unit
   const lastLogged = unit === 'metric'
     ? parseFloat((plan.currentWeight / 2.20462).toFixed(1))
-    : plan.currentWeight
+    : Math.round(plan.currentWeight)
 
   const parsedW = parseFloat(weight)
 

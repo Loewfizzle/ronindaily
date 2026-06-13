@@ -178,10 +178,10 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
     unsustainable,
     realisticEndDate,
 
-    startWeight:   Math.round(startWeightLbs),
-    currentWeight: Math.round(currentWeightLbs),
-    goalWeight:    Math.round(goalWeightLbs),
-    poundsToLose:  Math.round(poundsToLose),
+    startWeight:   startWeightLbs,
+    currentWeight: currentWeightLbs,
+    goalWeight:    goalWeightLbs,
+    poundsToLose,
 
     date: today,
     startDate: new Date(startDate),

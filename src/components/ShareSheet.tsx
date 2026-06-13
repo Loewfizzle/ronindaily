@@ -25,9 +25,12 @@ export default function ShareSheet({ open, onClose, streak, plan }: ShareSheetPr
 
   if (!plan) return null
 
-  const { dayNumber, totalDays, startWeight, currentWeight } = plan
-  const lostLbs = Math.max(0, Math.round(startWeight - currentWeight))
-  const shareText = `Day ${dayNumber}. Down ${lostLbs} lbs. Streak: ${streak} days. ronindaily.app`
+  const { unit, dayNumber, totalDays, startWeight, currentWeight } = plan
+  const lostLbs = Math.max(0, startWeight - currentWeight)
+  const lostDisplay = unit === 'metric'
+    ? `${(lostLbs / 2.20462).toFixed(1)} kg`
+    : `${Math.round(lostLbs)} lbs`
+  const shareText = `Day ${dayNumber}. Down ${lostDisplay}. Streak: ${streak} days. ronindaily.app`
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -65,7 +68,7 @@ export default function ShareSheet({ open, onClose, streak, plan }: ShareSheetPr
             <span style={{ fontSize: '0.75rem', color: 'var(--text-2)', letterSpacing: '0.1em' }}>day streak</span>
           </div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
-            Down {lostLbs} lbs. Day {dayNumber} of {totalDays}.
+            Down {lostDisplay}. Day {dayNumber} of {totalDays}.
           </div>
           <div style={{ fontSize: '0.58rem', letterSpacing: '0.18em', color: 'var(--text-3)', textTransform: 'uppercase', marginTop: '0.35rem' }}>
             ronindaily.app

@@ -1,4 +1,5 @@
 import type { User } from '@supabase/supabase-js'
+import type { Tables } from './types/database.types'
 
 export type UnitSystem = 'imperial' | 'metric'
 export type Sex = 'M' | 'F'
@@ -75,33 +76,8 @@ export interface AuthState {
   error: string | null
 }
 
-// ── Supabase table row shapes (used for casting query results) ────────────────
+// ── Supabase table row shapes (derived from generated database types) ─────────
 
-export interface ProfileRow {
-  id: string
-  created_at: string
-  unit: UnitSystem
-  sex: Sex
-  age: number
-  height_cm: number
-  start_weight: number
-  goal_weight: number
-  target_weeks: number
-  start_date: string
-}
-
-export interface CheckinRow {
-  id: string
-  created_at: string
-  user_id: string
-  week_number: number
-  weight: number
-  checked_in_at: string
-}
-
-export interface DailyLogRow {
-  id: string
-  created_at: string
-  user_id: string
-  logged_date: string
-}
+export type ProfileRow  = Tables<'profiles'>
+export type CheckinRow  = Tables<'checkins'>
+export type DailyLogRow = Tables<'daily_logs'>
