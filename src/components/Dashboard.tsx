@@ -3,6 +3,7 @@ import BottomSheet from './BottomSheet'
 import SettingsSheet from './SettingsSheet'
 import CheckinSheet from './CheckinSheet'
 import ShareSheet from './ShareSheet'
+import MealPlanSheet from './MealPlanSheet'
 import { calculatePlan } from '../utils/calculate'
 import { supabase } from '../lib/supabase'
 import type { PlanResult, Meal, UnitSystem } from '../types'
@@ -98,6 +99,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [checkinOpen, setCheckinOpen]   = useState(false)
   const [shareOpen, setShareOpen]       = useState(false)
+  const [mealPlanOpen, setMealPlanOpen] = useState(false)
   const [streak, setStreak]             = useState<number>(() => parseInt(localStorage.getItem('ronin_streak') || '1', 10))
   const [loggedDays, setLoggedDays]     = useState<Set<string>>(new Set())
   const plan = loadPlan()
@@ -314,6 +316,8 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
               <Stat label="Streak"     value={String(streak)} />
             </div>
           </div>
+
+          <MealPlanBlock calorieTarget={calorieTarget} onOpen={() => setMealPlanOpen(true)} />
         </div>
 
         {/* Footer — mobile only (hidden on desktop) */}
@@ -338,11 +342,39 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} streak={streak} plan={plan} />
       <CheckinSheet open={checkinOpen} onClose={() => setCheckinOpen(false)} plan={plan} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} onAdjustGoal={onAdjustGoal} onReset={onReset} onSignOut={onSignOut} />
+      <MealPlanSheet open={mealPlanOpen} onClose={() => setMealPlanOpen(false)} calorieTarget={calorieTarget} unit={unit} />
     </div>
   )
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
+
+function MealPlanBlock({ calorieTarget, onOpen }: { calorieTarget: number; onOpen: () => void }) {
+  const cached = (() => {
+    try { return JSON.parse(localStorage.getItem('ronin_meal_plan') || 'null') as { calorieTarget: number } | null }
+    catch { return null }
+  })()
+  const hasCurrentPlan = cached?.calorieTarget === calorieTarget
+
+  return (
+    <div className="mission-block" onClick={onOpen}>
+      <BlockHeader label="Meal Plan" />
+      {hasCurrentPlan ? (
+        <>
+          <div style={{ fontSize: '2.2rem', fontWeight: 300, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--text)', marginBottom: '0.3rem' }}>
+            7<span style={{ fontSize: '0.85rem', color: 'var(--text-2)', fontWeight: 400, marginLeft: '0.35rem' }}>days</span>
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>Weekly plan ready.</div>
+        </>
+      ) : (
+        <>
+          <div style={{ fontSize: '1.05rem', color: 'var(--text)', fontWeight: 400, marginBottom: '0.3rem' }}>Generate your week.</div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-2)' }}>AI meal plan for {calorieTarget.toLocaleString()} cal/day.</div>
+        </>
+      )}
+    </div>
+  )
+}
 
 function BlockHeader({ label }: { label: string }) {
   return (
