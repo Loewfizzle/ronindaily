@@ -3,7 +3,7 @@ import type { Tables } from './types/database.types'
 
 export type UnitSystem = 'imperial' | 'metric'
 export type Sex = 'M' | 'F'
-export type Screen = 'loading' | 'login' | 'onboarding' | 'dashboard'
+export type Screen = 'loading' | 'login' | 'onboarding' | 'preparation' | 'dashboard'
 
 /**
  * User profile — mirrors the profiles Supabase table plus all onboarding form fields.

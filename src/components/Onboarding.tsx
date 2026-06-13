@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import type { UserProfile, UnitSystem, Sex } from '../types'
 
@@ -90,6 +90,16 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
   })
   const [errors, setErrors] = useState<FormErrors>({})
 
+  const weightRef    = useRef<HTMLInputElement>(null)
+  const heightFtRef  = useRef<HTMLInputElement>(null)
+  const heightInRef  = useRef<HTMLInputElement>(null)
+  const heightCmRef  = useRef<HTMLInputElement>(null)
+  const ageRef       = useRef<HTMLInputElement>(null)
+  const goalRef      = useRef<HTMLInputElement>(null)
+  const timelineRef  = useRef<HTMLInputElement>(null)
+
+  const advance = (ref: React.RefObject<HTMLInputElement | null>) => ref.current?.focus()
+
   const set = (field: keyof OnboardingForm, value: string) => {
     setForm((p) => ({ ...p, [field]: value }))
     if (errors[field as keyof FormErrors]) setErrors((p) => ({ ...p, [field]: undefined }))
@@ -161,12 +171,15 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
               <div className="field-label">Current Weight</div>
               <div style={S.fieldRow}>
                 <input
+                  ref={weightRef}
                   className="input-bare"
                   type="number"
                   inputMode="decimal"
                   placeholder="0"
+                  enterKeyHint="next"
                   value={form.weightLbs}
                   onChange={(e) => set('weightLbs', e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(unit === 'imperial' ? heightFtRef : heightCmRef) } }}
                   style={{ width: '5rem' }}
                 />
                 <span style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
@@ -177,8 +190,18 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
             <div>
               <div className="field-label">Goal Weight</div>
               <div style={S.fieldRow}>
-                <input className="input-bare" type="number" inputMode="decimal" placeholder="0"
-                  value={form.goalWeightLbs} onChange={(e) => set('goalWeightLbs', e.target.value)} style={{ width: '5rem' }} />
+                <input
+                  ref={goalRef}
+                  className="input-bare"
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="0"
+                  enterKeyHint="next"
+                  value={form.goalWeightLbs}
+                  onChange={(e) => set('goalWeightLbs', e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(timelineRef) } }}
+                  style={{ width: '5rem' }}
+                />
                 <span style={S.unitLabel}>{unit === 'imperial' ? 'lbs' : 'kg'}</span>
               </div>
               {errors.goalWeightLbs && <div className="field-error">{errors.goalWeightLbs}</div>}
@@ -191,20 +214,50 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
             {unit === 'imperial' ? (
               <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-end' }}>
                 <div style={S.fieldRow}>
-                  <input className="input-bare" type="number" inputMode="numeric" placeholder="5"
-                    value={form.heightFt} onChange={(e) => set('heightFt', e.target.value)} style={{ width: '3rem' }} />
+                  <input
+                    ref={heightFtRef}
+                    className="input-bare"
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="5"
+                    enterKeyHint="next"
+                    value={form.heightFt}
+                    onChange={(e) => set('heightFt', e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(heightInRef) } }}
+                    style={{ width: '3rem' }}
+                  />
                   <span style={S.unitLabel}>ft</span>
                 </div>
                 <div style={S.fieldRow}>
-                  <input className="input-bare" type="number" inputMode="numeric" placeholder="10"
-                    value={form.heightIn} onChange={(e) => set('heightIn', e.target.value)} style={{ width: '3rem' }} />
+                  <input
+                    ref={heightInRef}
+                    className="input-bare"
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="10"
+                    enterKeyHint="next"
+                    value={form.heightIn}
+                    onChange={(e) => set('heightIn', e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(ageRef) } }}
+                    style={{ width: '3rem' }}
+                  />
                   <span style={S.unitLabel}>in</span>
                 </div>
               </div>
             ) : (
               <div style={S.fieldRow}>
-                <input className="input-bare" type="number" inputMode="decimal" placeholder="178"
-                  value={form.heightCm} onChange={(e) => set('heightCm', e.target.value)} style={{ width: '5rem' }} />
+                <input
+                  ref={heightCmRef}
+                  className="input-bare"
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="178"
+                  enterKeyHint="next"
+                  value={form.heightCm}
+                  onChange={(e) => set('heightCm', e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(ageRef) } }}
+                  style={{ width: '5rem' }}
+                />
                 <span style={S.unitLabel}>cm</span>
               </div>
             )}
@@ -215,8 +268,18 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
           <div>
             <div className="field-label">Age</div>
             <div style={S.fieldRow}>
-              <input className="input-bare" type="number" inputMode="numeric" placeholder="35"
-                value={form.age} onChange={(e) => set('age', e.target.value)} style={{ width: '4rem' }} />
+              <input
+                ref={ageRef}
+                className="input-bare"
+                type="number"
+                inputMode="numeric"
+                placeholder="35"
+                enterKeyHint="next"
+                value={form.age}
+                onChange={(e) => set('age', e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); advance(goalRef) } }}
+                style={{ width: '4rem' }}
+              />
               <span style={S.unitLabel}>years</span>
             </div>
             {errors.age && <div className="field-error">{errors.age}</div>}
@@ -237,8 +300,18 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
           <div>
             <div className="field-label">Timeline</div>
             <div style={S.fieldRow}>
-              <input className="input-bare" type="number" inputMode="numeric" placeholder="12"
-                value={form.targetWeeks} onChange={(e) => set('targetWeeks', e.target.value)} style={{ width: '4rem' }} />
+              <input
+                ref={timelineRef}
+                className="input-bare"
+                type="number"
+                inputMode="numeric"
+                placeholder="12"
+                enterKeyHint="done"
+                value={form.targetWeeks}
+                onChange={(e) => set('targetWeeks', e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+                style={{ width: '4rem' }}
+              />
               <span style={S.unitLabel}>weeks</span>
             </div>
             {errors.targetWeeks && <div className="field-error">{errors.targetWeeks}</div>}

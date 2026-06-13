@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import Onboarding from './components/Onboarding'
+import PreparationScreen from './components/PreparationScreen'
 import Dashboard from './components/Dashboard'
 import type { Database } from './types/database.types'
 import type { UserProfile, Screen, ProfileRow } from './types'
@@ -166,6 +167,12 @@ function clearLocal() {
   localStorage.removeItem('ronin_start')
   localStorage.removeItem('ronin_last_checkin')
   localStorage.removeItem('ronin_streak')
+  localStorage.removeItem('ronin_prepared')
+}
+
+function resolveScreen(): 'dashboard' | 'preparation' | 'onboarding' {
+  if (!localStorage.getItem('ronin_committed')) return 'onboarding'
+  return localStorage.getItem('ronin_prepared') === 'false' ? 'preparation' : 'dashboard'
 }
 
 export default function App() {
@@ -193,9 +200,9 @@ export default function App() {
 
     const timer = setTimeout(() => {
       if (!settled) {
-        const hasCache = !!localStorage.getItem('ronin_committed')
-        if (!hasCache) setConnectionError(true)
-        setScreen(hasCache ? 'dashboard' : 'login')
+        const screen = resolveScreen()
+        if (screen === 'onboarding') setConnectionError(true)
+        setScreen(screen === 'onboarding' ? 'login' : screen)
       }
     }, 4000)
 
@@ -215,13 +222,14 @@ export default function App() {
         .single()
 
       if (error || !data) {
-        setScreen(localStorage.getItem('ronin_committed') ? 'dashboard' : 'onboarding')
+        setScreen(resolveScreen())
         return
       }
 
       const profile = profileToLocal(data)
       localStorage.setItem('ronin_profile', JSON.stringify(profile))
       localStorage.setItem('ronin_committed', 'true')
+      localStorage.setItem('ronin_prepared', 'true')
       const [sy, sm, sd] = data.start_date.split('-').map(Number)
       localStorage.setItem('ronin_start', new Date(sy, sm - 1, sd).toISOString())
 
@@ -243,24 +251,48 @@ export default function App() {
       setScreen('dashboard')
     } catch {
       setProfileError(true)
-      setScreen(localStorage.getItem('ronin_committed') ? 'dashboard' : 'onboarding')
+      setScreen(resolveScreen())
     }
   }
 
   const handleCommit = async (data: UserProfile) => {
-    const startDate = new Date()
+    // If ronin_start already exists this is a goal adjustment mid-mission — keep start date
+    const isGoalAdjustment = !!localStorage.getItem('ronin_start')
+
     localStorage.setItem('ronin_profile', JSON.stringify(data))
     localStorage.setItem('ronin_committed', 'true')
-    localStorage.setItem('ronin_start', startDate.toISOString())
     localStorage.removeItem('ronin_last_checkin')
     setInitialProfile(null)
 
-    if (user) {
-      try {
-        await supabase.from('profiles').upsert(profileToDb(data, user.id, startDate))
-      } catch { /* offline — localStorage cache is set */ }
+    if (isGoalAdjustment) {
+      const startDate = new Date(localStorage.getItem('ronin_start')!)
+      if (user) {
+        try {
+          await supabase.from('profiles').upsert(profileToDb(data, user.id, startDate))
+        } catch { /* offline */ }
+      }
+      setScreen('dashboard')
+    } else {
+      // New mission — enter preparation period; start date is set only when BEGIN is hit
+      localStorage.setItem('ronin_prepared', 'false')
+      setScreen('preparation')
     }
+  }
 
+  const handleBegin = async () => {
+    const startDate = new Date()
+    localStorage.setItem('ronin_start', startDate.toISOString())
+    localStorage.setItem('ronin_prepared', 'true')
+
+    const profileData = (() => {
+      try { return JSON.parse(localStorage.getItem('ronin_profile') || 'null') as UserProfile | null }
+      catch { return null }
+    })()
+    if (user && profileData) {
+      try {
+        await supabase.from('profiles').upsert(profileToDb(profileData, user.id, startDate))
+      } catch { /* offline */ }
+    }
     setScreen('dashboard')
   }
 
@@ -268,7 +300,7 @@ export default function App() {
     const stored = localStorage.getItem('ronin_profile')
     setInitialProfile(stored ? (JSON.parse(stored) as UserProfile) : null)
     localStorage.removeItem('ronin_committed')
-    localStorage.removeItem('ronin_start')
+    // ronin_start intentionally preserved — handleCommit uses its presence to detect goal adjustment
     setScreen('onboarding')
   }
 
@@ -302,6 +334,9 @@ export default function App() {
     <div style={{ background: 'var(--bg)', minHeight: '100svh' }}>
       {screen === 'onboarding' && (
         <Onboarding onCommit={handleCommit} initialProfile={initialProfile} />
+      )}
+      {screen === 'preparation' && (
+        <PreparationScreen onBegin={handleBegin} />
       )}
       {screen === 'dashboard' && (
         <Dashboard
