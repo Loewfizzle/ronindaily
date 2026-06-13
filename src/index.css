@@ -204,7 +204,7 @@ input[type='number'] {
 .field-label {
   font-size: 0.72rem;
   letter-spacing: 0.22em;
-  color: var(--text-2);
+  color: var(--text);
   text-transform: uppercase;
   margin-bottom: 0.45rem;
 }

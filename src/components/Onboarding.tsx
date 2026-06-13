@@ -49,7 +49,7 @@ const ACTIVITIES: { id: string; icon: ReactNode; name: string }[] = [
     ),
   },
   {
-    id: 'resistance', name: 'Resistance',
+    id: 'resistance', name: 'Gym / Weights',
     icon: (
       <svg {...ip}>
         <rect x="1" y="10" width="3.5" height="4" rx="0.8" />
@@ -61,7 +61,7 @@ const ACTIVITIES: { id: string; icon: ReactNode; name: string }[] = [
     ),
   },
   {
-    id: 'bodyweight', name: 'Bodyweight',
+    id: 'bodyweight', name: 'No Equipment',
     icon: (
       <svg {...ip}>
         <circle cx="19.5" cy="6.5" r="1.8" />
@@ -83,7 +83,7 @@ const ACTIVITIES: { id: string; icon: ReactNode; name: string }[] = [
     ),
   },
   {
-    id: 'boxing', name: 'Boxing',
+    id: 'boxing', name: 'Boxing / HIIT',
     icon: (
       <svg {...ip}>
         <path d="M7 9.5C7 6 9.5 4 12 4s5 2 5 5.5L16.5 15C16.5 17.5 14.5 19 12 19S7.5 17.5 7 15Z" />
@@ -199,14 +199,14 @@ export default function Onboarding({ onCommit, initialProfile = null }: Onboardi
     heightIn:      initialProfile?.heightIn      ?? saved?.heightIn ?? '',
     heightCm:      initialProfile?.heightCm      ?? saved?.heightCm ?? '',
     age:           initialProfile?.age           ?? saved?.age      ?? '',
-    sex:           initialProfile?.sex           ?? saved?.sex      ?? '',
+    sex:           initialProfile?.sex           ?? saved?.sex      ?? 'M',
     goalWeightLbs: initialProfile?.goalWeightLbs ?? '',
     targetWeeks:   initialProfile?.targetWeeks   ?? '12',
   })
   const [activities, setActivities] = useState<string[]>(() => {
     if (initialProfile?.activities?.length) return initialProfile.activities
     if (saved?.activities?.length) return saved.activities
-    return [...DEFAULT_ACTIVITIES]
+    return ['walk']
   })
   const [errors, setErrors] = useState<FormErrors>({})
 

@@ -57,8 +57,8 @@ function localDateStr(d: Date = new Date()): string {
 
 const ACTIVITY_LABEL: Record<string, string> = {
   walk: 'walking', bike: 'cycling', run: 'running',
-  resistance: 'resistance training', bodyweight: 'bodyweight',
-  swim: 'swimming', boxing: 'boxing', yoga: 'yoga',
+  resistance: 'gym / weights', bodyweight: 'no equipment',
+  swim: 'swimming', boxing: 'boxing / HIIT', yoga: 'yoga',
 }
 
 interface DashboardProps {

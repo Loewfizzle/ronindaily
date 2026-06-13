@@ -130,6 +130,10 @@ function LoginScreen({ connectionError }: LoginScreenProps) {
           >
             Continue with Email
           </button>
+
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', maxWidth: '320px', margin: '1rem 0 0', lineHeight: 1.7 }}>
+            We only use your email to sign you in. No newsletters. No spam. Ever.
+          </p>
         </>
       )}
     </div>

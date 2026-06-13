@@ -20,10 +20,10 @@ const ACTIVITY_CONFIGS: Record<string, ActivityConfig> = {
   walk:       { type: 'distance', rate: 100, verb: 'Walk',  timeLabel: ''                  },
   bike:       { type: 'distance', rate: 50,  verb: 'Bike',  timeLabel: ''                  },
   run:        { type: 'distance', rate: 120, verb: 'Run',   timeLabel: ''                  },
-  resistance: { type: 'time',    rate: 8,   verb: '',       timeLabel: 'resistance training' },
-  bodyweight: { type: 'time',    rate: 6,   verb: '',       timeLabel: 'bodyweight'         },
+  resistance: { type: 'time',    rate: 8,   verb: '',       timeLabel: 'gym / weights'      },
+  bodyweight: { type: 'time',    rate: 6,   verb: '',       timeLabel: 'no equipment'       },
   swim:       { type: 'time',    rate: 10,  verb: '',       timeLabel: 'swimming'           },
-  boxing:     { type: 'time',    rate: 10,  verb: '',       timeLabel: 'boxing'             },
+  boxing:     { type: 'time',    rate: 10,  verb: '',       timeLabel: 'boxing / HIIT'      },
   yoga:       { type: 'time',    rate: 4,   verb: '',       timeLabel: 'yoga'               },
 }
 
