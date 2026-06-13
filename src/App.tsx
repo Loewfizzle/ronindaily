@@ -64,32 +64,49 @@ function LoginScreen({ connectionError }: LoginScreenProps) {
       justifyContent: 'center',
       padding: '2rem',
     }}>
-      <div className="font-jp onboarding-kanji" style={{ fontSize: '2.2rem', color: 'var(--red)', lineHeight: 1, marginBottom: '0.7rem' }}>
+      <div
+        className="font-jp"
+        style={{
+          fontSize: '5rem',
+          color: 'var(--red)',
+          lineHeight: 1,
+          marginBottom: '0.75rem',
+          animation: 'kanjiPulse 4s ease-in-out infinite',
+        }}
+      >
         侍
       </div>
-      <div style={{ fontSize: '0.63rem', letterSpacing: '0.38em', color: 'var(--text)', fontWeight: 500, textTransform: 'uppercase', marginBottom: '3rem' }}>
+      <div style={{ fontSize: '1.1rem', letterSpacing: '0.44em', color: 'var(--text)', fontWeight: 500, textTransform: 'uppercase', marginBottom: '3rem' }}>
         Ronin Daily
       </div>
 
       {connectionError && !sent && (
-        <div style={{ fontSize: '0.7rem', color: 'var(--red-bright)', marginBottom: '1.5rem', textAlign: 'center', letterSpacing: '0.04em' }}>
+        <div style={{ fontSize: '0.72rem', color: 'var(--red-bright)', marginBottom: '1.5rem', textAlign: 'center', letterSpacing: '0.04em', maxWidth: '320px' }}>
           Could not reach the server. Check your connection.
         </div>
       )}
 
       {sent ? (
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', textAlign: 'center', maxWidth: '280px', margin: 0, lineHeight: 1.7 }}>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-2)', textAlign: 'center', maxWidth: '320px', margin: 0, lineHeight: 1.8 }}>
           Check your email. A sign-in link has been sent.
         </p>
       ) : (
         <>
-          <button onClick={handleGoogleSignIn} className="commit-btn" style={{ width: '100%', maxWidth: '280px' }}>
+          <button
+            onClick={handleGoogleSignIn}
+            className="commit-btn"
+            style={{ width: '100%', maxWidth: '320px', padding: '0.85rem 1rem' }}
+          >
             Continue with Google
           </button>
 
-          <div style={{ width: '100%', maxWidth: '280px', borderTop: '1px solid var(--border)', margin: '1.75rem 0' }} />
+          <div style={{ width: '100%', maxWidth: '320px', display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.5rem 0' }}>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+            <span style={{ fontSize: '0.6rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase' }}>or</span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+          </div>
 
-          <div style={{ width: '100%', maxWidth: '280px' }}>
+          <div style={{ width: '100%', maxWidth: '320px' }}>
             <input
               className="input-bare"
               type="email"
@@ -100,7 +117,7 @@ function LoginScreen({ connectionError }: LoginScreenProps) {
               style={{ width: '100%' }}
             />
             {error && (
-              <div style={{ fontSize: '0.7rem', color: 'var(--red-bright)', marginTop: '0.4rem' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--red-bright)', marginTop: '0.45rem', letterSpacing: '0.02em' }}>
                 {error}
               </div>
             )}
@@ -109,7 +126,7 @@ function LoginScreen({ connectionError }: LoginScreenProps) {
           <button
             onClick={handleEmailSubmit}
             className="commit-btn"
-            style={{ width: '100%', maxWidth: '280px', marginTop: '1rem' }}
+            style={{ width: '100%', maxWidth: '320px', marginTop: '1rem', padding: '0.85rem 1rem' }}
           >
             Continue with Email
           </button>

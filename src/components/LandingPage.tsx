@@ -137,7 +137,8 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
               key={label}
               style={{
                 background: 'var(--elevated)',
-                padding: '1.75rem 1.25rem',
+                borderTop: '2px solid var(--red)',
+                padding: '2.25rem 1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -148,10 +149,10 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
               <div
                 className="font-jp"
                 style={{
-                  fontSize: '3.5rem',
+                  fontSize: '4.5rem',
                   color: 'var(--red)',
                   lineHeight: 1,
-                  marginBottom: '0.65rem',
+                  marginBottom: '0.75rem',
                   animation: 'kanjiPulse 4s ease-in-out infinite',
                 }}
               >
@@ -159,18 +160,18 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
               </div>
               <div
                 style={{
-                  fontSize: '0.9rem',
-                  letterSpacing: '0.3em',
+                  fontSize: '1rem',
+                  letterSpacing: '0.36em',
                   color: 'var(--gold)',
                   textTransform: 'uppercase',
-                  marginBottom: '0.85rem',
+                  marginBottom: '0.9rem',
                 }}
               >
                 {label}
               </div>
               <div
                 style={{
-                  fontSize: '0.95rem',
+                  fontSize: '1rem',
                   color: 'var(--text-2)',
                   lineHeight: 1.75,
                 }}
@@ -187,7 +188,7 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
         <div
           style={{
             width: '100%',
-            padding: '2.5rem 1.5rem',
+            padding: '1.25rem 1.5rem',
             borderLeft: '2px solid var(--red)',
             textAlign: 'left',
           }}
