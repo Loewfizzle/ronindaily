@@ -226,6 +226,7 @@ input[type='number'] {
   transition: background 0.15s ease;
 }
 
+.commit-btn:hover,
 .commit-btn:active {
   background: var(--red-bright);
 }
@@ -581,6 +582,26 @@ input[type='number'] {
   20%  { opacity: 1; }
   80%  { opacity: 1; }
   100% { opacity: 0; }
+}
+
+/* ── Landing page ─────────────────────────────────────────────────────────── */
+
+@keyframes landingFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.landing-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .landing-blocks {
+    flex-direction: row;
+  }
 }
 
 /* ── Koi fish watermark ───────────────────────────────────────────────────── */

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import LandingPage from './components/LandingPage'
 import Onboarding from './components/Onboarding'
 import PreparationScreen from './components/PreparationScreen'
 import Dashboard from './components/Dashboard'
@@ -200,11 +201,16 @@ export default function App() {
       settled = true
       setConnectionError(false)
       if (!session) {
-        // Only wipe local data on an explicit sign-out — not on token refresh failures,
-        // network errors, or other transient null-session events.
-        if (event === 'SIGNED_OUT') clearLocal()
+        if (event === 'SIGNED_OUT') {
+          clearLocal()
+          setUser(null)
+          setScreen('login')
+          return
+        }
+        // Transient null session (token refresh failure etc.) — show landing only
+        // for brand-new visitors who have never committed to a mission.
         setUser(null)
-        setScreen('login')
+        setScreen(localStorage.getItem('ronin_committed') ? 'login' : 'landing')
         return
       }
       setUser(session.user)
@@ -213,9 +219,13 @@ export default function App() {
 
     const timer = setTimeout(() => {
       if (!settled) {
-        const screen = resolveScreen()
-        if (screen === 'onboarding') setConnectionError(true)
-        setScreen(screen === 'onboarding' ? 'login' : screen)
+        const resolvedScreen = resolveScreen()
+        if (resolvedScreen === 'onboarding') {
+          setConnectionError(true)
+          setScreen(localStorage.getItem('ronin_committed') ? 'login' : 'landing')
+        } else {
+          setScreen(resolvedScreen)
+        }
       }
     }, 4000)
 
@@ -391,6 +401,7 @@ export default function App() {
   }
 
   if (screen === 'loading') return <LoadingScreen />
+  if (screen === 'landing') return <LandingPage onBegin={() => { localStorage.setItem('ronin_visited', 'true'); setScreen('login') }} />
   if (screen === 'login')   return <LoginScreen connectionError={connectionError} />
 
   return (
