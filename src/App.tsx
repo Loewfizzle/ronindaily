@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import Onboarding from './components/Onboarding'
@@ -182,6 +182,10 @@ export default function App() {
   const [connectionError, setConnectionError] = useState(false)
   const [profileError, setProfileError]   = useState(false)
 
+  // Incremented by handleCommit to cancel any in-flight loadProfile calls.
+  // Prevents a stale loadProfile response from overwriting the 'preparation' screen.
+  const loadGen = useRef(0)
+
   useEffect(() => {
     let settled = false
 
@@ -214,6 +218,8 @@ export default function App() {
   }, [])
 
   async function loadProfile(userId: string) {
+    const gen = ++loadGen.current
+    console.log('[ronin] loadProfile start gen=' + gen)
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -221,11 +227,21 @@ export default function App() {
         .eq('id', userId)
         .single()
 
-      if (error || !data) {
-        setScreen(resolveScreen())
+      if (loadGen.current !== gen) {
+        console.log('[ronin] loadProfile gen=' + gen + ' cancelled (superseded)')
         return
       }
 
+      if (error || !data) {
+        const dest = resolveScreen()
+        console.log('[ronin] loadProfile gen=' + gen + ' no profile → ' + dest +
+          ' (committed=' + localStorage.getItem('ronin_committed') +
+          ' prepared=' + localStorage.getItem('ronin_prepared') + ')')
+        setScreen(dest)
+        return
+      }
+
+      console.log('[ronin] loadProfile gen=' + gen + ' found profile start_date=' + data.start_date)
       const profile = profileToLocal(data)
       localStorage.setItem('ronin_profile', JSON.stringify(profile))
       localStorage.setItem('ronin_committed', 'true')
@@ -240,6 +256,11 @@ export default function App() {
         .order('week_number', { ascending: false })
         .limit(1)
 
+      if (loadGen.current !== gen) {
+        console.log('[ronin] loadProfile gen=' + gen + ' cancelled after checkins fetch')
+        return
+      }
+
       if (checkins && checkins.length > 0) {
         const last = checkins[0]
         localStorage.setItem('ronin_last_checkin', String(last.week_number))
@@ -248,16 +269,25 @@ export default function App() {
       }
 
       setProfileError(false)
+      console.log('[ronin] loadProfile gen=' + gen + ' → dashboard')
       setScreen('dashboard')
-    } catch {
+    } catch (e) {
+      if (loadGen.current !== gen) return
+      console.log('[ronin] loadProfile gen=' + gen + ' exception:', e)
       setProfileError(true)
       setScreen(resolveScreen())
     }
   }
 
   const handleCommit = async (data: UserProfile) => {
+    // Cancel any in-flight loadProfile so it cannot override the screen we set here
+    loadGen.current++
+    console.log('[ronin] handleCommit loadGen bumped to ' + loadGen.current)
+
     // If ronin_start already exists this is a goal adjustment mid-mission — keep start date
     const isGoalAdjustment = !!localStorage.getItem('ronin_start')
+    console.log('[ronin] handleCommit isGoalAdjustment=' + isGoalAdjustment +
+      ' ronin_start=' + localStorage.getItem('ronin_start'))
 
     localStorage.setItem('ronin_profile', JSON.stringify(data))
     localStorage.setItem('ronin_committed', 'true')
@@ -271,10 +301,12 @@ export default function App() {
           await supabase.from('profiles').upsert(profileToDb(data, user.id, startDate))
         } catch { /* offline */ }
       }
+      console.log('[ronin] handleCommit → dashboard (goal adjustment)')
       setScreen('dashboard')
     } else {
       // New mission — enter preparation period; start date is set only when BEGIN is hit
       localStorage.setItem('ronin_prepared', 'false')
+      console.log('[ronin] handleCommit → preparation (new mission)')
       setScreen('preparation')
     }
   }
