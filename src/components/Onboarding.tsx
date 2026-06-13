@@ -76,15 +76,30 @@ interface OnboardingProps {
   initialProfile?: UserProfile | null
 }
 
+interface PersonalStats {
+  age: string; sex: string
+  heightCm: string; heightFt: string; heightIn: string
+  unit: UnitSystem
+}
+
 export default function Onboarding({ onCommit, initialProfile = null }: OnboardingProps) {
-  const [unit, setUnit] = useState<UnitSystem>(initialProfile?.unit ?? 'imperial')
+  // When no initialProfile (fresh start or post-reset), load immutable stats so user skips re-entering them
+  const saved: PersonalStats | null = (() => {
+    if (initialProfile !== null) return null
+    try {
+      const s = localStorage.getItem('ronin_personal_stats')
+      return s ? (JSON.parse(s) as PersonalStats) : null
+    } catch { return null }
+  })()
+
+  const [unit, setUnit] = useState<UnitSystem>(initialProfile?.unit ?? saved?.unit ?? 'imperial')
   const [form, setForm] = useState<OnboardingForm>({
     weightLbs:     initialProfile?.weightLbs     ?? '',
-    heightFt:      initialProfile?.heightFt      ?? '',
-    heightIn:      initialProfile?.heightIn      ?? '',
-    heightCm:      initialProfile?.heightCm      ?? '',
-    age:           initialProfile?.age           ?? '',
-    sex:           initialProfile?.sex           ?? '',
+    heightFt:      initialProfile?.heightFt      ?? saved?.heightFt ?? '',
+    heightIn:      initialProfile?.heightIn      ?? saved?.heightIn ?? '',
+    heightCm:      initialProfile?.heightCm      ?? saved?.heightCm ?? '',
+    age:           initialProfile?.age           ?? saved?.age      ?? '',
+    sex:           initialProfile?.sex           ?? saved?.sex      ?? '',
     goalWeightLbs: initialProfile?.goalWeightLbs ?? '',
     targetWeeks:   initialProfile?.targetWeeks   ?? '12',
   })

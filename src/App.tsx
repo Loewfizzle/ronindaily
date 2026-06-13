@@ -355,6 +355,18 @@ export default function App() {
         await supabase.from('profiles').delete().eq('id', user.id)
       } catch { /* offline */ }
     }
+    // Preserve physical stats across resets so user doesn't re-enter them
+    try {
+      const stored = localStorage.getItem('ronin_profile')
+      if (stored) {
+        const p: UserProfile = JSON.parse(stored)
+        localStorage.setItem('ronin_personal_stats', JSON.stringify({
+          age: p.age, sex: p.sex,
+          heightCm: p.heightCm, heightFt: p.heightFt, heightIn: p.heightIn,
+          unit: p.unit,
+        }))
+      }
+    } catch { /* corrupt */ }
     clearLocal()
     setInitialProfile(null)
     setScreen('onboarding')
@@ -365,6 +377,7 @@ export default function App() {
       await supabase.auth.signOut()
     } catch { /* ignore sign-out errors */ }
     clearLocal()
+    localStorage.removeItem('ronin_personal_stats')
     setUser(null)
     setScreen('login')
   }
