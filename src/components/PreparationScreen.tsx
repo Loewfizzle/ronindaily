@@ -167,15 +167,14 @@ const pageBase = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: PreparationScreenProps) {
-  const [step, setStep]               = useState<1|2|3|4>(1)
-  const [direction, setDirection]     = useState<'forward'|'back'>('forward')
-  const [beginning, setBeginning]     = useState(false)
-  const [dishonorKey, setDishonorKey] = useState(0)
-  const [dishonorVisible, setDishonorVisible] = useState(false)
-  const dishonorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [step, setStep]           = useState<1|2|3|4>(1)
+  const [direction, setDirection] = useState<'forward'|'back'>('forward')
+  const [beginning, setBeginning] = useState(false)
+  const [dishonorPhase, setDishonorPhase] = useState<'hidden' | 'showing' | 'hiding'>('hidden')
+  const dishonorTimers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => () => {
-    if (dishonorTimeoutRef.current !== null) clearTimeout(dishonorTimeoutRef.current)
+    dishonorTimers.current.forEach(clearTimeout)
   }, [])
 
   const profile = (() => {
@@ -218,22 +217,21 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
     setStep(n)
   }
 
-  const showDishonor = (onAfter?: () => void) => {
-    setDishonorKey(k => k + 1)
-    setDishonorVisible(true)
-    if (onAfter) {
-      if (dishonorTimeoutRef.current !== null) clearTimeout(dishonorTimeoutRef.current)
-      dishonorTimeoutRef.current = setTimeout(onAfter, 2200)
-    }
+  const triggerDishonor = () => {
+    dishonorTimers.current.forEach(clearTimeout)
+    dishonorTimers.current = []
+    setDishonorPhase('showing')
+    dishonorTimers.current.push(
+      setTimeout(() => setDishonorPhase('hiding'), 2500)
+    )
   }
 
   const handleBeginClick = () => {
     if (beginning) return
     setBeginning(true)
-    if (dishonorTimeoutRef.current !== null) {
-      clearTimeout(dishonorTimeoutRef.current)
-      dishonorTimeoutRef.current = null
-    }
+    dishonorTimers.current.forEach(clearTimeout)
+    dishonorTimers.current = []
+    setDishonorPhase('hidden')
     setTimeout(onBegin, 1000)
   }
 
@@ -245,19 +243,67 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
     <div style={{ position: 'relative', background: 'var(--bg)', overflowX: 'hidden' }}>
 
       {/* Dishonor overlay */}
-      {dishonorVisible && (
+      {dishonorPhase !== 'hidden' && (
         <div
-          key={dishonorKey}
-          onAnimationEnd={() => setDishonorVisible(false)}
+          onAnimationEnd={(e) => {
+            if (e.animationName === 'dishonorBgOut') {
+              setDishonorPhase('hidden')
+              go(1, 'back')
+            }
+          }}
           style={{
-            position: 'fixed', inset: 0, zIndex: 100,
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: '#000000',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            pointerEvents: 'none',
-            animation: 'dishonorFade 2.5s ease forwards',
+            animation: dishonorPhase === 'showing'
+              ? 'dishonorBgIn 0.3s ease forwards'
+              : 'dishonorBgOut 0.5s ease forwards',
           }}
         >
-          <div style={{ fontSize: '1rem', letterSpacing: '0.12em', color: 'var(--red-bright)', textAlign: 'center', padding: '0 2rem' }}>
-            You were never a ronin. Dishonor.
+          {/* Ghost kanji watermark */}
+          <div
+            className="font-jp"
+            style={{
+              position: 'absolute', fontSize: '6rem', color: 'var(--red)',
+              opacity: 0.08, lineHeight: 1, userSelect: 'none', pointerEvents: 'none',
+            }}
+          >
+            侍
+          </div>
+
+          {/* Text content */}
+          <div
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              textAlign: 'center', padding: '0 2.5rem',
+              animation: dishonorPhase === 'showing'
+                ? 'dishonorTextIn 0.35s ease both 0.2s'
+                : 'none',
+            }}
+          >
+            <div style={{
+              fontSize: '1.4rem', fontWeight: 300, letterSpacing: '0.2em',
+              color: 'var(--text)', textTransform: 'uppercase', marginBottom: '1.25rem',
+              whiteSpace: 'nowrap',
+            }}>
+              You were never a ronin.
+            </div>
+
+            {/* Animated red line */}
+            <div style={{
+              height: '1px', background: 'var(--red)', width: '100%',
+              transformOrigin: 'left center', marginBottom: '1.25rem',
+              animation: dishonorPhase === 'showing'
+                ? 'dishonorLineExpand 0.4s ease both 0.2s'
+                : 'none',
+            }} />
+
+            <div style={{
+              fontSize: '2.5rem', fontWeight: 600, letterSpacing: '0.4em',
+              color: 'var(--red-bright)', textTransform: 'uppercase',
+            }}>
+              Dishonor.
+            </div>
           </div>
         </div>
       )}
@@ -582,7 +628,7 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                 <div style={{ marginTop: '2rem', paddingBottom: '0.5rem' }}>
                   <button
                     type="button"
-                    onClick={() => showDishonor(() => go(1, 'back'))}
+                    onClick={triggerDishonor}
                     style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
                   >
                     ← I am not ready.
