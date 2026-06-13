@@ -35,9 +35,36 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Precache only static assets with stable filenames.
+        // HTML and JS/CSS bundles are intentionally excluded — they are
+        // served network-first below so every deploy is immediately visible.
+        globPatterns: ['**/*.{ico,png,svg,woff2}'],
         skipWaiting: true,
         clientsClaim: true,
+        runtimeCaching: [
+          {
+            // HTML navigation — always try network first so new deploys
+            // are seen on the very next page load, not after a SW cycle.
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages',
+              networkTimeoutSeconds: 3,
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // JS + CSS bundles — network-first so updated bundles are
+            // fetched on each load; cached for offline fallback.
+            urlPattern: /\.(?:js|css)$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'app-shell',
+              networkTimeoutSeconds: 3,
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],
