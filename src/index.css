@@ -535,6 +535,12 @@ input[type='number'] {
   align-items: flex-start;
 }
 
+/* Mobile: logo centered above the form */
+.onboarding-logo {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
 /* Mobile: inner content unrestricted */
 .onboarding-inner {
   display: flex;
@@ -543,11 +549,28 @@ input[type='number'] {
 }
 
 @media (min-width: 768px) {
-  /* Center and constrain the form */
-  .onboarding-inner {
-    max-width: 560px;
-    margin: 0 auto;
+  /* Center children horizontally on desktop */
+  .onboarding-page {
+    align-items: center;
+  }
+
+  /* Logo above the card */
+  .onboarding-logo {
     width: 100%;
+    max-width: 600px;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Card */
+  .onboarding-inner {
+    max-width: 600px;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border-mid);
+    padding: 3rem;
+    margin: 0 auto;
+    margin-bottom: 3rem;
+    flex: unset;
   }
 
   /* Wider gap on desktop */
