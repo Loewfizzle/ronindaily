@@ -15,6 +15,63 @@ interface DayPlan {
   totalCalories: number
 }
 
+interface MealPrefs {
+  budget?: 'budget' | 'standard' | 'flexible'
+  restrictions?: string[]
+  equipment?: string[]
+  dislikes?: string
+}
+
+interface RequestBody {
+  calorieTarget: number
+  unit: string
+  days?: number
+  dayNumber?: number  // set when regenerating a single day; tells Claude which day it is
+  prefs?: MealPrefs
+}
+
+function buildPrefsSection(prefs: MealPrefs | undefined): string {
+  if (!prefs) return ''
+  const parts: string[] = []
+
+  const budgetMap = {
+    budget:   'BUDGET TIER — Use only affordable staple ingredients: rolled oats, eggs, canned beans, lentils, canned tuna, canned sardines, frozen vegetables (broccoli, spinach, mixed veg), chicken thighs, ground beef (80/20), rice, sweet potatoes, bananas, apples, peanut butter, whole milk, store-brand Greek yogurt. Prioritise cheap high-volume foods and repeat ingredients across days to keep the shopping list short and cheap.',
+    standard: 'STANDARD TIER — Use common supermarket ingredients available at any grocery store: chicken breast, ground turkey, eggs, canned fish, fresh and frozen vegetables, seasonal fruits, brown rice, pasta, rolled oats, Greek yogurt, cottage cheese, milk, olive oil, cheddar cheese, whole wheat bread.',
+    flexible: 'FLEXIBLE TIER — Any ingredients are acceptable including salmon, shrimp, steak, specialty produce, quinoa, almond butter, specialty cheeses, and premium items. Prioritise nutrition and variety.',
+  }
+  if (prefs.budget && budgetMap[prefs.budget]) parts.push(budgetMap[prefs.budget])
+
+  const restrictionMap: Record<string, string> = {
+    no_pork:     'No pork or pork products — no bacon, ham, sausage, prosciutto, lard, gelatin',
+    no_beef:     'No beef or beef products — no hamburger, steak, ground beef, veal',
+    no_seafood:  'No fish, shellfish, or seafood of any kind',
+    vegetarian:  'Vegetarian — no meat, poultry, or seafood; eggs and dairy are allowed',
+    vegan:       'Vegan — no animal products whatsoever: no meat, poultry, seafood, eggs, dairy, honey, gelatin',
+    gluten_free: 'Gluten-free — no wheat, barley, rye, regular oats, regular bread, or regular pasta; use rice, potatoes, certified GF oats, or GF alternatives',
+    dairy_free:  'Dairy-free — no milk, cheese, butter, cream, yogurt, or whey; use plant-based alternatives where needed',
+  }
+  const activeRestrictions = (prefs.restrictions ?? []).map(r => restrictionMap[r]).filter(Boolean)
+  if (activeRestrictions.length > 0) {
+    parts.push(`HARD DIETARY RESTRICTIONS — NEVER VIOLATE THESE:\n${activeRestrictions.map(r => `- ${r}`).join('\n')}`)
+  }
+
+  const equipmentMap: Record<string, string> = {
+    no_grill:       'No grill available — do not suggest any grilled items',
+    no_oven:        'No oven available — do not suggest any baked or oven-roasted items',
+    microwave_only: 'MICROWAVE ONLY — all meals must be microwavable or require no cooking whatsoever; no stovetop, no grill, no oven',
+  }
+  const activeEquipment = (prefs.equipment ?? []).map(e => equipmentMap[e]).filter(Boolean)
+  if (activeEquipment.length > 0) {
+    parts.push(`EQUIPMENT CONSTRAINTS:\n${activeEquipment.map(e => `- ${e}`).join('\n')}`)
+  }
+
+  if (prefs.dislikes?.trim()) {
+    parts.push(`DISLIKED FOODS — never include these or dishes where they are a primary component: ${prefs.dislikes.trim()}`)
+  }
+
+  return parts.length > 0 ? '\n\n' + parts.join('\n\n') : ''
+}
+
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -23,12 +80,14 @@ export default async function handler(req: Request): Promise<Response> {
     })
   }
 
-  let calorieTarget: number, unit: string, days: number
+  let calorieTarget: number, unit: string, days: number, dayNumber: number | undefined, prefs: MealPrefs | undefined
   try {
-    const body = await req.json() as { calorieTarget: number; unit: string; days?: number }
+    const body = await req.json() as RequestBody
     calorieTarget = body.calorieTarget
-    unit = body.unit ?? 'imperial'
-    days = body.days ?? 7
+    unit          = body.unit ?? 'imperial'
+    days          = body.days ?? 7
+    dayNumber     = body.dayNumber
+    prefs         = body.prefs
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid request body' }), {
       status: 400,
@@ -53,23 +112,32 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const portionSystem = unit === 'metric'
-    ? 'metric units (grams, ml) — e.g. "150g chicken breast", "200ml 2% milk"'
-    : 'imperial units (oz, cups, tbsp, tsp, or count) — e.g. "6 oz chicken breast", "1/2 cup rolled oats", "2 large eggs"'
+    ? 'metric units (grams, ml) — e.g. "150g chicken breast", "200ml whole milk"'
+    : 'imperial units (oz, cups, tbsp, tsp, or count-based) — e.g. "6 oz chicken breast", "1/2 cup rolled oats", "2 large eggs"'
 
-  const prompt = `You are a meal planning assistant. Create a ${days}-day meal plan.
+  const dayContext = days === 1 && dayNumber
+    ? ` This is day ${dayNumber} of a 7-day plan — generate only this single day.`
+    : ''
+
+  const prefsSection = buildPrefsSection(prefs)
+
+  const prompt = `You are a meal planning assistant. Create a ${days}-day meal plan.${dayContext}
 
 CALORIE TARGET: ${calorieTarget} calories per day. Each day's totalCalories must be within ±50 calories of this target.
-PORTIONS: Use ${portionSystem}.
+PORTIONS: Use ${portionSystem} with exact amounts.${prefsSection}
 
 RULES:
-1. Use SPECIFIC real foods only. Never write vague labels like "protein source", "lean protein", "complex carbohydrate", "healthy fat", or any category name. Write the actual food: "grilled chicken breast", "brown rice", "extra virgin olive oil", "unsalted almonds".
-2. Every portion must be exact with a number: "150g chicken breast", "1/2 cup rolled oats", "2 large eggs", "1 tbsp almond butter", "1 medium banana (118g)".
+1. Use SPECIFIC real foods only. Never write vague labels like "protein source", "lean protein", "complex carbohydrate", "healthy fat", or any category name. Write the actual food: "pan-fried chicken breast", "brown rice", "extra virgin olive oil", "unsalted almonds".
+2. Every portion must have an exact number: "150g chicken breast", "1/2 cup rolled oats", "2 large eggs", "1 tbsp almond butter", "1 medium banana (118g)".
 3. No two meals within the same day can be the same dish.
 4. Vary meaningfully across all ${days} days — each day should feel clearly different from the others.
-5. Each day has: breakfast, lunch, dinner, and snacks. Each slot has 1–4 food items.
-6. Calorie counts per item must be accurate. Item calories within each meal slot should sum close to that slot's contribution. All four slot totals for a day must sum to the day's totalCalories within ±50 cal.
+5. REPEAT CORE INGREDIENTS across multiple days to minimise the shopping list — one normal grocery trip should cover the entire week.
+6. SIMPLE PREPARATIONS ONLY: pan-fried, scrambled, baked, roasted, microwaved, steamed, raw. No complex techniques.
+7. All ingredients must be available at a standard supermarket.
+8. Each day has: breakfast, lunch, dinner, and snacks. Each slot contains 1–4 food items.
+9. Calorie counts per item must be accurate. All items within a day must sum to totalCalories within ±50 cal.
 
-Respond with ONLY raw JSON — no markdown fences, no backticks, no explanatory text before or after. Use this exact schema:
+Respond with ONLY raw JSON — no markdown fences, no backticks, no text before or after. Use this exact schema:
 {"days":[{"day":1,"breakfast":[{"name":"string","portion":"string","calories":0}],"lunch":[{"name":"string","portion":"string","calories":0}],"dinner":[{"name":"string","portion":"string","calories":0}],"snacks":[{"name":"string","portion":"string","calories":0}],"totalCalories":0}]}`
 
   let parsedDays: DayPlan[]
@@ -99,7 +167,6 @@ Respond with ONLY raw JSON — no markdown fences, no backticks, no explanatory 
 
     const data = await anthropicRes.json() as { content: Array<{ type: string; text: string }> }
     const raw = data.content?.[0]?.text ?? ''
-    // Strip accidental markdown fences if Claude adds them despite instructions
     const cleaned = raw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim()
     const parsed = JSON.parse(cleaned) as { days: DayPlan[] }
     parsedDays = parsed.days
