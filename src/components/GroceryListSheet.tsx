@@ -98,6 +98,11 @@ export default function GroceryListSheet({ open, onClose, mealPlan }: GroceryLis
   const mealPlanRef = useRef(mealPlan)
   mealPlanRef.current = mealPlan
 
+  // Tracks whether this open cycle has already been handled.
+  // Prevents double-firing while also not blocking the very first open
+  // (which the old `if (status === 'loading') return` guard broke).
+  const firedRef = useRef(false)
+
   const generate = useCallback(async () => {
     const plan = mealPlanRef.current
     if (!plan) return
@@ -126,8 +131,13 @@ export default function GroceryListSheet({ open, onClose, mealPlan }: GroceryLis
   }, [])
 
   useEffect(() => {
-    if (!open) return
-    if (status === 'loading') return
+    if (!open) {
+      firedRef.current = false  // reset so next open re-runs
+      return
+    }
+    if (firedRef.current) return  // already handled this open cycle
+    firedRef.current = true
+
     if (!mealPlan) return
 
     const cached = loadCachedList()

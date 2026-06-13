@@ -1,4 +1,4 @@
-export const config = { runtime: 'edge' }
+export const config = { runtime: 'edge', maxDuration: 30 }
 
 interface MealItem {
   name: string
@@ -93,6 +93,7 @@ Respond with ONLY raw JSON — no markdown fences, no text before or after. Sche
 
   let sections: Array<{ section: string; items: GroceryItem[] }>
   try {
+    // 25-second timeout leaves headroom before the 30s maxDuration limit
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -105,12 +106,13 @@ Respond with ONLY raw JSON — no markdown fences, no text before or after. Sche
         max_tokens: 2048,
         messages: [{ role: 'user', content: prompt }],
       }),
+      signal: AbortSignal.timeout(25000),
     })
 
     if (!anthropicRes.ok) {
       const errText = await anthropicRes.text()
       console.error('[grocery-list] Anthropic error:', anthropicRes.status, errText)
-      return new Response(JSON.stringify({ error: 'AI service unavailable' }), {
+      return new Response(JSON.stringify({ error: `AI service error (${anthropicRes.status})` }), {
         status: 502,
         headers: { 'Content-Type': 'application/json' },
       })
@@ -118,8 +120,22 @@ Respond with ONLY raw JSON — no markdown fences, no text before or after. Sche
 
     const data = await anthropicRes.json() as { content: Array<{ type: string; text: string }> }
     const raw = data.content?.[0]?.text ?? ''
+    if (!raw) {
+      console.error('[grocery-list] Empty text in Anthropic response:', JSON.stringify(data))
+      return new Response(JSON.stringify({ error: 'Empty response from AI' }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
     const cleaned = raw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim()
     const parsed = JSON.parse(cleaned) as { sections: Array<{ section: string; items: GroceryItem[] }> }
+    if (!Array.isArray(parsed.sections)) {
+      console.error('[grocery-list] Unexpected response shape:', cleaned.slice(0, 200))
+      return new Response(JSON.stringify({ error: 'Unexpected AI response format' }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
     sections = parsed.sections
   } catch (e) {
     console.error('[grocery-list] Parse or network error:', e)
