@@ -27,11 +27,10 @@ function ChevronIcon({ open = false }: { open?: boolean }) {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const BUDGET_OPTIONS: { id: MealPrefs['budget']; label: string }[] = [
-  { id: 'raw_materials', label: 'Raw Materials' },
-  { id: 'no_cook',       label: 'No Cook'       },
-  { id: 'budget',        label: 'Budget'        },
-  { id: 'standard',      label: 'Standard'      },
-  { id: 'flexible',      label: 'Flexible'      },
+  { id: 'raw_materials', label: 'Bare Bones'       },
+  { id: 'budget',        label: 'Budget Friendly'  },
+  { id: 'standard',      label: 'Everyday'         },
+  { id: 'flexible',      label: 'No Limits'        },
 ]
 
 const RESTRICTION_OPTIONS = [
@@ -45,9 +44,12 @@ const RESTRICTION_OPTIONS = [
 ]
 
 const EQUIPMENT_OPTIONS = [
-  { id: 'no_grill',       label: 'No Grill'       },
-  { id: 'no_oven',        label: 'No Oven'         },
-  { id: 'microwave_only', label: 'Microwave Only'  },
+  { id: 'stovetop',      label: 'Stovetop'     },
+  { id: 'oven',          label: 'Oven'         },
+  { id: 'air_fryer',     label: 'Air Fryer'    },
+  { id: 'blender',       label: 'Blender'      },
+  { id: 'microwave',     label: 'Microwave'    },
+  { id: 'no_equipment',  label: 'No Equipment' },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -186,7 +188,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
 
   const [budget, setBudget]             = useState<MealPrefs['budget']>('standard')
   const [restrictions, setRestrictions] = useState<string[]>([])
-  const [equipment, setEquipment]       = useState<string[]>([])
+  const [equipment, setEquipment]       = useState<string[]>(['stovetop', 'microwave'])
   const [dislikes, setDislikes]         = useState('')
   const [description, setDescription]   = useState('')
 
@@ -373,39 +375,94 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
 
       <div>
         <div className="field-label">Budget</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-          {BUDGET_OPTIONS.map(b => (
-            <button
-              key={b.id}
-              className={`toggle-btn${budget === b.id ? ' active' : ''}`}
-              onClick={() => setBudget(b.id)}
-              style={{ flex: '1 1 calc(50% - 2px)', minWidth: 'calc(50% - 2px)' }}
-            >
-              {b.label}
-            </button>
-          ))}
+        <div style={{ display: 'flex' }}>
+          {BUDGET_OPTIONS.map((b, i) => {
+            const isSelected = budget === b.id
+            const isFirst = i === 0
+            const isLast = i === BUDGET_OPTIONS.length - 1
+            return (
+              <button
+                key={b.id}
+                onClick={() => setBudget(b.id)}
+                style={{
+                  flex: 1,
+                  padding: '0.55rem 0.2rem',
+                  fontSize: '0.7rem',
+                  lineHeight: 1.25,
+                  letterSpacing: '0.02em',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  background: isSelected ? 'var(--red)' : 'transparent',
+                  color: isSelected ? 'var(--text)' : 'var(--text-2)',
+                  border: `1px solid ${isSelected ? 'var(--red)' : 'var(--border-mid)'}`,
+                  marginLeft: i > 0 ? -1 : 0,
+                  position: 'relative',
+                  zIndex: isSelected ? 1 : 0,
+                  borderRadius: isFirst ? '3px 0 0 3px' : isLast ? '0 3px 3px 0' : 0,
+                  transition: 'background 0.12s ease, color 0.12s ease',
+                }}
+              >
+                {b.label}
+              </button>
+            )
+          })}
         </div>
       </div>
 
       <div>
         <div className="field-label">Dietary Restrictions</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-          {RESTRICTION_OPTIONS.map(opt => (
-            <button key={opt.id} className={`toggle-btn${restrictions.includes(opt.id) ? ' active' : ''}`} onClick={() => toggleRestriction(opt.id)}>
-              {opt.label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          {RESTRICTION_OPTIONS.map(opt => {
+            const isSelected = restrictions.includes(opt.id)
+            return (
+              <button
+                key={opt.id}
+                onClick={() => toggleRestriction(opt.id)}
+                style={{
+                  borderRadius: '999px',
+                  padding: '0.4rem 1rem',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  background: isSelected ? 'var(--red)' : 'transparent',
+                  color: isSelected ? 'var(--text)' : 'var(--text-2)',
+                  border: isSelected ? '1px solid transparent' : '1px solid var(--border-mid)',
+                  transition: 'background 0.12s ease, color 0.12s ease',
+                }}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
         </div>
       </div>
 
       <div>
-        <div className="field-label">Equipment</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-          {EQUIPMENT_OPTIONS.map(opt => (
-            <button key={opt.id} className={`toggle-btn${equipment.includes(opt.id) ? ' active' : ''}`} onClick={() => toggleEquipment(opt.id)}>
-              {opt.label}
-            </button>
-          ))}
+        <div className="field-label">Available Equipment</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          {EQUIPMENT_OPTIONS.map(opt => {
+            const isSelected = equipment.includes(opt.id)
+            return (
+              <button
+                key={opt.id}
+                onClick={() => toggleEquipment(opt.id)}
+                style={{
+                  borderRadius: '999px',
+                  padding: '0.4rem 1rem',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  background: isSelected ? 'var(--red)' : 'transparent',
+                  color: isSelected ? 'var(--text)' : 'var(--text-2)',
+                  border: isSelected ? '1px solid transparent' : '1px solid var(--border-mid)',
+                  transition: 'background 0.12s ease, color 0.12s ease',
+                }}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
         </div>
       </div>
 
