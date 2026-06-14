@@ -195,6 +195,40 @@ export type Database = {
           },
         ]
       }
+      activity_totals: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string
+          activity_id: string
+          total_amount: number
+          unit: string
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id: string
+          activity_id: string
+          total_amount: number
+          unit: string
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string
+          activity_id?: string
+          total_amount?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'activity_totals_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       cheat_meals: {
         Row: {
           id: string

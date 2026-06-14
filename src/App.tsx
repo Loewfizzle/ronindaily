@@ -213,6 +213,7 @@ function clearLocal() {
   localStorage.removeItem('ronin_pre_skip_streak')
   localStorage.removeItem('ronin_dawn_count')
   localStorage.removeItem('ronin_dawn_last_date')
+  localStorage.removeItem('ronin_activity_totals')
   localStorage.removeItem('ronin_skipped')
   localStorage.removeItem('ronin_plan_cache_version')
   for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -398,6 +399,7 @@ export default function App() {
     if (user) {
       try {
         await supabase.from('activity_logs').delete().eq('user_id', user.id)
+        await supabase.from('activity_totals').delete().eq('user_id', user.id)
         await supabase.from('badges').delete().eq('user_id', user.id)
         await supabase.from('cheat_meals').delete().eq('user_id', user.id)
         await supabase.from('daily_logs').delete().eq('user_id', user.id)

@@ -7,7 +7,7 @@ import MealPlanSheet from './MealPlanSheet'
 import BadgeBanner from './BadgeBanner'
 import BadgeDetailSheet from './BadgeDetailSheet'
 import { calculatePlan, formatMovementItem, getActivityInfo } from '../utils/calculate'
-import { checkAndAwardBadges, awardBadge, BADGE_KANJI } from '../utils/badges'
+import { checkAndAwardBadges, awardBadge, checkActivityMilestoneBadges, BADGE_KANJI, ACTIVITY_SERIES_TIERS } from '../utils/badges'
 import { supabase } from '../lib/supabase'
 import type { PlanResult, Meal, UnitSystem, MovementItem, MealPlanData } from '../types'
 import type { BadgeDef } from '../utils/badges'
@@ -180,6 +180,8 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [skipInput, setSkipInput]         = useState('')
   const skipConfirmTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
   const logDebounceRef                    = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const activityPrevDailyRef             = useRef<Record<string, number>>({})
+  const handleBadgesEarnedRef            = useRef<(badges: BadgeDef[]) => void>(() => {})
   const [dismissed, setDismissed] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem(`ronin_dismissed_activities_${localDateStr()}`)
@@ -405,8 +407,37 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     loadActivityLog()
   }, [])
 
+  // Load cumulative activity totals from Supabase on mount, merge with localStorage cache.
+  useEffect(() => {
+    async function loadActivityTotals() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const { data: totals } = await supabase
+          .from('activity_totals')
+          .select('activity_id, total_amount')
+          .eq('user_id', user.id)
+        if (!totals || totals.length === 0) return
+        const cached: Record<string, number> = {}
+        try { Object.assign(cached, JSON.parse(localStorage.getItem('ronin_activity_totals') || '{}')) } catch {}
+        for (const row of totals) cached[row.activity_id] = Number(row.total_amount)
+        localStorage.setItem('ronin_activity_totals', JSON.stringify(cached))
+      } catch { /* offline */ }
+    }
+    loadActivityTotals()
+  }, [])
+
   const handleLogActivity = useCallback((id: string, amount: number) => {
     const today = localDateStr()
+    // Capture pre-session daily amount once per debounce cycle (before state update)
+    if (!logDebounceRef.current[id]) {
+      try {
+        const raw = localStorage.getItem(`ronin_activity_log_${today}`)
+        activityPrevDailyRef.current[id] = raw
+          ? ((JSON.parse(raw) as Record<string, number>)[id] ?? 0)
+          : 0
+      } catch { activityPrevDailyRef.current[id] = 0 }
+    }
     setActivityLog(prev => {
       const next = { ...prev, [id]: amount }
       localStorage.setItem(`ronin_activity_log_${today}`, JSON.stringify(next))
@@ -427,6 +458,29 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           { user_id: user.id, logged_date: today, activity_id: id, planned_amount: plannedAmount, actual_amount: amount, unit: actUnit },
           { onConflict: 'user_id,logged_date,activity_id' },
         )
+        // Update cumulative total: only increment by the delta since last commit
+        const prevDailyAmount = activityPrevDailyRef.current[id] ?? 0
+        const delta = amount - prevDailyAmount
+        let cachedTotals: Record<string, number> = {}
+        try { cachedTotals = JSON.parse(localStorage.getItem('ronin_activity_totals') || '{}') } catch {}
+        const newTotal = Math.max(0, (cachedTotals[id] ?? 0) + delta)
+        const { error: totalError } = await supabase.from('activity_totals').upsert(
+          { user_id: user.id, activity_id: id, total_amount: newTotal, unit: actUnit },
+          { onConflict: 'user_id,activity_id' },
+        )
+        if (!totalError) {
+          try {
+            const fresh: Record<string, number> = JSON.parse(localStorage.getItem('ronin_activity_totals') || '{}')
+            fresh[id] = newTotal
+            localStorage.setItem('ronin_activity_totals', JSON.stringify(fresh))
+          } catch {}
+          activityPrevDailyRef.current[id] = amount
+          delete logDebounceRef.current[id]
+          const newBadges = await checkActivityMilestoneBadges(user.id, id, newTotal, actUnit)
+          if (newBadges.length > 0) handleBadgesEarnedRef.current(newBadges)
+        } else {
+          delete logDebounceRef.current[id]
+        }
       } catch { /* offline — localStorage cache is source of truth */ }
     }, 1000)
   }, [])
@@ -437,6 +491,13 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       clearTimeout(logDebounceRef.current[id])
       delete logDebounceRef.current[id]
     }
+    // Capture amount being removed before state update
+    let prevDailyAmount = 0
+    try {
+      const raw = localStorage.getItem(`ronin_activity_log_${today}`)
+      if (raw) prevDailyAmount = (JSON.parse(raw) as Record<string, number>)[id] ?? 0
+    } catch {}
+    delete activityPrevDailyRef.current[id]
     setActivityLog(prev => {
       const next = { ...prev }
       delete next[id]
@@ -452,6 +513,21 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           .eq('user_id', user.id)
           .eq('logged_date', today)
           .eq('activity_id', id)
+        // Subtract unlogged amount from cumulative total
+        if (prevDailyAmount > 0) {
+          const info = getActivityInfo(id)
+          const actUnit = info?.type === 'distance' ? 'miles' : 'minutes'
+          try {
+            const cached: Record<string, number> = JSON.parse(localStorage.getItem('ronin_activity_totals') || '{}')
+            const newTotal = Math.max(0, (cached[id] ?? 0) - prevDailyAmount)
+            await supabase.from('activity_totals').upsert(
+              { user_id: user.id, activity_id: id, total_amount: newTotal, unit: actUnit },
+              { onConflict: 'user_id,activity_id' },
+            )
+            cached[id] = newTotal
+            localStorage.setItem('ronin_activity_totals', JSON.stringify(cached))
+          } catch {}
+        }
       } catch { /* offline */ }
     })()
   }, [])
@@ -463,6 +539,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       ...badges.map(b => ({ badge_id: b.id, earned_at: new Date().toISOString() })),
     ])
   }, [])
+  useEffect(() => { handleBadgesEarnedRef.current = handleBadgesEarned }, [handleBadgesEarned])
 
   // Accountable badge — fires when both cheat meal and full movement target are logged
   useEffect(() => {
@@ -947,6 +1024,13 @@ function GoalBadgeCircle({ badge, onSelect, progressPct }: {
   )
 }
 
+const TIER_BORDERS = [
+  '1px solid var(--red)',
+  '1px solid var(--red-bright)',
+  '1px solid rgba(201, 168, 76, 0.5)',
+  '1px solid var(--gold)',
+]
+
 function BadgeRow({
   badges,
   onSelect,
@@ -956,6 +1040,23 @@ function BadgeRow({
   onSelect: (b: EarnedBadge) => void
   progressPct: number
 }) {
+  const allMilestoneIds = new Set(Object.values(ACTIVITY_SERIES_TIERS).flat())
+
+  // Find highest earned tier per activity series
+  const seriesHighest: Record<string, { tierIndex: number; badge: EarnedBadge }> = {}
+  for (const badge of badges) {
+    for (const [series, tiers] of Object.entries(ACTIVITY_SERIES_TIERS)) {
+      const tierIndex = tiers.indexOf(badge.badge_id)
+      if (tierIndex === -1) continue
+      const existing = seriesHighest[series]
+      if (!existing || tierIndex > existing.tierIndex) {
+        seriesHighest[series] = { tierIndex, badge }
+      }
+    }
+  }
+
+  const nonMilestoneBadges = badges.filter(b => !allMilestoneIds.has(b.badge_id))
+
   return (
     <div style={{
       display: 'flex',
@@ -964,7 +1065,7 @@ function BadgeRow({
       padding: '0.75rem 1.5rem',
       scrollbarWidth: 'none',
     }}>
-      {badges.map(b =>
+      {nonMilestoneBadges.map(b =>
         b.badge_id === 'goal_reached' ? (
           <GoalBadgeCircle key={b.badge_id} badge={b} onSelect={onSelect} progressPct={progressPct} />
         ) : b.badge_id === 'extreme_mission' ? (
@@ -987,6 +1088,26 @@ function BadgeRow({
           </button>
         )
       )}
+      {Object.entries(ACTIVITY_SERIES_TIERS).map(([series, tiers]) => {
+        const highest = seriesHighest[series]
+        if (!highest) return null
+        const isTopTier = highest.tierIndex === tiers.length - 1
+        return (
+          <button
+            key={`series-${series}`}
+            onClick={() => onSelect(highest.badge)}
+            style={{
+              ...CIRCLE_STYLE,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: TIER_BORDERS[highest.tierIndex] ?? TIER_BORDERS[0],
+            }}
+          >
+            <span className="font-jp" style={{ fontSize: '1.1rem', color: isTopTier ? 'var(--gold)' : 'var(--red)', lineHeight: 1 }}>
+              {BADGE_KANJI[highest.badge.badge_id] ?? '侍'}
+            </span>
+          </button>
+        )
+      })}
     </div>
   )
 }
