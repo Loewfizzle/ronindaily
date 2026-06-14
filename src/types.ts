@@ -83,9 +83,18 @@ export interface AuthState {
 
 // ── Supabase table row shapes (derived from generated database types) ─────────
 
-export type ProfileRow  = Tables<'profiles'>
-export type CheckinRow  = Tables<'checkins'>
-export type DailyLogRow = Tables<'daily_logs'>
+export type ProfileRow             = Tables<'profiles'>
+export type CheckinRow             = Tables<'checkins'>
+export type DailyLogRow            = Tables<'daily_logs'>
+export type DailyAccountabilityRow = Tables<'daily_accountability'>
+
+// ── Named utility types ───────────────────────────────────────────────────────
+
+export interface WeeklyRecapCounts {
+  complete: number
+  partial: number
+  failed: number
+}
 
 // ── Meal plan ─────────────────────────────────────────────────────────────────
 

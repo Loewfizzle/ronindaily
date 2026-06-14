@@ -15,7 +15,7 @@ import { detectPatterns } from '../utils/patterns'
 import type { PatternReport } from '../utils/patterns'
 import { checkAndAwardBadges, awardBadge, checkActivityMilestoneBadges, BADGE_KANJI, ACTIVITY_SERIES_TIERS } from '../utils/badges'
 import { supabase } from '../lib/supabase'
-import type { PlanResult, Meal, UnitSystem, MovementItem, MealPlanData } from '../types'
+import type { PlanResult, Meal, UnitSystem, MovementItem, MealPlanData, WeeklyRecapCounts } from '../types'
 import type { BadgeDef } from '../utils/badges'
 
 interface EarnedBadge {
@@ -203,11 +203,11 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [weeklyRecapDismissed, setWeeklyRecapDismissed] = useState(() =>
     new Date().getDay() !== 0 || !!localStorage.getItem(`ronin_weekly_recap_${localDateStr()}`)
   )
-  const [weeklyRecapCounts, setWeeklyRecapCounts] = useState<{ complete: number; partial: number; failed: number } | null>(() => {
+  const [weeklyRecapCounts, setWeeklyRecapCounts] = useState<WeeklyRecapCounts | null>(() => {
     if (new Date().getDay() !== 0) return null
     try {
       const cached = JSON.parse(localStorage.getItem(`ronin_weekly_recap_data_${localDateStr()}`) || 'null')
-      if (cached) return cached as { complete: number; partial: number; failed: number }
+      if (cached) return cached as WeeklyRecapCounts
     } catch { /* corrupt */ }
     return null
   })
@@ -373,7 +373,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         if (!user) return
         const startDate = new Date()
         startDate.setDate(startDate.getDate() - 6)
-        const { data } = await (supabase as any)
+        const { data } = await supabase
           .from('daily_accountability')
           .select('result')
           .eq('user_id', user.id)
@@ -381,7 +381,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           .lte('logged_date', sundayDate)
         if (!data) return
         let complete = 0, partial = 0, failed = 0
-        for (const r of data as Array<{ result: string }>) {
+        for (const r of data) {
           if (r.result === 'complete') complete++
           else if (r.result === 'partial') partial++
           else failed++
@@ -412,7 +412,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
         const [{ data: accData }, { data: checkinData }] = await Promise.all([
-          (supabase as any)
+          supabase
             .from('daily_accountability')
             .select('result, logged_date')
             .eq('user_id', user.id)
@@ -430,7 +430,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         const dowStrong: Record<number, number> = {}
         const dowWeak: Record<number, number> = {}
         const dowTotal: Record<number, number> = {}
-        for (const r of (accData ?? []) as Array<{ result: string; logged_date: string }>) {
+        for (const r of (accData ?? [])) {
           if (r.result === 'complete') { complete++; curRun++; if (curRun > streakHigh) streakHigh = curRun }
           else { if (r.result === 'partial') partial++; else failed++; curRun = 0 }
           const dow = new Date(r.logged_date + 'T12:00:00').getDay()
@@ -450,7 +450,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
         // Weight: earliest checkin in window = start, latest = current
         const windowStart = startDate.getTime()
-        const allCheckins = (checkinData ?? []) as Array<{ weight: number; checked_in_at: string }>
+        const allCheckins = checkinData ?? []
         const windowCheckins = allCheckins.filter(c => new Date(c.checked_in_at).getTime() >= windowStart)
         let weightStart: number | null = null, weightCurrent: number | null = null
         if (windowCheckins.length > 0) {
@@ -844,7 +844,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         // If user reached skip via "I failed today" in accountability, finalize the log.
         if (localStorage.getItem(`ronin_accountability_${today}`) === 'pending') {
           localStorage.setItem(`ronin_accountability_${today}`, JSON.stringify({ result: 'failed', caloriesHit: false, movementHit: false }))
-          await (supabase as any).from('daily_accountability').upsert(
+          await supabase.from('daily_accountability').upsert(
             { user_id: user.id, logged_date: today, result: 'failed', calories_hit: false, movement_hit: false },
             { onConflict: 'user_id,logged_date' }
           )
@@ -862,7 +862,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      await (supabase as any).from('daily_accountability').upsert(
+      await supabase.from('daily_accountability').upsert(
         { user_id: user.id, logged_date: today, result, calories_hit: caloriesHit, movement_hit: movementHit },
         { onConflict: 'user_id,logged_date' }
       )

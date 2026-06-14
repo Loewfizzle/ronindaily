@@ -1,5 +1,7 @@
 export const config = { runtime: 'edge', maxDuration: 30 }
 
+declare const process: { env: Record<string, string | undefined> }
+
 interface MealItem {
   name: string
   portion: string
@@ -137,7 +139,6 @@ export default async function handler(req: Request): Promise<Response> {
     })
   }
 
-  // @ts-ignore — process.env is available in Vercel Edge Runtime
   const apiKey: string | undefined = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'API key not configured' }), {

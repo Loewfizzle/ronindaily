@@ -37,7 +37,7 @@ function defaultReport(): PatternReport {
 
 export async function detectPatterns(userId: string): Promise<PatternReport> {
   try {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('daily_accountability')
       .select('logged_date, result, calories_hit, movement_hit')
       .eq('user_id', userId)
@@ -47,12 +47,7 @@ export async function detectPatterns(userId: string): Promise<PatternReport> {
       return defaultReport()
     }
 
-    const rows: Array<{
-      logged_date: string
-      result: string
-      calories_hit: boolean
-      movement_hit: boolean
-    }> = data
+    const rows = data
 
     let totalComplete = 0, totalPartial = 0, totalFailed = 0
     for (const r of rows) {

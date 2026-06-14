@@ -3,7 +3,7 @@ import BottomSheet from './BottomSheet'
 import { supabase } from '../lib/supabase'
 import { awardBadge } from '../utils/badges'
 import type { BadgeDef } from '../utils/badges'
-import type { PlanResult } from '../types'
+import type { PlanResult, UserProfile } from '../types'
 
 interface CheckinSheetProps {
   open: boolean
@@ -21,16 +21,16 @@ export default function CheckinSheet({ open, onClose, plan, onCheckin, onBadgesE
   if (!plan) return null
 
   const profile = (() => {
-    try { return JSON.parse(localStorage.getItem('ronin_profile') || '{}') as Record<string, string> }
-    catch { return {} as Record<string, string> }
+    try { return JSON.parse(localStorage.getItem('ronin_profile') || 'null') as UserProfile | null }
+    catch { return null }
   })()
-  const unit       = profile.unit || 'imperial'
+  const unit       = profile?.unit ?? 'imperial'
   const unitLabel  = unit === 'metric' ? 'kg' : 'lbs'
 
   // Original pace for comparison
-  const origStart  = parseFloat(profile.weightLbs    || '')
-  const origGoal   = parseFloat(profile.goalWeightLbs || '')
-  const totalWeeks = parseInt(profile.targetWeeks    || '0', 10)
+  const origStart  = parseFloat(profile?.weightLbs    ?? '')
+  const origGoal   = parseFloat(profile?.goalWeightLbs ?? '')
+  const totalWeeks = parseInt(profile?.targetWeeks    ?? '0', 10)
   const weeklyPace = (!isNaN(origStart) && !isNaN(origGoal) && totalWeeks > 0)
     ? (origStart - origGoal) / totalWeeks
     : NaN
@@ -65,11 +65,11 @@ export default function CheckinSheet({ open, onClose, plan, onCheckin, onBadgesE
       return
     }
     setSubmitting(true)
-    let storedProfile: Record<string, string> = {}
-    try { storedProfile = JSON.parse(localStorage.getItem('ronin_profile') || '{}') as Record<string, string> }
+    let storedProfile: UserProfile | null = null
+    try { storedProfile = JSON.parse(localStorage.getItem('ronin_profile') || 'null') as UserProfile | null }
     catch { /* corrupt — still proceed with weight update */ }
-    storedProfile.currentWeightLbs = String(parsedW)
-    localStorage.setItem('ronin_profile', JSON.stringify(storedProfile))
+    if (storedProfile) storedProfile.currentWeightLbs = String(parsedW)
+    localStorage.setItem('ronin_profile', JSON.stringify(storedProfile ?? {}))
     localStorage.setItem('ronin_last_checkin', String(plan.weekNumber))
 
     try {

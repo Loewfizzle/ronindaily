@@ -108,7 +108,7 @@ function formatMealPlanText(mealPlan: MealPlanData, calorieTarget: number): stri
     for (const slot of MEAL_SLOTS) {
       const items = day[slot] ?? []
       if (!items.length) continue
-      const label = (slot as string).charAt(0).toUpperCase() + (slot as string).slice(1)
+      const label = slot.charAt(0).toUpperCase() + slot.slice(1)
       const text = items.map((i: MealItem) => `${i.name} (${i.portion}) — ${i.calories} cal`).join(', ')
       parts.push(`${label}: ${text}`)
     }
@@ -123,7 +123,7 @@ function printMealPlan(mealPlan: MealPlanData, calorieTarget: number): void {
     const slotsHtml = MEAL_SLOTS.map(slot => {
       const items = day[slot] ?? []
       if (!items.length) return ''
-      const label = (slot as string).charAt(0).toUpperCase() + (slot as string).slice(1)
+      const label = slot.charAt(0).toUpperCase() + slot.slice(1)
       const text = items.map((i: MealItem) =>
         `${i.name} <span class="portion">(${i.portion})</span> <span class="cal">— ${i.calories} cal</span>`
       ).join(', ')

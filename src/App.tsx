@@ -409,7 +409,7 @@ export default function App() {
         await supabase.from('badges').delete().eq('user_id', user.id)
         await supabase.from('cheat_meals').delete().eq('user_id', user.id)
         await supabase.from('daily_logs').delete().eq('user_id', user.id)
-        await (supabase as any).from('daily_accountability').delete().eq('user_id', user.id)
+        await supabase.from('daily_accountability').delete().eq('user_id', user.id)
         await supabase.from('checkins').delete().eq('user_id', user.id)
         await supabase.from('profiles').delete().eq('id', user.id)
       } catch { /* offline */ }

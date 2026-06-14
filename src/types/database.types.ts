@@ -263,6 +263,43 @@ export type Database = {
           },
         ]
       }
+      daily_accountability: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string
+          logged_date: string
+          result: 'complete' | 'partial' | 'failed'
+          calories_hit: boolean
+          movement_hit: boolean
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id: string
+          logged_date: string
+          result: 'complete' | 'partial' | 'failed'
+          calories_hit: boolean
+          movement_hit: boolean
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string
+          logged_date?: string
+          result?: 'complete' | 'partial' | 'failed'
+          calories_hit?: boolean
+          movement_hit?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'daily_accountability_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
