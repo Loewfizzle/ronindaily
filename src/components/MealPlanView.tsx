@@ -158,9 +158,10 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   const [mealPlan, setMealPlan]     = useState<MealPlanData | null>(null)
   const [openDay, setOpenDay]       = useState<number | null>(1)
   const [error, setError]           = useState<string | null>(null)
-  const [regenDays, setRegenDays]   = useState<Set<number>>(new Set())
-  const [regenSlots, setRegenSlots] = useState<Set<string>>(new Set())
-  const [exportOpen, setExportOpen] = useState(false)
+  const [regenDays, setRegenDays]     = useState<Set<number>>(new Set())
+  const [regenSlots, setRegenSlots]   = useState<Set<string>>(new Set())
+  const [regenErrors, setRegenErrors] = useState<Set<string>>(new Set())
+  const [exportOpen, setExportOpen]   = useState(false)
 
   const [budget, setBudget]             = useState<MealPrefs['budget']>('standard')
   const [restrictions, setRestrictions] = useState<string[]>([])
@@ -229,8 +230,11 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
         localStorage.setItem('ronin_meal_plan', JSON.stringify(updated))
         return updated
       })
-    } catch { /* silent — existing day preserved */ }
-    finally {
+    } catch {
+      const key = `d${dayNum}`
+      setRegenErrors(prev => new Set([...prev, key]))
+      setTimeout(() => setRegenErrors(prev => { const n = new Set(prev); n.delete(key); return n }), 3000)
+    } finally {
       setRegenDays(prev => { const n = new Set(prev); n.delete(dayNum); return n })
     }
   }, [])
@@ -270,8 +274,10 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
         localStorage.setItem('ronin_meal_plan', JSON.stringify(updated))
         return updated
       })
-    } catch { /* silent — existing slot preserved */ }
-    finally {
+    } catch {
+      setRegenErrors(prev => new Set([...prev, key]))
+      setTimeout(() => setRegenErrors(prev => { const n = new Set(prev); n.delete(key); return n }), 3000)
+    } finally {
       setRegenSlots(prev => { const n = new Set(prev); n.delete(key); return n })
     }
   }, [])
@@ -462,6 +468,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
         const isDayRegen      = regenDays.has(day.day)
         const anySlotRegen    = Array.from(regenSlots).some(k => k.startsWith(`${day.day}-`))
         const disableDayRegen = isDayRegen || anySlotRegen
+        const isDayError      = regenErrors.has(`d${day.day}`)
 
         return (
           <div key={day.day}>
@@ -482,8 +489,8 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                 Day {day.day}
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '0.82rem', color: 'var(--text-2)', minWidth: '5.5rem', textAlign: 'right' }}>
-                  {isDayRegen ? '—' : day.totalCalories.toLocaleString() + ' cal'}
+                <span style={{ fontSize: '0.82rem', color: isDayError ? 'var(--red-bright)' : 'var(--text-2)', minWidth: '5.5rem', textAlign: 'right' }}>
+                  {isDayRegen ? '—' : isDayError ? 'Failed' : day.totalCalories.toLocaleString() + ' cal'}
                 </span>
                 <button
                   onClick={(e) => { e.stopPropagation(); if (!disableDayRegen) doRegenerateDay(day.day) }}
@@ -523,9 +530,10 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                 ) : (
                   <>
                     {MEAL_SLOTS.map((slot: MealSlot, slotIdx: number) => {
-                      const slotKey     = `${day.day}-${slot}`
-                      const isSlotRegen = regenSlots.has(slotKey)
-                      const items       = day[slot] ?? []
+                      const slotKey      = `${day.day}-${slot}`
+                      const isSlotRegen  = regenSlots.has(slotKey)
+                      const isSlotError  = regenErrors.has(slotKey)
+                      const items        = day[slot] ?? []
 
                       return (
                         <div
@@ -539,10 +547,10 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
                             <div style={{
                               fontSize: '0.75rem', letterSpacing: '0.28em', textTransform: 'uppercase',
-                              color: 'var(--text)',
+                              color: isSlotError ? 'var(--red-bright)' : 'var(--text)',
                               animation: isSlotRegen ? 'slotPulse 1.2s ease-in-out infinite' : 'none',
                             }}>
-                              {slot}
+                              {slot}{isSlotError ? ' — failed' : ''}
                             </div>
                             {!isSlotRegen && (
                               <button

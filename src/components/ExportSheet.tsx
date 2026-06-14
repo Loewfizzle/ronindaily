@@ -77,19 +77,23 @@ export default function ExportSheet({
   const hasNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
   const handleCopy = async () => {
+    let success = false
     try {
       await navigator.clipboard.writeText(plainText)
+      success = true
     } catch {
       const ta = document.createElement('textarea')
       ta.value = plainText
       Object.assign(ta.style, { position: 'fixed', opacity: '0', top: '0', left: '0' })
       document.body.appendChild(ta)
       ta.focus(); ta.select()
-      try { document.execCommand('copy') } catch { /* silent */ }
+      try { document.execCommand('copy'); success = true } catch { /* silent */ }
       document.body.removeChild(ta)
     }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    if (success) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
 
   const handleShare = async () => {
@@ -97,14 +101,22 @@ export default function ExportSheet({
       try {
         await navigator.share({ title: shareTitle, text: plainText })
         onClose()
-      } catch { handleCopy() }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return
+        handleCopy()
+      }
     } else {
       handleCopy()
     }
   }
 
   const handleEmail = () => {
-    window.location.href = `mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(plainText)}`
+    onClose()
+    const MAX_BODY = 1600
+    const body = plainText.length > MAX_BODY
+      ? plainText.slice(0, MAX_BODY) + '\n\n[Truncated — copy full text for complete list]'
+      : plainText
+    window.location.href = `mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(body)}`
   }
 
   const handlePrint = () => {

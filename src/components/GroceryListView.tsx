@@ -315,7 +315,7 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
               </button>
 
               {/* Expanded item list */}
-              <div style={{ overflow: 'hidden', maxHeight: isOpen ? '600px' : '0', transition: 'max-height 0.22s ease' }}>
+              <div style={{ overflow: 'hidden', maxHeight: isOpen ? '1800px' : '0', transition: 'max-height 0.25s ease' }}>
                 <div style={{ paddingBottom: '0.5rem' }}>
                   {section.items.map(item => {
                     const key = `${section.section}:${item.name}`

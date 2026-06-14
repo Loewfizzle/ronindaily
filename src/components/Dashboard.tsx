@@ -22,6 +22,7 @@ interface CheatEntry {
   description: string
   calories: number
   loggedAt: string
+  supabaseId?: string
 }
 
 const CHEAT_PICKS: Array<{ group: string; items: Array<{ id: string; label: string; cal: number }> }> = [
@@ -225,6 +226,24 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         const raw = localStorage.getItem(`ronin_dismissed_activities_${localDateStr()}`)
         setDismissed(raw ? (JSON.parse(raw) as string[]) : [])
       } catch { setDismissed([]) }
+    }
+    document.addEventListener('visibilitychange', sync)
+    return () => document.removeEventListener('visibilitychange', sync)
+  }, [])
+
+  // Re-read date-keyed state when the app returns to the foreground — handles midnight rollover.
+  useEffect(() => {
+    const sync = () => {
+      if (document.visibilityState !== 'visible') return
+      const today = localDateStr()
+      try {
+        const raw = localStorage.getItem(`ronin_activity_log_${today}`)
+        setActivityLog(raw ? (JSON.parse(raw) as Record<string, number>) : {})
+      } catch { setActivityLog({}) }
+      try {
+        const raw = localStorage.getItem(`ronin_cheat_meal_${today}`)
+        setCheatEntries(raw ? (JSON.parse(raw) as CheatEntry[]) : [])
+      } catch { setCheatEntries([]) }
     }
     document.addEventListener('visibilitychange', sync)
     return () => document.removeEventListener('visibilitychange', sync)
@@ -959,10 +978,11 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
   const handleLog = () => {
     if (!sessionTotal) return
     const today = localDateStr()
+    const ts = Date.now()
     const newEntries: CheatEntry[] = [
-      ...Array.from(selectedPicks).map(id => {
-        const item = CHEAT_PICKS.flatMap(g => g.items).find(i => i.id === id)!
-        return { id: `${Date.now()}-${id}`, description: item.label, calories: item.cal, loggedAt: new Date().toISOString() }
+      ...Array.from(selectedPicks).map((id, i) => {
+        const item = CHEAT_PICKS.flatMap(g => g.items).find(it => it.id === id)!
+        return { id: `${ts + i}-${id}`, description: item.label, calories: item.cal, loggedAt: new Date().toISOString() }
       }),
       ...customItems.map(item => ({ id: item.id, description: item.desc, calories: item.cal, loggedAt: new Date().toISOString() })),
     ]
@@ -975,18 +995,37 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
-        await supabase.from('cheat_meals').insert(
+        const { data: inserted } = await supabase.from('cheat_meals').insert(
           newEntries.map(e => ({ user_id: user.id, logged_date: today, description: e.description, calories: e.calories }))
-        )
+        ).select()
+        if (!inserted?.length) return
+        // Backfill Supabase UUIDs so removeEntry can issue deletes
+        const withIds = [...cheatEntries, ...newEntries.map((e, i) => ({
+          ...e,
+          supabaseId: (inserted[i] as { id: string } | undefined)?.id,
+        }))]
+        localStorage.setItem(`ronin_cheat_meal_${today}`, JSON.stringify(withIds))
+        onCheatChange(withIds)
       } catch { /* offline */ }
     })()
   }
 
   const removeEntry = (id: string) => {
     const today = localDateStr()
+    const entry = cheatEntries.find(e => e.id === id)
     const updated = cheatEntries.filter(e => e.id !== id)
     localStorage.setItem(`ronin_cheat_meal_${today}`, JSON.stringify(updated))
     onCheatChange(updated)
+    if (entry?.supabaseId) {
+      const sid = entry.supabaseId
+      ;(async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) return
+          await supabase.from('cheat_meals').delete().eq('id', sid)
+        } catch { /* offline */ }
+      })()
+    }
   }
 
   const todayTotal = cheatEntries.reduce((s, e) => s + e.calories, 0)
@@ -1039,7 +1078,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
                 </div>
               </button>
 
-              <div style={{ overflow: 'hidden', maxHeight: isOpen ? '600px' : '0', transition: 'max-height 0.2s ease' }}>
+              <div style={{ overflow: 'hidden', maxHeight: isOpen ? '1200px' : '0', transition: 'max-height 0.25s ease' }}>
                 <div style={{ paddingBottom: '0.75rem' }}>
                   {items && items.length > 0 ? items.map((item, j) => (
                     <div key={j} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '0.45rem 0' }}>

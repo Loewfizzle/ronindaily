@@ -13,7 +13,7 @@ type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 function LoadingScreen() {
   return (
     <div style={{ minHeight: '100svh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <span className="font-jp onboarding-kanji" style={{ fontSize: '2.2rem', color: 'var(--red)', lineHeight: 1 }}>侍</span>
+      <span className="font-jp" style={{ fontSize: '2.2rem', color: 'var(--red)', lineHeight: 1, animation: 'kanjiPulse 4s ease-in-out infinite' }}>侍</span>
     </div>
   )
 }
