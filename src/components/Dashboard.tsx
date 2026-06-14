@@ -958,9 +958,20 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
         {/* Extreme mission indicator */}
         {extremeMission && (
-          <div style={{ padding: '0 1.5rem 0.75rem' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', letterSpacing: '0.06em' }}>
-              Extreme mission active.
+          <div style={{ padding: '0.25rem 1.5rem 0.75rem' }}>
+            <span style={{
+              display: 'inline-block',
+              background: 'var(--red)',
+              color: 'var(--text)',
+              borderRadius: '999px',
+              padding: '0.3rem 0.85rem',
+              fontSize: '0.65rem',
+              fontWeight: 600,
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              animation: 'kanjiPulse 3s ease-in-out infinite',
+            }}>
+              Extreme Mission
             </span>
           </div>
         )}
@@ -968,11 +979,16 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         {/* Countdown to next check-in */}
         {!showCheckin && dayNumber % 7 !== 0 && (() => {
           const daysUntil = 7 - (dayNumber % 7)
-          const color = daysUntil <= 2 ? 'var(--text-2)' : 'var(--text-3)'
-          const text = daysUntil === 1 ? 'Weigh in tomorrow.' : `Check in ${daysUntil} days.`
+          const textColor = daysUntil <= 2 ? 'var(--text-2)' : 'var(--text-3)'
+          const label = daysUntil === 1 ? 'day until check-in. Prepare to weigh in.' : 'days until check-in'
           return (
-            <div style={{ padding: '0 1.5rem 0.75rem' }}>
-              <span style={{ fontSize: '0.75rem', color, letterSpacing: '0.06em' }}>{text}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.5rem' }}>
+              <span style={{ fontSize: '2rem', fontWeight: 300, color: 'var(--text)', letterSpacing: '0.02em', lineHeight: 1 }}>
+                {daysUntil}
+              </span>
+              <span style={{ fontSize: '0.78rem', color: textColor, lineHeight: 1.3 }}>
+                {label}
+              </span>
             </div>
           )
         })()}
