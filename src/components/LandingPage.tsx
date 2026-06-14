@@ -13,12 +13,12 @@ const PILLARS = [
   {
     kanji: '侍',
     label: 'Commit',
-    text: 'One goal. One timeline. The math does not negotiate.',
+    text: 'Commit to a goal. The app does the math. You do the work.',
   },
   {
     kanji: '完',
     label: 'Complete',
-    text: 'Hit your goal. Earn your rank. Begin the next mission.',
+    text: 'The math guarantees it. Discipline earns it.',
   },
 ]
 
@@ -112,7 +112,7 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
           {[
             'The math tells you exactly what to eat and how to move.',
             "You either do it or you don't.",
-            'Show up. The math handles the rest.',
+            'Show up. The app handles the rest.',
             'Discipline required.',
           ].map((line, i) => (
             <div
