@@ -27,10 +27,12 @@ interface CheatEntry {
 
 const CHEAT_PICKS: Array<{ group: string; items: Array<{ id: string; label: string; cal: number }> }> = [
   { group: 'DRINKS', items: [
-    { id: 'beer',     label: 'Beer (12oz)',        cal: 150  },
-    { id: 'wine',     label: 'Glass of wine',      cal: 125  },
-    { id: 'cocktail', label: 'Cocktail',            cal: 200  },
-    { id: 'shot',     label: 'Shot of liquor',      cal: 100  },
+    { id: 'beer',          label: 'Beer (12oz)',        cal: 150  },
+    { id: 'wine',          label: 'Glass of wine',      cal: 125  },
+    { id: 'cocktail',      label: 'Cocktail',            cal: 200  },
+    { id: 'shot',          label: 'Shot of liquor',      cal: 100  },
+    { id: 'energy_drink',  label: 'Energy drink',        cal: 160  },
+    { id: 'soda',          label: 'Soda (12oz can)',      cal: 150  },
   ]},
   { group: 'FAST FOOD', items: [
     { id: 'burger',           label: 'Burger',            cal: 550  },
@@ -221,6 +223,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   }, [])
 
   useEffect(() => { if (!skipOpen) setSkipInput('') }, [skipOpen])
+
+  useEffect(() => {
+    if (sheet !== 'food') return
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [sheet])
 
   useEffect(() => {
     const sync = () => {
@@ -785,9 +793,33 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       </div>
 
       {/* ── Sheets ──────────────────────────────────────────────────── */}
-      <BottomSheet open={sheet === 'food'} onClose={() => setSheet(null)} title="Food">
-        <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} dayNumber={dayNumber} cheatEntries={cheatEntries} onCheatChange={handleCheatChange} />
-      </BottomSheet>
+      {sheet === 'food' && (
+        <div className="fullsheet-backdrop" onPointerDown={e => { if (e.target === e.currentTarget) setSheet(null) }}>
+          <div className="fullsheet-panel">
+            <div style={{ padding: '1.25rem 1.5rem 0', flexShrink: 0, background: 'var(--surface)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>Food</div>
+                  <div style={{ fontSize: '3rem', fontWeight: 300, color: 'var(--text)', letterSpacing: '0.05em', lineHeight: 1, marginTop: '0.35rem' }}>
+                    Day {dayNumber}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSheet(null)}
+                  aria-label="Close"
+                  style={{ background: 'none', border: 'none', color: 'var(--text-2)', cursor: 'pointer', fontSize: '1.1rem', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: 0, fontFamily: 'inherit' }}
+                >
+                  ✕
+                </button>
+              </div>
+              <div style={{ height: '1px', background: 'var(--red)', opacity: 0.35, marginTop: '1rem' }} />
+            </div>
+            <div className="fullsheet-content">
+              <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} dayNumber={dayNumber} cheatEntries={cheatEntries} onCheatChange={handleCheatChange} />
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomSheet open={sheet === 'movement'} onClose={() => setSheet(null)} title="Movement">
         <MovementDetail movement={movement} cal={movementCal} activityLog={activityLog} onLog={handleLogActivity} onUnlog={handleUnlogActivity} />
@@ -1021,11 +1053,12 @@ interface FoodDetailProps {
 }
 
 function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetailProps) {
-  const [expanded, setExpanded]           = useState<string | null>(null)
-  const [selectedPicks, setSelectedPicks] = useState<Set<string>>(new Set())
-  const [customItems, setCustomItems]     = useState<Array<{ id: string; desc: string; cal: number }>>([])
-  const [customDesc, setCustomDesc]       = useState('')
-  const [customCal, setCustomCal]         = useState('')
+  const [expanded, setExpanded]             = useState<Set<string>>(new Set())
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set())
+  const [selectedPicks, setSelectedPicks]   = useState<Set<string>>(new Set())
+  const [customItems, setCustomItems]       = useState<Array<{ id: string; desc: string; cal: number }>>([])
+  const [customDesc, setCustomDesc]         = useState('')
+  const [customCal, setCustomCal]           = useState('')
 
   const mealPlan = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('ronin_meal_plan') || 'null') as MealPlanData | null }
@@ -1035,7 +1068,12 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
   const dayIndex = (dayNumber - 1) % 7
   const planDay  = mealPlan?.days?.[dayIndex] ?? mealPlan?.days?.[0] ?? null
 
-  const toggle = (key: string) => setExpanded(prev => prev === key ? null : key)
+  const toggle = (key: string) => setExpanded(prev => {
+    const next = new Set(prev)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    return next
+  })
 
   const pickTotal   = Array.from(selectedPicks).reduce((sum, id) => {
     for (const g of CHEAT_PICKS) { const it = g.items.find(i => i.id === id); if (it) return sum + it.cal }
@@ -1135,7 +1173,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
       <div style={{ borderTop: '1px solid var(--border)' }}>
         {data.meals.map((meal) => {
           const slotKey = meal.name.toLowerCase() as 'breakfast' | 'lunch' | 'dinner' | 'snacks'
-          const isOpen  = expanded === slotKey
+          const isOpen  = expanded.has(slotKey)
           const items   = planDay ? planDay[slotKey] : null
 
           return (
@@ -1220,31 +1258,57 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
           </div>
         )}
 
-        {/* Quick picks */}
-        {CHEAT_PICKS.map(group => (
-          <div key={group.group} style={{ marginBottom: '1rem' }}>
-            <div style={GROUP_LABEL}>{group.group}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {group.items.map(item => (
+        {/* Quick picks — collapsible categories */}
+        <div style={{ borderTop: '1px solid var(--border)' }}>
+          {CHEAT_PICKS.map(group => {
+            const isCatOpen = openCategories.has(group.group)
+            return (
+              <div key={group.group}>
                 <button
-                  key={item.id}
-                  className={`toggle-btn${selectedPicks.has(item.id) ? ' active' : ''}`}
-                  onClick={() => togglePick(item.id)}
-                  style={{ minHeight: '44px', lineHeight: 1.3 }}
+                  onClick={() => setOpenCategories(prev => {
+                    const next = new Set(prev)
+                    if (next.has(group.group)) next.delete(group.group)
+                    else next.add(group.group)
+                    return next
+                  })}
+                  style={{
+                    width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '0.9rem 0', borderBottom: '1px solid var(--border)',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
                 >
-                  {item.label} — {item.cal}
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{group.group}</span>
+                  <span style={{
+                    fontSize: '0.9rem', color: 'var(--text-3)', display: 'inline-block',
+                    transform: isCatOpen ? 'rotate(90deg)' : 'none',
+                    transition: 'transform 0.15s ease',
+                  }}>›</span>
                 </button>
-              ))}
-            </div>
-          </div>
-        ))}
+                <div style={{ overflow: 'hidden', maxHeight: isCatOpen ? '600px' : '0', transition: 'max-height 0.25s ease' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', padding: '0.75rem 0 1rem' }}>
+                    {group.items.map(item => (
+                      <button
+                        key={item.id}
+                        className={`toggle-btn${selectedPicks.has(item.id) ? ' active' : ''}`}
+                        onClick={() => togglePick(item.id)}
+                        style={{ minHeight: '44px', lineHeight: 1.3 }}
+                      >
+                        {item.label} — {item.cal}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
 
         {/* Running total */}
         <div style={{
           fontSize: '1rem', fontWeight: 400,
           color: sessionTotal > 0 ? 'var(--text)' : 'var(--text-3)',
-          letterSpacing: '0.04em', paddingTop: '0.75rem', marginBottom: '1.25rem',
-          borderTop: '1px solid var(--border)',
+          letterSpacing: '0.04em', paddingTop: '0.75rem', marginTop: '0.25rem', marginBottom: '1.25rem',
         }}>
           Total: {sessionTotal.toLocaleString()} cal
         </div>
