@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import LandingPage from './components/LandingPage'
+import PrivacyPolicy from './components/PrivacyPolicy'
+import TermsOfService from './components/TermsOfService'
 import Onboarding from './components/Onboarding'
 import PreparationScreen from './components/PreparationScreen'
 import Dashboard from './components/Dashboard'
@@ -439,6 +441,10 @@ export default function App() {
     setUser(null)
     setScreen('login')
   }
+
+  const path = window.location.pathname
+  if (path === '/privacy') return <PrivacyPolicy />
+  if (path === '/terms') return <TermsOfService />
 
   if (screen === 'loading') return <LoadingScreen />
   if (screen === 'landing') return <LandingPage onBegin={() => setScreen('login')} />
