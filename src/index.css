@@ -12,6 +12,7 @@
   --red: #8b1c1c;
   --red-bright: #b02828;
   --gold: #c9a84c;
+  --green: #4a7c59;
 }
 
 *,
@@ -237,6 +238,26 @@ input[type='number'] {
 .commit-btn:active {
   transform: scale(0.98);
   box-shadow: 0 1px 6px rgba(139, 28, 28, 0.3);
+}
+
+/* ── Ghost / secondary button ── */
+.ghost-btn {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border-mid);
+  color: var(--text-2);
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.ghost-btn:hover {
+  border-color: var(--text-3);
+  color: var(--text);
 }
 
 /* ── Field error ── */

@@ -35,11 +35,15 @@ export default function ShareSheet({ open, onClose, streak, plan }: ShareSheetPr
   const shareText = `Day ${dayNumber}. ${changeText}. Streak: ${streak} days. ronindaily.app`
 
   const copyToClipboard = async (text: string) => {
+    let success = false
     try {
       await navigator.clipboard.writeText(text)
+      success = true
+    } catch { /* clipboard unavailable */ }
+    if (success) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch { /* clipboard unavailable */ }
+    }
   }
 
   const handleShare = async () => {

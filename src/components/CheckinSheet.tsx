@@ -120,7 +120,7 @@ export default function CheckinSheet({ open, onClose, plan, onCheckin }: Checkin
 
         <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
           <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
-            Last logged
+            {parseInt(localStorage.getItem('ronin_last_checkin') || '0', 10) > 0 ? 'Last logged' : 'Starting weight'}
           </div>
           <div style={{ fontSize: '1.2rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>
             {lastLogged} {unitLabel}
@@ -128,7 +128,7 @@ export default function CheckinSheet({ open, onClose, plan, onCheckin }: Checkin
         </div>
 
         <button className="commit-btn" onClick={handleConfirm} disabled={submitting} style={{ opacity: submitting ? 0.6 : 1 }}>
-          {submitting ? '...' : 'Confirm'}
+          {submitting ? 'Saving...' : 'Confirm'}
         </button>
       </div>
     </BottomSheet>

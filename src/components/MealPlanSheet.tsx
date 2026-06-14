@@ -67,19 +67,7 @@ export default function MealPlanSheet({ open, onClose, calorieTarget, unit }: Me
             <div style={{ marginTop: '1.25rem', paddingBottom: '0.5rem' }}>
               <button
                 onClick={() => setGroceryOpen(true)}
-                style={{
-                  width: '100%',
-                  padding: '0.85rem 1rem',
-                  background: 'transparent',
-                  border: '1px solid var(--border-mid)',
-                  color: 'var(--text-2)',
-                  fontSize: '0.8rem',
-                  letterSpacing: '0.22em',
-                  textTransform: 'uppercase',
-                  fontFamily: 'Inter, sans-serif',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.15s ease, color 0.15s ease',
-                }}
+                className="ghost-btn"
               >
                 Grocery List
               </button>

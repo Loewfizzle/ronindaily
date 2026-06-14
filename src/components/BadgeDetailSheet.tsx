@@ -24,8 +24,13 @@ function formatDate(iso: string): string {
 }
 
 function loadGoalRecord(): GoalRecord | null {
-  try { return JSON.parse(localStorage.getItem('ronin_goal_reached') || 'null') }
-  catch { return null }
+  try {
+    const raw = localStorage.getItem('ronin_goal_reached')
+    if (!raw || raw === 'true') return null
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null
+    return parsed as GoalRecord
+  } catch { return null }
 }
 
 // ── Goal-reached special view ─────────────────────────────────────────────────

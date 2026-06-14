@@ -76,9 +76,10 @@ function LoginScreen({ connectionError }: LoginScreenProps) {
       >
         侍
       </div>
-      <div style={{ fontSize: '1.1rem', letterSpacing: '0.44em', color: 'var(--text)', fontWeight: 500, textTransform: 'uppercase', marginBottom: '3rem' }}>
+      <div style={{ fontSize: '1.1rem', letterSpacing: '0.44em', color: 'var(--text)', fontWeight: 500, textTransform: 'uppercase', marginBottom: '1.5rem' }}>
         Ronin Daily
       </div>
+      <div style={{ width: '100%', maxWidth: '320px', height: '1px', background: 'var(--red)', opacity: 0.35, marginBottom: '1.5rem' }} />
 
       {connectionError && !sent && (
         <div style={{ fontSize: '0.72rem', color: 'var(--red-bright)', marginBottom: '1.5rem', textAlign: 'center', letterSpacing: '0.04em', maxWidth: '320px' }}>
@@ -278,7 +279,6 @@ export default function App() {
 
   async function loadProfile(userId: string) {
     const gen = ++loadGen.current
-    console.log('[ronin] loadProfile start gen=' + gen)
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -286,22 +286,13 @@ export default function App() {
         .eq('id', userId)
         .single()
 
-      if (loadGen.current !== gen) {
-        console.log('[ronin] loadProfile gen=' + gen + ' cancelled (superseded)')
-        return
-      }
+      if (loadGen.current !== gen) return
 
       if (error || !data) {
-        const dest = resolveScreen()
-        console.log('[ronin] loadProfile gen=' + gen + ' no profile → ' + dest +
-          ' (committed=' + localStorage.getItem('ronin_committed') +
-          ' prepared=' + localStorage.getItem('ronin_prepared') + ')')
-        setScreen(dest)
+        setScreen(resolveScreen())
         return
       }
 
-      console.log('[ronin] loadProfile gen=' + gen + ' found profile start_date=' + data.start_date +
-        ' prepared=' + localStorage.getItem('ronin_prepared'))
       const profile = profileToLocal(data)
       localStorage.setItem('ronin_profile', JSON.stringify(profile))
       localStorage.setItem('ronin_committed', 'true')
@@ -317,10 +308,7 @@ export default function App() {
         .order('week_number', { ascending: false })
         .limit(1)
 
-      if (loadGen.current !== gen) {
-        console.log('[ronin] loadProfile gen=' + gen + ' cancelled after checkins fetch')
-        return
-      }
+      if (loadGen.current !== gen) return
 
       if (checkins && checkins.length > 0) {
         const last = checkins[0]
@@ -330,13 +318,9 @@ export default function App() {
       }
 
       setProfileError(false)
-      const dest = resolveScreen()
-      console.log('[ronin] loadProfile gen=' + gen + ' → ' + dest +
-        ' (prepared=' + localStorage.getItem('ronin_prepared') + ')')
-      setScreen(dest)
-    } catch (e) {
+      setScreen(resolveScreen())
+    } catch {
       if (loadGen.current !== gen) return
-      console.log('[ronin] loadProfile gen=' + gen + ' exception:', e)
       setProfileError(true)
       setScreen(resolveScreen())
     }
@@ -345,12 +329,9 @@ export default function App() {
   const handleCommit = async (data: UserProfile) => {
     // Cancel any in-flight loadProfile so it cannot override the screen we set here
     loadGen.current++
-    console.log('[ronin] handleCommit loadGen bumped to ' + loadGen.current)
 
     // If ronin_start already exists this is a goal adjustment mid-mission — keep start date
     const isGoalAdjustment = !!localStorage.getItem('ronin_start')
-    console.log('[ronin] handleCommit isGoalAdjustment=' + isGoalAdjustment +
-      ' ronin_start=' + localStorage.getItem('ronin_start'))
 
     localStorage.setItem('ronin_profile', JSON.stringify(data))
     localStorage.setItem('ronin_committed', 'true')
@@ -364,7 +345,6 @@ export default function App() {
           await supabase.from('profiles').upsert(profileToDb(data, user.id, startDate))
         } catch { /* offline */ }
       }
-      console.log('[ronin] handleCommit → dashboard (goal adjustment)')
       setScreen('dashboard')
     } else {
       // New mission — enter preparation period; start date is set only when BEGIN is hit
@@ -374,7 +354,6 @@ export default function App() {
       localStorage.removeItem('ronin_meal_prefs')
       localStorage.removeItem('ronin_grocery_list')
       localStorage.removeItem('ronin_grocery_checked')
-      console.log('[ronin] handleCommit → preparation (new mission)')
       setScreen('preparation')
     }
   }
@@ -415,6 +394,7 @@ export default function App() {
       try {
         await supabase.from('activity_logs').delete().eq('user_id', user.id)
         await supabase.from('badges').delete().eq('user_id', user.id)
+        await supabase.from('cheat_meals').delete().eq('user_id', user.id)
         await supabase.from('daily_logs').delete().eq('user_id', user.id)
         await supabase.from('checkins').delete().eq('user_id', user.id)
         await supabase.from('profiles').delete().eq('id', user.id)

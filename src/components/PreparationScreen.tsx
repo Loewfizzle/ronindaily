@@ -208,7 +208,7 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
   const statBlocks = [
     { label: 'Daily Target', value: `${calorieTarget.toLocaleString()} cal` },
     { label: 'Duration',     value: `${targetWeeks} weeks` },
-    { label: 'Start',        value: 'When you are ready' },
+    { label: 'Start',        value: 'Your call.' },
   ]
 
   const go = (n: 1|2|3|4, dir: 'forward'|'back') => {
@@ -404,7 +404,7 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                 {statBlocks.map(({ label, value }) => (
                   <div key={label} style={{ flex: 1, background: 'var(--elevated)', padding: '1rem 0.75rem', textAlign: 'center' }}>
                     <div style={{
-                      fontSize: '0.7rem', letterSpacing: '0.22em', color: 'var(--text)',
+                      fontSize: '0.75rem', letterSpacing: '0.22em', color: 'var(--text)',
                       textTransform: 'uppercase', marginBottom: '0.45rem',
                     }}>
                       {label}
@@ -424,6 +424,7 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                     background: 'none', border: 'none', color: 'var(--text-3)',
                     fontSize: '0.8rem', letterSpacing: '0.04em', cursor: 'pointer',
                     padding: 0, fontFamily: 'Inter, sans-serif',
+                    minHeight: '44px', display: 'inline-flex', alignItems: 'center',
                   }}
                 >
                   Edit goal →
@@ -446,9 +447,13 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
               <div style={{ marginBottom: '1.5rem' }}>
                 <button
                   type="button"
-                  className="commit-btn"
-                  style={{ width: 'auto', padding: '0.6rem 1.5rem' }}
                   onClick={() => go(1, 'back')}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--text-3)',
+                    fontSize: '0.8rem', letterSpacing: '0.04em', cursor: 'pointer',
+                    padding: 0, fontFamily: 'Inter, sans-serif',
+                    minHeight: '44px', display: 'inline-flex', alignItems: 'center',
+                  }}
                 >
                   ← Back
                 </button>
@@ -481,9 +486,13 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
               <div style={{ marginBottom: '1.5rem' }}>
                 <button
                   type="button"
-                  className="commit-btn"
-                  style={{ width: 'auto', padding: '0.6rem 1.5rem' }}
                   onClick={() => go(2, 'back')}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--text-3)',
+                    fontSize: '0.8rem', letterSpacing: '0.04em', cursor: 'pointer',
+                    padding: 0, fontFamily: 'Inter, sans-serif',
+                    minHeight: '44px', display: 'inline-flex', alignItems: 'center',
+                  }}
                 >
                   ← Back
                 </button>
@@ -582,14 +591,14 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem', paddingTop: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
                       <span style={{ fontSize: '0.8rem', letterSpacing: '0.12em', color: 'var(--text-2)', textTransform: 'uppercase', flexShrink: 0 }}>Meal Plan</span>
                       <span style={{ fontSize: '0.95rem', color: hasMealPlan ? 'var(--red)' : 'var(--text-3)', textAlign: 'right' }}>
-                        {hasMealPlan ? 'Ready ✓' : 'Not generated'}
+                        {hasMealPlan ? 'Ready' : 'Not generated'}
                       </span>
                     </div>
                     {/* Grocery List */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem', paddingTop: '1rem' }}>
                       <span style={{ fontSize: '0.8rem', letterSpacing: '0.12em', color: 'var(--text-2)', textTransform: 'uppercase', flexShrink: 0 }}>Grocery List</span>
                       <span style={{ fontSize: '0.95rem', color: hasGrocery ? 'var(--red)' : 'var(--text-3)', textAlign: 'right' }}>
-                        {hasGrocery ? 'Ready ✓' : 'Not generated'}
+                        {hasGrocery ? 'Ready' : 'Not generated'}
                       </span>
                     </div>
                   </div>
@@ -608,7 +617,6 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                     <div key={i} style={{
                       fontSize: '1.2rem', color: 'var(--text)',
                       lineHeight: 2.2, letterSpacing: '0.02em',
-                      whiteSpace: 'nowrap',
                     }}>
                       {line}
                     </div>

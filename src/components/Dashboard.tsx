@@ -175,6 +175,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [selectedBadge, setSelectedBadge] = useState<EarnedBadge | null>(null)
   const [skipOpen, setSkipOpen]           = useState(false)
   const [skipConfirmed, setSkipConfirmed] = useState(false)
+  const [skipInput, setSkipInput]         = useState('')
   const skipConfirmTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
   const logDebounceRef                    = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
   const [dismissed, setDismissed] = useState<string[]>(() => {
@@ -219,6 +220,8 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     Object.values(logDebounceRef.current).forEach(clearTimeout)
   }, [])
 
+  useEffect(() => { if (!skipOpen) setSkipInput('') }, [skipOpen])
+
   useEffect(() => {
     const sync = () => {
       if (document.visibilityState !== 'visible') return
@@ -261,7 +264,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     const p = planRef.current
     if (!p) return
     if (progressPct >= 100 && !localStorage.getItem('ronin_goal_reached')) {
-      localStorage.setItem('ronin_goal_reached', 'true')
+      localStorage.setItem('ronin_goal_reached', JSON.stringify({
+        achievedAt: new Date().toISOString(),
+        lostLbs: p.startWeight - p.currentWeight,
+        unit: p.unit,
+        totalDays: p.dayNumber,
+      }))
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressPct])
@@ -685,11 +693,13 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
               </div>
             )}
             {hasActivityLog ? (
-              <div style={{ fontSize: '0.8rem', color: calSurplus >= 0 ? '#4a7c59' : 'var(--text-2)' }}>
-                {actualCalBurned} cal burned · {calSurplus >= 0 ? `+${calSurplus} surplus` : `${Math.abs(calSurplus)} shortfall`}.
+              <div style={{ fontSize: '0.8rem', color: calSurplus >= 10 ? 'var(--green)' : 'var(--text-2)' }}>
+                {actualCalBurned.toLocaleString()} cal burned{Math.abs(calSurplus) >= 10
+                  ? ` · ${calSurplus >= 0 ? `+${calSurplus.toLocaleString()} cal surplus` : `${Math.abs(calSurplus).toLocaleString()} cal shortfall`}`
+                  : ''}.
               </div>
             ) : (
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>{movementCal} cal burn required.</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>{movementCal.toLocaleString()} cal burn required.</div>
             )}
           </div>
 
@@ -758,10 +768,29 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             <div style={{ fontSize: '1.35rem', fontWeight: 300, color: 'var(--text)', letterSpacing: '0.02em', lineHeight: 1.3, marginBottom: '0.9rem' }}>
               You have failed.
             </div>
-            <div style={{ fontSize: '0.88rem', color: 'var(--text-2)', lineHeight: 1.85, marginBottom: '2.5rem' }}>
+            <div style={{ fontSize: '0.88rem', color: 'var(--text-2)', lineHeight: 1.85, marginBottom: '1.5rem' }}>
               You have dishonored your name and your family.
             </div>
-            <button className="commit-btn" onClick={handleSkipConfirm} style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1.75rem' }}>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                Type SKIP to confirm
+              </div>
+              <input
+                className="input-bare"
+                type="text"
+                placeholder="SKIP"
+                value={skipInput}
+                onChange={e => setSkipInput(e.target.value)}
+                autoComplete="off"
+                style={{ width: '100%' }}
+              />
+            </div>
+            <button
+              className="commit-btn"
+              onClick={handleSkipConfirm}
+              disabled={skipInput !== 'SKIP'}
+              style={{ marginBottom: '1.5rem', opacity: skipInput === 'SKIP' ? 1 : 0.4 }}
+            >
               I Accept This Failure
             </button>
             <div style={{ textAlign: 'center' }}>
@@ -785,7 +814,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           padding: '2rem',
         }}>
           <div style={{
-            fontSize: '0.85rem', color: '#ffffff',
+            fontSize: '0.85rem', color: 'var(--text)',
             letterSpacing: '0.3em', textTransform: 'uppercase',
             textAlign: 'center', lineHeight: 2.6,
           }}>
@@ -892,7 +921,7 @@ function MealPlanBlock({ calorieTarget, onOpen }: { calorieTarget: number; onOpe
           <div style={{ fontSize: '2.2rem', fontWeight: 300, letterSpacing: '-0.02em', lineHeight: 1, color: 'var(--text)', marginBottom: '0.3rem' }}>
             7<span style={{ fontSize: '0.85rem', color: 'var(--text-2)', fontWeight: 400, marginLeft: '0.35rem' }}>days</span>
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>Weekly plan ready.</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>Plan generated.</div>
         </>
       ) : (
         <>
