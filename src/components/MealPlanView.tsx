@@ -212,8 +212,9 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   const [regenErrors, setRegenErrors] = useState<Set<string>>(new Set())
   const [exportOpen, setExportOpen]   = useState(false)
   const [regenConfirmOpen, setRegenConfirmOpen] = useState(false)
-  const [slotToast, setSlotToast]     = useState<{ dayNum: number; slot: MealSlot } | null>(null)
+  const [slotToast, setSlotToast]     = useState<{ dayNum: number; slot: MealSlot; fading: boolean } | null>(null)
   const slotToastTimerRef             = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const slotToastFadeTimerRef         = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [budget, setBudget]             = useState<MealPrefs['budget']>('standard')
   const [restrictions, setRestrictions] = useState<string[]>([])
@@ -310,7 +311,11 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
 
   const handleSlotRegenClick = useCallback((dayNum: number, slot: MealSlot) => {
     if (slotToastTimerRef.current) clearTimeout(slotToastTimerRef.current)
-    setSlotToast({ dayNum, slot })
+    if (slotToastFadeTimerRef.current) clearTimeout(slotToastFadeTimerRef.current)
+    setSlotToast({ dayNum, slot, fading: false })
+    slotToastFadeTimerRef.current = setTimeout(() => {
+      setSlotToast(t => t ? { ...t, fading: true } : null)
+    }, 1700)
     slotToastTimerRef.current = setTimeout(() => {
       setSlotToast(null)
       slotToastTimerRef.current = null
@@ -320,7 +325,13 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
 
   const handleUndoSlotRegen = useCallback(() => {
     if (slotToastTimerRef.current) { clearTimeout(slotToastTimerRef.current); slotToastTimerRef.current = null }
+    if (slotToastFadeTimerRef.current) { clearTimeout(slotToastFadeTimerRef.current); slotToastFadeTimerRef.current = null }
     setSlotToast(null)
+  }, [])
+
+  useEffect(() => () => {
+    if (slotToastTimerRef.current) clearTimeout(slotToastTimerRef.current)
+    if (slotToastFadeTimerRef.current) clearTimeout(slotToastFadeTimerRef.current)
   }, [])
 
   useEffect(() => {
@@ -868,7 +879,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
           padding: '0.75rem 1rem',
           display: 'flex', alignItems: 'center', gap: '0.75rem',
           whiteSpace: 'nowrap',
-          animation: 'toastFadeIn 0.2s ease forwards',
+          animation: slotToast.fading ? 'toastFadeOut 0.3s ease forwards' : 'toastFadeIn 0.2s ease forwards',
         }}
       >
         <span style={{ fontSize: '0.82rem', color: 'var(--text-2)' }}>

@@ -965,6 +965,18 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           </div>
         )}
 
+        {/* Countdown to next check-in */}
+        {!showCheckin && dayNumber % 7 !== 0 && (() => {
+          const daysUntil = 7 - (dayNumber % 7)
+          const color = daysUntil <= 2 ? 'var(--text-2)' : 'var(--text-3)'
+          const text = daysUntil === 1 ? 'Weigh in tomorrow.' : `Check in ${daysUntil} days.`
+          return (
+            <div style={{ padding: '0 1.5rem 0.75rem' }}>
+              <span style={{ fontSize: '0.75rem', color, letterSpacing: '0.06em' }}>{text}</span>
+            </div>
+          )
+        })()}
+
         {/* Check-in banner */}
         {showCheckin && (
           <div
@@ -1044,7 +1056,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
               gap: '0.75rem',
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.65rem', letterSpacing: '0.18em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                <div style={{ fontSize: '0.72rem', letterSpacing: '0.18em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
                   Pattern Detected
                 </div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.7 }}>
@@ -2073,7 +2085,7 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
                         background: 'none', border: '1px solid var(--border-mid)', color: 'var(--text-2)',
                         fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase',
                         cursor: 'pointer', padding: '0 0.75rem', fontFamily: 'Inter, sans-serif',
-                        minHeight: '36px', flexShrink: 0,
+                        minHeight: '44px', flexShrink: 0,
                       }}
                     >Done</button>
                     <button
