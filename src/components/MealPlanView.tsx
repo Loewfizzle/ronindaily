@@ -358,7 +358,11 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   const toggleRestriction = (id: string) =>
     setRestrictions(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   const toggleEquipment = (id: string) =>
-    setEquipment(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+    setEquipment(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id)
+      if (id === 'no_equipment') return ['no_equipment']
+      return [...prev.filter(x => x !== 'no_equipment'), id]
+    })
 
   const dayRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
@@ -394,7 +398,8 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                 style={{
                   flex: 1,
                   padding: '0.55rem 0.2rem',
-                  fontSize: '0.7rem',
+                  minHeight: '44px',
+                  fontSize: '0.75rem',
                   lineHeight: 1.25,
                   letterSpacing: '0.02em',
                   textAlign: 'center',
@@ -429,6 +434,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                 style={{
                   borderRadius: '999px',
                   padding: '0.4rem 1rem',
+                  minHeight: '44px',
                   fontSize: '0.78rem',
                   cursor: 'pointer',
                   fontFamily: 'Inter, sans-serif',
@@ -457,6 +463,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                 style={{
                   borderRadius: '999px',
                   padding: '0.4rem 1rem',
+                  minHeight: '44px',
                   fontSize: '0.78rem',
                   cursor: 'pointer',
                   fontFamily: 'Inter, sans-serif',

@@ -1,4 +1,6 @@
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+import type { ReactNode } from 'react'
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div style={{ marginBottom: '2rem' }}>
       <div style={{

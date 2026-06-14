@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BADGE_DEFS, BADGE_KANJI } from '../utils/badges'
 
 function CloseIcon() {
@@ -27,6 +27,8 @@ function formatDate(iso: string): string {
 
 export default function BadgeDetailSheet({ badge, onClose }: BadgeDetailSheetProps) {
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => { setCopied(false) }, [badge])
 
   if (!badge) return null
 
