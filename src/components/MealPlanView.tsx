@@ -360,6 +360,13 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   const toggleEquipment = (id: string) =>
     setEquipment(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
 
+  const dayRefs = useRef<Record<number, HTMLDivElement | null>>({})
+
+  const budgetLabel = useMemo(
+    () => BUDGET_OPTIONS.find(b => b.id === budget)?.label ?? budget,
+    [budget]
+  )
+
   // ── Prefs screen ──────────────────────────────────────────────────────────────
 
   if (screen === 'prefs') return (
@@ -528,13 +535,6 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   // ── Ready screen ──────────────────────────────────────────────────────────────
 
   if (!mealPlan) return null
-
-  const dayRefs = useRef<Record<number, HTMLDivElement | null>>({})
-
-  const budgetLabel = useMemo(
-    () => BUDGET_OPTIONS.find(b => b.id === budget)?.label ?? budget,
-    [budget]
-  )
 
   const handleDayClick = (dayNum: number) => {
     const willOpen = openDay !== dayNum
