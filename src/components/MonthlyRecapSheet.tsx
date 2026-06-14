@@ -19,7 +19,7 @@ function StatCell({ label, value }: { label: string; value: number | string }) {
   return (
     <div style={{ textAlign: 'center', padding: '0.8rem 0.5rem' }}>
       <div style={{ fontSize: '1.9rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', color: 'var(--text-3)', textTransform: 'uppercase', marginTop: '0.35rem' }}>{label}</div>
+      <div style={{ fontSize: '0.72rem', letterSpacing: '0.14em', color: 'var(--text-3)', textTransform: 'uppercase', marginTop: '0.35rem' }}>{label}</div>
     </div>
   )
 }
@@ -36,9 +36,9 @@ function fmtWeight(lbs: number, unit: 'imperial' | 'metric'): string {
   return `${Math.round(lbs)} lbs`
 }
 
-function fmtLoss(lbs: number, unit: 'imperial' | 'metric'): string {
-  if (unit === 'metric') return `${(lbs / 2.20462).toFixed(1)} kg`
-  return `${lbs.toFixed(1)} lbs`
+function fmtChange(lbs: number, unit: 'imperial' | 'metric'): string {
+  if (unit === 'metric') return `${(Math.abs(lbs) / 2.20462).toFixed(1)} kg`
+  return `${Math.abs(lbs).toFixed(1)} lbs`
 }
 
 function Divider({ color = 'var(--red)' }: { color?: string }) {
@@ -51,8 +51,10 @@ export default function MonthlyRecapSheet({
 }: MonthlyRecapSheetProps) {
   if (!open) return null
 
-  const lostLbs = weightStart !== null && weightCurrent !== null ? weightStart - weightCurrent : null
-  const aheadOfPace = lostLbs !== null ? lostLbs >= expectedLossLbs : null
+  const delta = weightStart !== null && weightCurrent !== null ? weightStart - weightCurrent : null
+  const lost = delta !== null && delta > 0
+  const gained = delta !== null && delta < 0
+  const aheadOfPace = delta !== null && expectedLossLbs > 0 ? delta >= expectedLossLbs : null
   const showWeight = weightStart !== null && weightCurrent !== null
 
   return (
@@ -97,10 +99,7 @@ export default function MonthlyRecapSheet({
         <div style={{ height: '1px', background: 'var(--gold)', opacity: 0.4, marginBottom: '1.25rem' }} />
 
         {/* Stats 2×2 grid */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr',
-          border: '1px solid var(--border)',
-        }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid var(--border)' }}>
           <div style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
             <StatCell label="Complete Days" value={complete} />
           </div>
@@ -120,7 +119,7 @@ export default function MonthlyRecapSheet({
           <>
             <Divider />
             <div>
-              <div style={{ fontSize: '0.65rem', letterSpacing: '0.18em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.18em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
                 Weight Progress
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.4rem' }}>
@@ -131,10 +130,16 @@ export default function MonthlyRecapSheet({
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>Current</span>
                 <span style={{ fontSize: '1rem', color: 'var(--text)' }}>{fmtWeight(weightCurrent!, unit)}</span>
               </div>
-              {lostLbs !== null && lostLbs > 0 && (
+              {lost && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>Lost this month</span>
-                  <span style={{ fontSize: '1rem', color: 'var(--text)' }}>{fmtLoss(lostLbs, unit)}</span>
+                  <span style={{ fontSize: '1rem', color: 'var(--green)' }}>{fmtChange(delta!, unit)}</span>
+                </div>
+              )}
+              {gained && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>Gained this month</span>
+                  <span style={{ fontSize: '1rem', color: 'var(--red-bright)' }}>{fmtChange(delta!, unit)}</span>
                 </div>
               )}
               {aheadOfPace !== null && (
@@ -153,13 +158,13 @@ export default function MonthlyRecapSheet({
             <div style={{ display: 'flex', gap: '1rem' }}>
               {strongestDay && (
                 <div style={{ flex: 1, padding: '0.7rem 0.8rem', background: 'var(--elevated)', border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '0.62rem', letterSpacing: '0.16em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Strongest Day</div>
+                  <div style={{ fontSize: '0.72rem', letterSpacing: '0.16em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Strongest Day</div>
                   <div style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{strongestDay}</div>
                 </div>
               )}
               {weakestDay && (
                 <div style={{ flex: 1, padding: '0.7rem 0.8rem', background: 'var(--elevated)', border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '0.62rem', letterSpacing: '0.16em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Weakest Day</div>
+                  <div style={{ fontSize: '0.72rem', letterSpacing: '0.16em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Weakest Day</div>
                   <div style={{ fontSize: '0.9rem', color: 'var(--red-bright)' }}>{weakestDay}</div>
                 </div>
               )}

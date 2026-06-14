@@ -127,6 +127,12 @@ interface DashboardProps {
   connectionWarning: string | null
 }
 
+interface MonthlyRecapData {
+  complete: number; partial: number; failed: number; streakHigh: number
+  weightStart: number | null; weightCurrent: number | null
+  strongestDay: string | null; weakestDay: string | null
+}
+
 // Renders the streak pip row + week indicator + share button.
 // Used in both the mobile footer and the desktop left-column footer.
 function FooterContent({
@@ -206,11 +212,6 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     return null
   })
 
-  interface MonthlyRecapData {
-    complete: number; partial: number; failed: number; streakHigh: number
-    weightStart: number | null; weightCurrent: number | null
-    strongestDay: string | null; weakestDay: string | null
-  }
   const [monthlyRecapDismissed, setMonthlyRecapDismissed] = useState(() => {
     try {
       const p = loadPlan(); if (!p || p.dayNumber % 30 !== 0) return true

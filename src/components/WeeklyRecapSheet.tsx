@@ -12,7 +12,7 @@ function StatCell({ label, value }: { label: string; value: number }) {
   return (
     <div style={{ flex: 1, textAlign: 'center', padding: '0.9rem 0.5rem' }}>
       <div style={{ fontSize: '2.2rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '0.68rem', letterSpacing: '0.15em', color: 'var(--text-3)', textTransform: 'uppercase', marginTop: '0.4rem' }}>{label}</div>
+      <div style={{ fontSize: '0.72rem', letterSpacing: '0.15em', color: 'var(--text-3)', textTransform: 'uppercase', marginTop: '0.4rem' }}>{label}</div>
     </div>
   )
 }
@@ -84,7 +84,7 @@ export default function WeeklyRecapSheet({
         {patternMessage && (
           <>
             <div style={{ marginBottom: '1.25rem' }}>
-              <div style={{ fontSize: '0.65rem', letterSpacing: '0.18em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.18em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
                 Pattern Noticed
               </div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-2)', lineHeight: 1.7 }}>{patternMessage}</div>

@@ -12,7 +12,7 @@ function StatCell({ label, value, color }: { label: string; value: number; color
       <div style={{ fontSize: '2rem', fontWeight: 300, color: color ?? 'var(--text)', lineHeight: 1 }}>
         {value}
       </div>
-      <div style={{ fontSize: '0.7rem', letterSpacing: '0.14em', color: 'var(--text-3)', textTransform: 'uppercase', marginTop: '0.4rem' }}>
+      <div style={{ fontSize: '0.72rem', letterSpacing: '0.14em', color: 'var(--text-3)', textTransform: 'uppercase', marginTop: '0.4rem' }}>
         {label}
       </div>
     </div>
@@ -53,7 +53,7 @@ export default function PatternSheet({ open, report, onClose }: PatternSheetProp
           padding: '1.1rem 1.5rem',
           borderBottom: '1px solid var(--border)',
         }}>
-          <span style={{ fontSize: '0.7rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: '0.72rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
             Pattern Analysis
           </span>
           <button
@@ -99,13 +99,13 @@ export default function PatternSheet({ open, report, onClose }: PatternSheetProp
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1.25rem' }}>
                   {report!.strongestDayOfWeek && (
                     <div style={{ flex: 1, padding: '0.75rem 0.85rem', background: 'var(--elevated)', border: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: '0.65rem', letterSpacing: '0.16em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Strongest</div>
+                      <div style={{ fontSize: '0.72rem', letterSpacing: '0.16em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Strongest</div>
                       <div style={{ fontSize: '0.95rem', color: 'var(--text)' }}>{report!.strongestDayOfWeek}</div>
                     </div>
                   )}
                   {report!.weakestDayOfWeek && (
                     <div style={{ flex: 1, padding: '0.75rem 0.85rem', background: 'var(--elevated)', border: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: '0.65rem', letterSpacing: '0.16em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Weakest</div>
+                      <div style={{ fontSize: '0.72rem', letterSpacing: '0.16em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Weakest</div>
                       <div style={{ fontSize: '0.95rem', color: 'var(--red-bright)' }}>{report!.weakestDayOfWeek}</div>
                     </div>
                   )}
@@ -141,7 +141,7 @@ export default function PatternSheet({ open, report, onClose }: PatternSheetProp
 
           {/* Bottom note */}
           <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', lineHeight: 1.6, textAlign: 'center' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', lineHeight: 1.6, textAlign: 'center' }}>
               Patterns update daily. Based on your accountability check-ins.
             </div>
           </div>
