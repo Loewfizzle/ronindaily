@@ -110,8 +110,8 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
         {/* Body lines */}
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', marginBottom: '2.75rem' }}>
           {[
-            'The math tells you exactly what to eat and how to move.',
-            "You either do it or you don't.",
+            'Every day the app gives you one mission.',
+            'Eat this. Move this much. That is all.',
             'Show up. The app handles the rest.',
             'Discipline required.',
           ].map((line, i) => (
