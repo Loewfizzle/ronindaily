@@ -195,6 +195,40 @@ export type Database = {
           },
         ]
       }
+      cheat_meals: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string
+          logged_date: string
+          description: string | null
+          calories: number
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id: string
+          logged_date: string
+          description?: string | null
+          calories: number
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string
+          logged_date?: string
+          description?: string | null
+          calories?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'cheat_meals_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

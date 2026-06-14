@@ -17,6 +17,56 @@ interface EarnedBadge {
   earned_at: string
 }
 
+interface CheatEntry {
+  id: string
+  description: string
+  calories: number
+  loggedAt: string
+}
+
+const CHEAT_PICKS: Array<{ group: string; items: Array<{ id: string; label: string; cal: number }> }> = [
+  { group: 'DRINKS', items: [
+    { id: 'beer',     label: 'Beer (12oz)',        cal: 150  },
+    { id: 'wine',     label: 'Glass of wine',      cal: 125  },
+    { id: 'cocktail', label: 'Cocktail',            cal: 200  },
+    { id: 'shot',     label: 'Shot of liquor',      cal: 100  },
+  ]},
+  { group: 'FAST FOOD', items: [
+    { id: 'burger',           label: 'Burger',            cal: 550  },
+    { id: 'fries',            label: 'Large fries',       cal: 490  },
+    { id: 'chicken_sandwich', label: 'Chicken sandwich',  cal: 500  },
+    { id: 'combo',            label: 'Combo meal',        cal: 1100 },
+  ]},
+  { group: 'PIZZA', items: [
+    { id: 'one_slice',  label: 'One slice',  cal: 300 },
+    { id: 'two_slices', label: 'Two slices', cal: 600 },
+  ]},
+  { group: 'DESSERT', items: [
+    { id: 'cake',      label: 'Slice of cake',      cal: 350 },
+    { id: 'ice_cream', label: 'Ice cream (1 cup)',  cal: 300 },
+    { id: 'cookies',   label: 'Cookies (3)',         cal: 250 },
+  ]},
+  { group: 'OTHER', items: [
+    { id: 'chips',      label: 'Bag of chips',   cal: 300 },
+    { id: 'candy',      label: 'Candy bar',       cal: 250 },
+    { id: 'late_night', label: 'Late night run',  cal: 600 },
+  ]},
+]
+
+function getCheatFeedback(totalCheatCal: number, dailyTarget: number): { text: string; color: string } {
+  if (totalCheatCal >= dailyTarget * 2) {
+    return { text: 'The mission is compromised. Recommit tomorrow.', color: 'var(--red-bright)' }
+  }
+  const remaining = dailyTarget - totalCheatCal
+  if (remaining > 0) {
+    return { text: `${remaining.toLocaleString()} calories remaining today. Stay on target.`, color: 'var(--text-2)' }
+  }
+  const over = Math.abs(remaining)
+  if (over <= 200) return { text: 'You are at your limit. No more today.', color: 'var(--text-2)' }
+  if (over <= 500) return { text: `You are ${over.toLocaleString()} calories over. Reduce tomorrow by ${over.toLocaleString()}.`, color: 'var(--text-2)' }
+  return { text: 'That was not a cheat meal. That was a decision. Adjust the rest of the week.', color: 'var(--red-bright)' }
+}
+
 function formatDate(d: Date): string {
   const day   = d.getDate()
   const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase()
@@ -137,6 +187,11 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       const raw = localStorage.getItem(`ronin_activity_log_${localDateStr()}`)
       return raw ? (JSON.parse(raw) as Record<string, number>) : {}
     } catch { return {} }
+  })
+  const [cheatEntries, setCheatEntries] = useState<CheatEntry[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`ronin_cheat_meal_${localDateStr()}`) || '[]') as CheatEntry[]
+    } catch { return [] }
   })
   const plan = useMemo(() => loadPlan(), [refreshKey])
   const planRef = useRef(plan)
@@ -351,6 +406,10 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     setBadgeQueue(prev => prev.slice(1))
   }, [])
 
+  const handleCheatChange = useCallback((entries: CheatEntry[]) => {
+    setCheatEntries(entries)
+  }, [])
+
   if (!plan) {
     return (
       <div style={{ minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
@@ -373,6 +432,8 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   } = plan
 
   // progressPct, lastCheckin, showCheckin, savedBest, bestProgress computed above the early return.
+
+  const todayCheatCal = cheatEntries.reduce((s, e) => s + e.calories, 0)
 
   // Actual cal burned from logged activities vs planned target.
   const actualCalBurned = Object.entries(activityLog)
@@ -542,6 +603,11 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             <div style={{ fontSize: '0.8rem', color: 'var(--text-2)' }}>
               Deficit: {(maintenance - calorieTarget).toLocaleString()} cal below maintenance.
             </div>
+            {todayCheatCal > 0 && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-3)', marginTop: '0.35rem', letterSpacing: '0.04em' }}>
+                Cheat meal logged. {Math.max(0, calorieTarget - todayCheatCal).toLocaleString()} cal remaining.
+              </div>
+            )}
           </div>
 
           <div className="mission-block" onClick={() => setSheet('movement')}>
@@ -646,7 +712,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
       {/* ── Sheets ──────────────────────────────────────────────────── */}
       <BottomSheet open={sheet === 'food'} onClose={() => setSheet(null)} title="Food">
-        <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} dayNumber={dayNumber} />
+        <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} dayNumber={dayNumber} cheatEntries={cheatEntries} onCheatChange={handleCheatChange} />
       </BottomSheet>
 
       <BottomSheet open={sheet === 'movement'} onClose={() => setSheet(null)} title="Movement">
@@ -849,24 +915,91 @@ function Stat({ label, value, unit }: StatProps) {
 interface FoodDetailProps {
   data: { target: number; maintenance: number; deficit: number; meals: Meal[] }
   dayNumber: number
+  cheatEntries: CheatEntry[]
+  onCheatChange: (entries: CheatEntry[]) => void
 }
 
-function FoodDetail({ data, dayNumber }: FoodDetailProps) {
-  const [expanded, setExpanded] = useState<string | null>(null)
+function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetailProps) {
+  const [expanded, setExpanded]           = useState<string | null>(null)
+  const [selectedPicks, setSelectedPicks] = useState<Set<string>>(new Set())
+  const [customItems, setCustomItems]     = useState<Array<{ id: string; desc: string; cal: number }>>([])
+  const [customDesc, setCustomDesc]       = useState('')
+  const [customCal, setCustomCal]         = useState('')
 
   const mealPlan = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('ronin_meal_plan') || 'null') as MealPlanData | null }
     catch { return null }
   }, [])
 
-  // Cycle through 7-day plan; fall back to first day if index out of range
   const dayIndex = (dayNumber - 1) % 7
-  const planDay = mealPlan?.days?.[dayIndex] ?? mealPlan?.days?.[0] ?? null
+  const planDay  = mealPlan?.days?.[dayIndex] ?? mealPlan?.days?.[0] ?? null
 
   const toggle = (key: string) => setExpanded(prev => prev === key ? null : key)
 
+  const pickTotal   = Array.from(selectedPicks).reduce((sum, id) => {
+    for (const g of CHEAT_PICKS) { const it = g.items.find(i => i.id === id); if (it) return sum + it.cal }
+    return sum
+  }, 0)
+  const customTotal = customItems.reduce((s, i) => s + i.cal, 0)
+  const sessionTotal = pickTotal + customTotal
+
+  const togglePick = (id: string) => setSelectedPicks(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id); else next.add(id)
+    return next
+  })
+
+  const handleAddCustom = () => {
+    const cal = parseInt(customCal, 10)
+    if (!customDesc.trim() || !cal) return
+    setCustomItems(prev => [...prev, { id: `c-${Date.now()}`, desc: customDesc.trim(), cal }])
+    setCustomDesc(''); setCustomCal('')
+  }
+
+  const handleLog = () => {
+    if (!sessionTotal) return
+    const today = localDateStr()
+    const newEntries: CheatEntry[] = [
+      ...Array.from(selectedPicks).map(id => {
+        const item = CHEAT_PICKS.flatMap(g => g.items).find(i => i.id === id)!
+        return { id: `${Date.now()}-${id}`, description: item.label, calories: item.cal, loggedAt: new Date().toISOString() }
+      }),
+      ...customItems.map(item => ({ id: item.id, description: item.desc, calories: item.cal, loggedAt: new Date().toISOString() })),
+    ]
+    const allEntries = [...cheatEntries, ...newEntries]
+    localStorage.setItem(`ronin_cheat_meal_${today}`, JSON.stringify(allEntries))
+    onCheatChange(allEntries)
+    setSelectedPicks(new Set())
+    setCustomItems([])
+    ;(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        await supabase.from('cheat_meals').insert(
+          newEntries.map(e => ({ user_id: user.id, logged_date: today, description: e.description, calories: e.calories }))
+        )
+      } catch { /* offline */ }
+    })()
+  }
+
+  const removeEntry = (id: string) => {
+    const today = localDateStr()
+    const updated = cheatEntries.filter(e => e.id !== id)
+    localStorage.setItem(`ronin_cheat_meal_${today}`, JSON.stringify(updated))
+    onCheatChange(updated)
+  }
+
+  const todayTotal = cheatEntries.reduce((s, e) => s + e.calories, 0)
+  const feedback   = todayTotal > 0 ? getCheatFeedback(todayTotal, data.target) : null
+
+  const GROUP_LABEL: React.CSSProperties = {
+    fontSize: '0.65rem', letterSpacing: '0.22em', color: 'var(--text-3)',
+    textTransform: 'uppercase', marginBottom: '0.5rem',
+  }
+
   return (
     <div>
+      {/* Calorie target header */}
       <div style={{ marginBottom: '1.5rem' }}>
         <div style={{ fontSize: '2.6rem', fontWeight: 300, letterSpacing: '-0.02em', color: 'var(--text)', lineHeight: 1, marginBottom: '0.3rem' }}>
           {data.target.toLocaleString()}
@@ -877,15 +1010,15 @@ function FoodDetail({ data, dayNumber }: FoodDetailProps) {
         </div>
       </div>
 
+      {/* Meal breakdown accordion */}
       <div style={{ borderTop: '1px solid var(--border)' }}>
         {data.meals.map((meal) => {
           const slotKey = meal.name.toLowerCase() as 'breakfast' | 'lunch' | 'dinner' | 'snacks'
-          const isOpen = expanded === slotKey
-          const items = planDay ? planDay[slotKey] : null
+          const isOpen  = expanded === slotKey
+          const items   = planDay ? planDay[slotKey] : null
 
           return (
             <div key={slotKey} style={{ borderBottom: '1px solid var(--border)' }}>
-              {/* Row header — tappable */}
               <button
                 onClick={() => toggle(slotKey)}
                 style={{
@@ -902,27 +1035,14 @@ function FoodDetail({ data, dayNumber }: FoodDetailProps) {
                     <span style={{ fontSize: '1.2rem', fontWeight: 300, color: 'var(--text)' }}>{meal.cal}</span>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>cal</span>
                   </div>
-                  <span style={{
-                    fontSize: '0.85rem', color: 'var(--text-3)',
-                    display: 'inline-block',
-                    transition: 'transform 0.2s ease',
-                    transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                  }}>›</span>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-3)', display: 'inline-block', transition: 'transform 0.2s ease', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>›</span>
                 </div>
               </button>
 
-              {/* Expandable food items */}
-              <div style={{
-                overflow: 'hidden',
-                maxHeight: isOpen ? '600px' : '0',
-                transition: 'max-height 0.2s ease',
-              }}>
+              <div style={{ overflow: 'hidden', maxHeight: isOpen ? '600px' : '0', transition: 'max-height 0.2s ease' }}>
                 <div style={{ paddingBottom: '0.75rem' }}>
                   {items && items.length > 0 ? items.map((item, j) => (
-                    <div key={j} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                      padding: '0.45rem 0',
-                    }}>
+                    <div key={j} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '0.45rem 0' }}>
                       <div style={{ flex: 1, paddingRight: '1rem' }}>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.4 }}>{item.name}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.1rem' }}>{item.portion}</div>
@@ -944,6 +1064,127 @@ function FoodDetail({ data, dayNumber }: FoodDetailProps) {
         })}
       </div>
 
+      {/* ── Cheat meal section ── */}
+      <div style={{ marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
+        <div className="field-label" style={{ marginBottom: '1.25rem' }}>Log a Cheat Meal</div>
+
+        {/* Logged today */}
+        {cheatEntries.length > 0 && (
+          <div style={{ marginBottom: '1.25rem' }}>
+            {cheatEntries.map(entry => (
+              <div
+                key={entry.id}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.6rem 0.75rem', marginBottom: '0.4rem',
+                  borderLeft: '2px solid var(--red)', background: 'var(--elevated)',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.3 }}>{entry.description}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', marginTop: '0.1rem' }}>{entry.calories.toLocaleString()} cal</div>
+                </div>
+                <button
+                  onClick={() => removeEntry(entry.id)}
+                  aria-label="Remove"
+                  style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', flexShrink: 0 }}
+                >✕</button>
+              </div>
+            ))}
+            {feedback && (
+              <div style={{ fontSize: '0.85rem', color: feedback.color, letterSpacing: '0.04em', lineHeight: 1.65, marginTop: '0.75rem', marginBottom: '0.25rem' }}>
+                {feedback.text}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Quick picks */}
+        {CHEAT_PICKS.map(group => (
+          <div key={group.group} style={{ marginBottom: '1rem' }}>
+            <div style={GROUP_LABEL}>{group.group}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {group.items.map(item => (
+                <button
+                  key={item.id}
+                  className={`toggle-btn${selectedPicks.has(item.id) ? ' active' : ''}`}
+                  onClick={() => togglePick(item.id)}
+                  style={{ minHeight: '44px', lineHeight: 1.3 }}
+                >
+                  {item.label} — {item.cal}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {/* Running total */}
+        <div style={{
+          fontSize: '1rem', fontWeight: 400,
+          color: sessionTotal > 0 ? 'var(--text)' : 'var(--text-3)',
+          letterSpacing: '0.04em', paddingTop: '0.75rem', marginBottom: '1.25rem',
+          borderTop: '1px solid var(--border)',
+        }}>
+          Total: {sessionTotal.toLocaleString()} cal
+        </div>
+
+        {/* Custom entry */}
+        <div style={{ marginBottom: '1.25rem' }}>
+          <div style={GROUP_LABEL}>Add Custom</div>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+            <input
+              className="input-bare"
+              type="text"
+              placeholder="Description"
+              value={customDesc}
+              onChange={e => setCustomDesc(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <input
+              className="input-bare"
+              type="number"
+              placeholder="cal"
+              value={customCal}
+              onChange={e => setCustomCal(e.target.value)}
+              style={{ width: '64px' }}
+              min="1"
+            />
+            <button
+              onClick={handleAddCustom}
+              style={{
+                background: 'none', border: '1px solid var(--border-mid)', color: 'var(--text-2)',
+                fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase',
+                cursor: 'pointer', padding: '0 0.75rem', fontFamily: 'Inter, sans-serif',
+                minHeight: '44px', flexShrink: 0,
+              }}
+            >Add</button>
+          </div>
+          {customItems.length > 0 && (
+            <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              {customItems.map(item => (
+                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-2)' }}>
+                  <span>{item.desc} — {item.cal} cal</span>
+                  <button
+                    onClick={() => setCustomItems(prev => prev.filter(i => i.id !== item.id))}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}
+                  >✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* LOG IT */}
+        <button
+          className="commit-btn"
+          onClick={handleLog}
+          style={{ opacity: sessionTotal > 0 ? 1 : 0.4 }}
+        >
+          Log It
+        </button>
+      </div>
+
+      {/* Note box */}
       <div className="note-box" style={{ marginTop: '1.25rem' }}>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
           Log every meal honestly. Deviation means recalculation next week.

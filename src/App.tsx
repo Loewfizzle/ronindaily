@@ -213,6 +213,7 @@ function clearLocal() {
     const k = localStorage.key(i)
     if (k?.startsWith('ronin_dismissed_activities_')) localStorage.removeItem(k)
     if (k?.startsWith('ronin_activity_log_')) localStorage.removeItem(k)
+    if (k?.startsWith('ronin_cheat_meal_')) localStorage.removeItem(k)
   }
 }
 
