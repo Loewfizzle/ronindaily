@@ -216,6 +216,7 @@ function clearLocal() {
   localStorage.removeItem('ronin_activity_totals')
   localStorage.removeItem('ronin_skipped')
   localStorage.removeItem('ronin_plan_cache_version')
+  localStorage.removeItem('ronin_patterns')
   for (let i = localStorage.length - 1; i >= 0; i--) {
     const k = localStorage.key(i)
     if (k?.startsWith('ronin_dismissed_activities_')) localStorage.removeItem(k)

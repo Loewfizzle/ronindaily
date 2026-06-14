@@ -7,7 +7,10 @@ import MealPlanSheet from './MealPlanSheet'
 import BadgeBanner from './BadgeBanner'
 import BadgeDetailSheet from './BadgeDetailSheet'
 import AccountabilitySheet from './AccountabilitySheet'
+import PatternSheet from './PatternSheet'
 import { calculatePlan, formatMovementItem, getActivityInfo } from '../utils/calculate'
+import { detectPatterns } from '../utils/patterns'
+import type { PatternReport } from '../utils/patterns'
 import { checkAndAwardBadges, awardBadge, checkActivityMilestoneBadges, BADGE_KANJI, ACTIVITY_SERIES_TIERS } from '../utils/badges'
 import { supabase } from '../lib/supabase'
 import type { PlanResult, Meal, UnitSystem, MovementItem, MealPlanData } from '../types'
@@ -179,6 +182,15 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [skipOpen, setSkipOpen]           = useState(false)
   const [skipConfirmed, setSkipConfirmed] = useState(false)
   const [showAccountability, setShowAccountability] = useState(false)
+  const [patternReport, setPatternReport] = useState<PatternReport | null>(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem('ronin_patterns') || 'null')
+      const today = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`
+      if (cached?.date === today && cached?.report) return cached.report as PatternReport
+    } catch { /* corrupt */ }
+    return null
+  })
+  const [patternSheetOpen, setPatternSheetOpen] = useState(false)
   const [skipInput, setSkipInput]         = useState('')
   const skipConfirmTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
   const logDebounceRef                    = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
@@ -283,6 +295,27 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     const sync = () => { if (document.visibilityState === 'visible') checkAccountabilityRef.current() }
     document.addEventListener('visibilitychange', sync)
     return () => document.removeEventListener('visibilitychange', sync)
+  }, [])
+
+  // Pattern detection: fetch from Supabase once per day, cache in localStorage.
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const today = localDateStr()
+        const cached = (() => {
+          try { return JSON.parse(localStorage.getItem('ronin_patterns') || 'null') } catch { return null }
+        })()
+        if (cached?.date === today && cached?.report) {
+          setPatternReport(cached.report as PatternReport)
+          return
+        }
+        const report = await detectPatterns(user.id)
+        setPatternReport(report)
+        localStorage.setItem('ronin_patterns', JSON.stringify({ date: today, report }))
+      } catch { /* offline */ }
+    })()
   }, [])
 
   // Persist best progress whenever progressPct improves (not gated behind showCheckin).
@@ -801,6 +834,43 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           </div>
         </div>
 
+        {/* Pattern insight */}
+        {patternReport?.hasEnoughData && patternReport.patternMessages.length > 0 && (
+          <div style={{ padding: '0 1.5rem 0.75rem' }}>
+            <div style={{
+              background: 'var(--elevated)',
+              border: '1px solid var(--border)',
+              borderLeft: '2px solid var(--red)',
+              padding: '0.75rem 1rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: '0.75rem',
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.65rem', letterSpacing: '0.18em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                  Pattern Detected
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.7 }}>
+                  {patternReport.patternMessages[0]}
+                </div>
+              </div>
+              <button
+                onClick={() => setPatternSheetOpen(true)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--text-3)', fontSize: '0.8rem', letterSpacing: '0.05em',
+                  padding: 0, minHeight: '44px', minWidth: '44px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+                  fontFamily: 'Inter, sans-serif', flexShrink: 0,
+                }}
+              >
+                › see all
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Mission blocks */}
         <div className="dash-mission-blocks" style={{ padding: '0 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div className="mission-block" onClick={() => setSheet('food')}>
@@ -968,6 +1038,11 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         dayNumber={dayNumber}
         onLog={handleAccountabilityLog}
         onFailed={handleAccountabilityFailed}
+      />
+      <PatternSheet
+        open={patternSheetOpen}
+        report={patternReport}
+        onClose={() => setPatternSheetOpen(false)}
       />
       <BadgeBanner badge={activeBadge} onDismiss={handleBadgeDismiss} />
 
