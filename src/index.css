@@ -587,14 +587,15 @@ input[type='number'] {
   align-items: center;
   justify-content: space-between;
   padding: 0 1.5rem;
-  height: 56px;
+  height: 58px;
   flex-shrink: 0;
+  border-top: 2px solid var(--red);
   border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
 
 .fullsheet-title {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   letter-spacing: 0.28em;
   color: var(--text-2);
   text-transform: uppercase;
@@ -649,7 +650,7 @@ input[type='number'] {
 .fullsheet-icon-btn {
   background: none;
   border: none;
-  color: var(--text-3);
+  color: var(--text-2);
   cursor: pointer;
   padding: 0;
   display: flex;
@@ -658,6 +659,12 @@ input[type='number'] {
   width: 44px;
   height: 44px;
   flex-shrink: 0;
+  transition: color 0.12s ease;
+}
+
+.fullsheet-icon-btn:hover,
+.fullsheet-icon-btn:active {
+  color: var(--text);
 }
 
 .fullsheet-content {

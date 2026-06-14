@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, forwardRef, useImperativeHandle } from 'react'
 import type { ReactNode } from 'react'
 import type { UnitSystem, MealItem, DayPlan, MealPlanData, MealPrefs, MealSlot } from '../types'
 import { MEAL_SLOTS } from '../types'
@@ -472,25 +472,47 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
 
   if (!mealPlan) return null
 
+  const dayRefs = useRef<Record<number, HTMLDivElement | null>>({})
+
+  const budgetLabel = useMemo(
+    () => BUDGET_OPTIONS.find(b => b.id === budget)?.label ?? budget,
+    [budget]
+  )
+
+  const handleDayClick = (dayNum: number) => {
+    const willOpen = openDay !== dayNum
+    setOpenDay(willOpen ? dayNum : null)
+    if (willOpen) {
+      requestAnimationFrame(() => {
+        dayRefs.current[dayNum]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
+  }
+
   return (
     <>
     <div>
-      {/* Plan info line */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div style={{ fontSize: '0.8rem', letterSpacing: '0.1em', color: 'var(--text-3)' }}>
-          7 days · {calorieTarget.toLocaleString()} cal/day
+      {/* Hero stat block */}
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <div style={{ fontSize: '3rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>
+          {calorieTarget.toLocaleString()}
         </div>
-        <button
-          onClick={() => setExportOpen(true)}
-          aria-label="Export meal plan"
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-3)', padding: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            minWidth: '44px', minHeight: '44px',
-          }}
-        >
-          <ExportIcon />
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', marginTop: '0.35rem' }}>
+          cal / day
+        </div>
+        <div style={{ height: '1px', background: 'var(--red)', margin: '1.25rem 0 1.25rem' }} />
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '2.5rem', marginBottom: '1.25rem' }}>
+          <div>
+            <div style={{ fontSize: '0.72rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Duration</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>7 days</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.72rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Budget</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>{budgetLabel}</div>
+          </div>
+        </div>
+        <button onClick={() => setExportOpen(true)} className="ghost-btn">
+          Export Plan
         </button>
       </div>
 
@@ -503,10 +525,10 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
         const isDayError      = regenErrors.has(`d${day.day}`)
 
         return (
-          <div key={day.day}>
+          <div key={day.day} ref={el => { dayRefs.current[day.day] = el }}>
             {/* Day header row — full row is clickable */}
             <div
-              onClick={() => setOpenDay(isOpen ? null : day.day)}
+              onClick={() => handleDayClick(day.day)}
               style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '1.1rem 0', borderTop: '1px solid var(--border)',

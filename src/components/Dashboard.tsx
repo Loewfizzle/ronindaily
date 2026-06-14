@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import BottomSheet from './BottomSheet'
+import FullSheet from './FullSheet'
 import SettingsSheet from './SettingsSheet'
 import CheckinSheet from './CheckinSheet'
 import ShareSheet from './ShareSheet'
@@ -864,37 +864,46 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       </div>
 
       {/* ── Sheets ──────────────────────────────────────────────────── */}
-      {sheet === 'food' && (
-        <div className="fullsheet-backdrop" onPointerDown={e => { if (e.target === e.currentTarget) setSheet(null) }}>
-          <div className="fullsheet-panel">
-            <div style={{ padding: '1.25rem 1.5rem 0', flexShrink: 0, background: 'var(--surface)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontSize: '0.75rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase' }}>Food</div>
-                  <div style={{ fontSize: '3rem', fontWeight: 300, color: 'var(--text)', letterSpacing: '0.05em', lineHeight: 1, marginTop: '0.35rem' }}>
-                    Day {dayNumber}
-                  </div>
-                </div>
-                <button onClick={() => setSheet(null)} aria-label="Close" className="close-btn">
-                  <CloseIcon />
-                </button>
-              </div>
-              <div style={{ height: '1px', background: 'var(--red)', opacity: 0.35, marginTop: '1rem' }} />
-            </div>
-            <div className="fullsheet-content">
-              <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} dayNumber={dayNumber} cheatEntries={cheatEntries} onCheatChange={handleCheatChange} />
-            </div>
+      <FullSheet open={sheet === 'food'} onClose={() => setSheet(null)} title="Food">
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ fontSize: '3rem', fontWeight: 300, color: 'var(--text)', letterSpacing: '0.04em', lineHeight: 1 }}>
+            DAY {dayNumber}
           </div>
+          <div style={{ fontSize: '1.2rem', color: 'var(--text-2)', marginTop: '0.4rem' }}>
+            {calorieTarget.toLocaleString()} cal target
+          </div>
+          <div style={{ height: '1px', background: 'var(--red)', marginTop: '1.25rem' }} />
         </div>
-      )}
+        <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} dayNumber={dayNumber} cheatEntries={cheatEntries} onCheatChange={handleCheatChange} />
+      </FullSheet>
 
-      <BottomSheet open={sheet === 'movement'} onClose={() => setSheet(null)} title="Movement">
+      <FullSheet open={sheet === 'movement'} onClose={() => setSheet(null)} title="Movement">
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ fontSize: '3rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>
+            {movementCal}
+          </div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', marginTop: '0.35rem' }}>
+            cal burn
+          </div>
+          <div style={{ height: '1px', background: 'var(--red)', marginTop: '1.25rem' }} />
+        </div>
         <MovementDetail movement={activePrescriptions} cal={movementCal} activityLog={activityLog} onLog={handleLogActivity} onUnlog={handleUnlogActivity} />
-      </BottomSheet>
+      </FullSheet>
 
-      <BottomSheet open={sheet === 'progress'} onClose={() => setSheet(null)} title="Progress">
-        <ProgressDetail plan={plan} />
-      </BottomSheet>
+      {plan && (
+        <FullSheet open={sheet === 'progress'} onClose={() => setSheet(null)} title="Progress">
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{ fontSize: '3rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1 }}>
+              {wtVal(plan.poundsToLose, plan.unit)}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', marginTop: '0.35rem' }}>
+              {plan.unit === 'metric' ? 'kg remaining' : 'lbs remaining'}
+            </div>
+            <div style={{ height: '1px', background: 'var(--red)', marginTop: '1.25rem' }} />
+          </div>
+          <ProgressDetail plan={plan} />
+        </FullSheet>
+      )}
 
       <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} streak={streak} plan={plan} />
       <CheckinSheet open={checkinOpen} onClose={() => setCheckinOpen(false)} plan={plan} onCheckin={() => setRefreshKey(k => k + 1)} onBadgesEarned={handleBadgesEarned} />
@@ -1295,17 +1304,6 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
 
   return (
     <div>
-      {/* Calorie target header */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ fontSize: '2.6rem', fontWeight: 300, letterSpacing: '-0.02em', color: 'var(--text)', lineHeight: 1, marginBottom: '0.3rem' }}>
-          {data.target.toLocaleString()}
-          <span style={{ fontSize: '1rem', color: 'var(--text-2)', fontWeight: 400, marginLeft: '0.4rem' }}>calories</span>
-        </div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>
-          Maintenance: {data.maintenance.toLocaleString()} cal — you are {(data.maintenance - data.target).toLocaleString()} below.
-        </div>
-      </div>
-
       {/* Meal breakdown accordion */}
       <div style={{ borderTop: '1px solid var(--border)' }}>
         {data.meals.map((meal) => {
@@ -1581,12 +1579,6 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
 
   return (
     <div style={{ overflowX: 'hidden' }}>
-      <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontSize: '2.1rem', fontWeight: 300, color: 'var(--text)', lineHeight: 1, marginBottom: '0.25rem' }}>
-          {cal}<span style={{ fontSize: '0.85rem', color: 'var(--text-2)', fontWeight: 400, marginLeft: '0.35rem' }}>cal burn</span>
-        </div>
-        <div style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>Required. Not optional.</div>
-      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {movement.map((item) => (
           <div key={item.id} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
