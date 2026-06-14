@@ -110,7 +110,7 @@ export default function LandingPage({ onBegin }: LandingPageProps) {
         {/* Body lines */}
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', marginBottom: '2.75rem' }}>
           {[
-            'Every day the app gives you one mission.',
+            'Set your goal. Set your deadline. The app builds your daily mission.',
             'Eat this. Move this much. That is all.',
             'Show up. The app handles the rest.',
             'Discipline required.',
