@@ -7,9 +7,16 @@ interface BottomSheetProps {
   children: ReactNode
 }
 
-// Reference-counted scroll lock so nested sheets don't release the lock
-// when the inner one closes while the outer is still open.
 let openSheetCount = 0
+
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <line x1="3" y1="3" x2="13" y2="13" />
+      <line x1="13" y1="3" x2="3" y2="13" />
+    </svg>
+  )
+}
 
 export default function BottomSheet({ open, onClose, title, children }: BottomSheetProps) {
   useEffect(() => {
@@ -32,12 +39,10 @@ export default function BottomSheet({ open, onClose, title, children }: BottomSh
       }}
     >
       <div className="sheet-panel">
-        {/* Drag handle — hidden on desktop where sheets render as centered modals */}
         <div className="sheet-handle" style={{ display: 'flex', justifyContent: 'center', padding: '0.7rem 0 0' }}>
           <div style={{ width: '2.25rem', height: '2px', background: 'var(--border-mid)', borderRadius: '1px' }} />
         </div>
 
-        {/* Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -48,31 +53,11 @@ export default function BottomSheet({ open, onClose, title, children }: BottomSh
           <span style={{ fontSize: '0.75rem', letterSpacing: '0.28em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
             {title}
           </span>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-2)',
-              cursor: 'pointer',
-              fontSize: '1.1rem',
-              padding: 0,
-              fontFamily: 'inherit',
-              lineHeight: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '44px',
-              height: '44px',
-              flexShrink: 0,
-            }}
-          >
-            ×
+          <button onClick={onClose} aria-label="Close" className="close-btn">
+            <CloseIcon />
           </button>
         </div>
 
-        {/* Content */}
         <div style={{ padding: '1.5rem' }}>{children}</div>
       </div>
     </div>

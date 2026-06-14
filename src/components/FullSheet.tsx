@@ -1,5 +1,14 @@
 import { useEffect, type ReactNode } from 'react'
 
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <line x1="3" y1="3" x2="13" y2="13" />
+      <line x1="13" y1="3" x2="3" y2="13" />
+    </svg>
+  )
+}
+
 interface FullSheetProps {
   open: boolean
   onClose: () => void
@@ -33,7 +42,7 @@ export default function FullSheet({ open, onClose, title, headerActions, childre
           <span className="fullsheet-title">{title}</span>
           <div className="fullsheet-header-actions">
             {headerActions}
-            <button onClick={onClose} className="fullsheet-close" aria-label="Close">×</button>
+            <button onClick={onClose} className="fullsheet-close" aria-label="Close"><CloseIcon /></button>
           </div>
         </div>
         <div className="fullsheet-content">

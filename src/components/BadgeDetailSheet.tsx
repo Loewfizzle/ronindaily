@@ -1,5 +1,14 @@
 import { BADGE_DEFS, BADGE_KANJI } from '../utils/badges'
 
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <line x1="3" y1="3" x2="13" y2="13" />
+      <line x1="13" y1="3" x2="3" y2="13" />
+    </svg>
+  )
+}
+
 interface EarnedBadge {
   badge_id: string
   earned_at: string
@@ -48,15 +57,10 @@ export default function BadgeDetailSheet({ badge, onClose }: BadgeDetailSheetPro
         <button
           onClick={onClose}
           aria-label="Close"
-          style={{
-            position: 'absolute', top: 0, right: 0,
-            minWidth: '44px', minHeight: '44px',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-3)', fontSize: '1rem',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
+          className="close-btn"
+          style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}
         >
-          ✕
+          <CloseIcon />
         </button>
 
         {/* Kanji */}

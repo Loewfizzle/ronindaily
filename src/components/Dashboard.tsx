@@ -778,15 +778,9 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDismiss(item.id) }}
                       aria-label={`Dismiss ${ACTIVITY_LABEL[item.id] ?? item.id}`}
-                      style={{
-                        background: 'none', border: 'none', color: 'var(--text-3)',
-                        cursor: 'pointer', fontSize: '0.75rem',
-                        minWidth: '44px', minHeight: '44px', flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        padding: '0 0.25rem',
-                      }}
+                      className="close-btn"
                     >
-                      ✕
+                      <CloseIcon />
                     </button>
                   )}
                 </div>
@@ -881,12 +875,8 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
                     Day {dayNumber}
                   </div>
                 </div>
-                <button
-                  onClick={() => setSheet(null)}
-                  aria-label="Close"
-                  style={{ background: 'none', border: 'none', color: 'var(--text-2)', cursor: 'pointer', fontSize: '1.1rem', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: 0, fontFamily: 'inherit' }}
-                >
-                  ✕
+                <button onClick={() => setSheet(null)} aria-label="Close" className="close-btn">
+                  <CloseIcon />
                 </button>
               </div>
               <div style={{ height: '1px', background: 'var(--red)', opacity: 0.35, marginTop: '1rem' }} />
@@ -1139,11 +1129,37 @@ function MealPlanBlock({ calorieTarget, onOpen }: { calorieTarget: number; onOpe
   )
 }
 
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <line x1="3" y1="3" x2="13" y2="13" />
+      <line x1="13" y1="3" x2="3" y2="13" />
+    </svg>
+  )
+}
+
+function ChevronIcon({ open = false }: { open?: boolean }) {
+  return (
+    <svg
+      width="18" height="18" viewBox="0 0 18 18"
+      fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      style={{
+        color: 'var(--text-3)', flexShrink: 0,
+        transition: 'transform 0.2s ease',
+        transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+      }}
+    >
+      <polyline points="6 4 12 9 6 14" />
+    </svg>
+  )
+}
+
 function BlockHeader({ label }: { label: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.7rem' }}>
       <span style={{ fontSize: '0.75rem', letterSpacing: '0.26em', color: 'var(--text-2)', textTransform: 'uppercase' }}>{label}</span>
-      <span style={{ fontSize: '0.85rem', color: 'var(--text-3)' }}>›</span>
+      <ChevronIcon />
     </div>
   )
 }
@@ -1315,7 +1331,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
                     <span style={{ fontSize: '1.2rem', fontWeight: 300, color: 'var(--text)' }}>{meal.cal}</span>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>cal</span>
                   </div>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-3)', display: 'inline-block', transition: 'transform 0.2s ease', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>›</span>
+                  <ChevronIcon open={isOpen} />
                 </div>
               </button>
 
@@ -1364,11 +1380,9 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
                   <div style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.3 }}>{entry.description}</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', marginTop: '0.1rem' }}>{entry.calories.toLocaleString()} cal</div>
                 </div>
-                <button
-                  onClick={() => removeEntry(entry.id)}
-                  aria-label="Remove"
-                  style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', flexShrink: 0 }}
-                >✕</button>
+                <button onClick={() => removeEntry(entry.id)} aria-label="Remove" className="close-btn">
+                  <CloseIcon />
+                </button>
               </div>
             ))}
             {feedback && (
@@ -1400,11 +1414,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
                   }}
                 >
                   <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{group.group}</span>
-                  <span style={{
-                    fontSize: '0.9rem', color: 'var(--text-3)', display: 'inline-block',
-                    transform: isCatOpen ? 'rotate(90deg)' : 'none',
-                    transition: 'transform 0.15s ease',
-                  }}>›</span>
+                  <ChevronIcon open={isCatOpen} />
                 </button>
                 <div style={{ overflow: 'hidden', maxHeight: isCatOpen ? '600px' : '0', transition: 'max-height 0.25s ease' }}>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', padding: '0.75rem 0 1rem' }}>
@@ -1470,10 +1480,9 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
               {customItems.map(item => (
                 <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-2)' }}>
                   <span>{item.desc} — {item.cal} cal</span>
-                  <button
-                    onClick={() => setCustomItems(prev => prev.filter(i => i.id !== item.id))}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}
-                  >✕</button>
+                  <button onClick={() => setCustomItems(prev => prev.filter(i => i.id !== item.id))} aria-label="Remove" className="close-btn">
+                    <CloseIcon />
+                  </button>
                 </div>
               ))}
             </div>
@@ -1507,42 +1516,62 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
   onLog: (id: string, amount: number) => void
   onUnlog: (id: string) => void
 }) {
-  // Initialise from activityLog (safe: BottomSheet remounts on open so this always reflects current data)
-  const [drafts, setDrafts] = useState<Record<string, string>>(() => {
-    const d: Record<string, string> = {}
-    for (const [id, amount] of Object.entries(activityLog)) d[id] = String(amount)
-    return d
-  })
-  const [confirmed, setConfirmed] = useState<Set<string>>(() => new Set(Object.keys(activityLog)))
-
-  const handleChange = (id: string, raw: string) => {
-    setDrafts(prev => ({ ...prev, [id]: raw }))
-    if (confirmed.has(id)) {
-      const amount = parseFloat(raw)
-      if (!raw.trim() || isNaN(amount) || amount <= 0) {
-        // Input cleared — un-confirm and remove log entry
-        setConfirmed(prev => { const next = new Set(prev); next.delete(id); return next })
-        onUnlog(id)
-      } else {
-        // Already confirmed — update logged amount in real-time
-        onLog(id, amount)
-      }
+  const [checked, setChecked] = useState<Set<string>>(() => new Set(Object.keys(activityLog)))
+  const [extras, setExtras] = useState<Record<string, number>>(() => {
+    const result: Record<string, number> = {}
+    for (const [id, amount] of Object.entries(activityLog)) {
+      const item = movement.find(m => m.id === id)
+      if (!item) continue
+      const info = getActivityInfo(id)
+      if (!info) continue
+      const planned = item.cal / info.rate
+      if (amount > planned + 0.01) result[id] = +(amount - planned).toFixed(2)
     }
+    return result
+  })
+  const [expandedExtra, setExpandedExtra] = useState<string | null>(null)
+  const [extraDrafts, setExtraDrafts] = useState<Record<string, string>>({})
+
+  const getPlannedAmount = (item: MovementItem): number => {
+    const info = getActivityInfo(item.id)
+    return info ? item.cal / info.rate : 0
   }
 
-  const handleCheckmark = (item: MovementItem) => {
-    if (confirmed.has(item.id)) {
-      // Toggle off
-      setConfirmed(prev => { const next = new Set(prev); next.delete(item.id); return next })
+  const handleCheck = (item: MovementItem) => {
+    if (checked.has(item.id)) {
+      setChecked(prev => { const n = new Set(prev); n.delete(item.id); return n })
+      setExtras(prev => { const n = { ...prev }; delete n[item.id]; return n })
+      setExpandedExtra(prev => prev === item.id ? null : prev)
       onUnlog(item.id)
     } else {
-      // Confirm if valid
-      const amount = parseFloat(drafts[item.id] ?? '')
-      if (isNaN(amount) || amount <= 0) return
-      setConfirmed(prev => new Set([...prev, item.id]))
-      onLog(item.id, amount)
+      setChecked(prev => new Set([...prev, item.id]))
+      onLog(item.id, getPlannedAmount(item))
     }
   }
+
+  const handleExtraConfirm = (item: MovementItem) => {
+    const extra = parseFloat(extraDrafts[item.id] ?? '')
+    if (isNaN(extra) || extra <= 0) return
+    setExtras(prev => ({ ...prev, [item.id]: extra }))
+    setExpandedExtra(null)
+    onLog(item.id, getPlannedAmount(item) + extra)
+  }
+
+  const totalSurplusCal = movement.reduce((sum, item) => {
+    const extra = extras[item.id]
+    if (!extra) return sum
+    const info = getActivityInfo(item.id)
+    return sum + Math.round(extra * (info?.rate ?? 0))
+  }, 0)
+
+  const allChecked = movement.length > 0 && checked.size === movement.length
+  const summaryText = checked.size === 0
+    ? { text: 'Log your movement below.', color: 'var(--text-3)' }
+    : totalSurplusCal > 0
+      ? { text: `${totalSurplusCal.toLocaleString()} cal above target today.`, color: 'var(--green)' }
+      : allChecked
+        ? { text: 'Mission complete.', color: 'var(--red)' }
+        : null
 
   return (
     <div>
@@ -1561,62 +1590,92 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
         ))}
       </div>
 
-      {/* LOG TODAY */}
       <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-        <div style={{ fontSize: '0.75rem', letterSpacing: '0.26em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '1rem' }}>
-          Log Today
-        </div>
+        {summaryText && (
+          <div style={{ fontSize: '0.85rem', color: summaryText.color, marginBottom: '1.25rem' }}>
+            {summaryText.text}
+          </div>
+        )}
         {movement.map((item) => {
-          const isConfirmed = confirmed.has(item.id)
+          const isCheckedItem = checked.has(item.id)
           const info = getActivityInfo(item.id)
           const unitLabel = info?.type === 'distance' ? 'mi' : 'min'
+          const isExpanded = expandedExtra === item.id
+          const extraAmount = extras[item.id]
+          const surplusCal = extraAmount && info ? Math.round(extraAmount * info.rate) : 0
+
           return (
-            <div
-              key={item.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                minHeight: '44px',
-                paddingLeft: isConfirmed ? '0.75rem' : '0',
-                borderLeft: isConfirmed ? '2px solid var(--red)' : '2px solid transparent',
-                marginBottom: '0.5rem',
-              }}
-            >
-              <div style={{ flex: 1, fontSize: '0.85rem', color: isConfirmed ? 'var(--text)' : 'var(--text-2)', minWidth: 0 }}>
-                {ACTIVITY_LABEL[item.id] ?? item.id}
+            <div key={item.id} style={{ marginBottom: '0.75rem' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem', minHeight: '44px',
+                paddingLeft: isCheckedItem ? '0.75rem' : '0',
+                borderLeft: isCheckedItem ? '2px solid var(--red)' : '2px solid transparent',
+              }}>
+                <button
+                  onClick={() => handleCheck(item)}
+                  aria-label={isCheckedItem ? 'Uncheck' : 'Check'}
+                  style={{
+                    width: '22px', height: '22px', flexShrink: 0,
+                    background: isCheckedItem ? 'var(--red)' : 'none',
+                    border: `1px solid ${isCheckedItem ? 'var(--red)' : 'var(--border-mid)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', padding: 0, transition: 'all 0.12s ease',
+                  }}
+                >
+                  {isCheckedItem && (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
+                <span style={{ flex: 1, fontSize: '0.9rem', color: isCheckedItem ? 'var(--text)' : 'var(--text-2)', lineHeight: 1.4 }}>
+                  {ACTIVITY_LABEL[item.id] ?? item.id}
+                </span>
+                {isCheckedItem && !isExpanded && (
+                  extraAmount ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--green)' }}>+{surplusCal} cal</span>
+                      <button
+                        onClick={() => setExpandedExtra(item.id)}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.08em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', minHeight: '44px' }}
+                      >edit</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setExpandedExtra(item.id)}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.08em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', minHeight: '44px', flexShrink: 0 }}
+                    >I did more</button>
+                  )
+                )}
               </div>
-              <input
-                className="input-bare"
-                type="number"
-                inputMode="decimal"
-                placeholder="0"
-                value={drafts[item.id] ?? ''}
-                onChange={e => handleChange(item.id, e.target.value)}
-                style={{ width: '56px', textAlign: 'right', fontSize: '0.85rem', padding: '0 0.25rem' }}
-              />
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', width: '20px', flexShrink: 0 }}>{unitLabel}</span>
-              <button
-                onClick={() => handleCheckmark(item)}
-                style={{
-                  background: isConfirmed ? 'var(--red)' : 'none',
-                  border: isConfirmed ? 'none' : '1px solid var(--border-mid)',
-                  color: isConfirmed ? '#ffffff' : 'var(--text-3)',
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                  fontSize: '0.9rem',
-                  fontFamily: 'Inter, sans-serif',
-                  padding: 0,
-                }}
-              >
-                ✓
-              </button>
+              {isCheckedItem && isExpanded && (
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem', paddingLeft: '2.75rem' }}>
+                  <input
+                    className="input-bare"
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={extraDrafts[item.id] ?? (extraAmount ? String(extraAmount) : '')}
+                    onChange={e => setExtraDrafts(prev => ({ ...prev, [item.id]: e.target.value }))}
+                    style={{ width: '60px', textAlign: 'right', fontSize: '0.85rem', padding: '0 0.25rem' }}
+                    autoFocus
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', flexShrink: 0 }}>{unitLabel} extra</span>
+                  <button
+                    onClick={() => handleExtraConfirm(item)}
+                    style={{
+                      background: 'none', border: '1px solid var(--border-mid)', color: 'var(--text-2)',
+                      fontSize: '0.7rem', letterSpacing: '0.14em', textTransform: 'uppercase',
+                      cursor: 'pointer', padding: '0 0.6rem', fontFamily: 'Inter, sans-serif',
+                      minHeight: '36px', flexShrink: 0,
+                    }}
+                  >Confirm</button>
+                  <button
+                    onClick={() => setExpandedExtra(null)}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', minHeight: '36px' }}
+                  >Cancel</button>
+                </div>
+              )}
             </div>
           )
         })}
