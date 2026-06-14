@@ -146,20 +146,20 @@ export default async function handler(req: Request): Promise<Response> {
       return `${s.toUpperCase()}: ${items.map(i => `${i.name} (${i.portion})`).join(', ')}`
     }).join('\n')
 
-    const slotPrompt = `You are a meal planning assistant. Regenerate ONLY the ${slotName.toUpperCase()} slot for one day of a 7-day meal plan.
+    const slotPrompt = `You are a meal prep assistant. Regenerate ONLY the ${slotName.toUpperCase()} slot for one day of a 7-day meal prep plan.
 
 CALORIE TARGET for ${slotName}: ${slotCalTarget} calories (±50 cal acceptable).
 PORTIONS: Use ${portionSystem}.${prefsSection}
 
-EXISTING MEALS ALREADY PLANNED FOR THIS DAY — do not duplicate their main protein or primary ingredient:
+EXISTING MEALS ALREADY PLANNED FOR THIS DAY:
 ${contextLines}
 
 RULES:
-1. Specific real foods only — no vague category labels like "lean protein" or "complex carb".
-2. Every portion needs an exact number.
-3. Choose a clearly different main protein or primary ingredient from those already used today.
-4. 1–4 food items in this slot. Calories must sum to approximately ${slotCalTarget} (±50 cal).
-5. Standard supermarket ingredients only.
+1. Specific real foods only — no vague labels like "lean protein" or "complex carb". Write: "chicken breast", "brown rice", "broccoli".
+2. Every portion has an exact number.
+3. Use simple meal prep ingredients (standard proteins, carbs, vegetables) — do not introduce exotic or specialty ingredients.
+4. Choose a different main component from those already used today, but stay within the same family of simple meal prep staples.
+5. 1–4 food items in this slot. Calories must sum to approximately ${slotCalTarget} (±50 cal).
 
 Respond with ONLY raw JSON — no markdown, no backticks, no text outside the JSON:
 {"slot":[{"name":"string","portion":"string","calories":0}]}`
@@ -194,26 +194,36 @@ Respond with ONLY raw JSON — no markdown, no backticks, no text outside the JS
   // ── FULL PLAN / SINGLE DAY REGEN MODE ───────────────────────────────────────
 
   const dayNumContext = days === 1 && dayNumber
-    ? ` This is day ${dayNumber} of a 7-day plan — generate only this single day.`
+    ? ` Regenerate only Day ${dayNumber} of an existing 7-day plan. Keep the same core proteins, carbs, and vegetables as the rest of the week — do not introduce new ingredients.`
     : ''
 
-  const prompt = `You are a meal planning assistant. Create a ${days}-day meal plan.${dayNumContext}
+  const prompt = `You are a meal prep assistant. Generate a strict 7-day meal plan built around REPETITION, not variety. The user buys ingredients once and eats the same meals multiple times. Repetition is intentional and correct.${dayNumContext}
+
+INGREDIENT BUDGET — CHOOSE THESE FIRST, THEN BUILD THE ENTIRE PLAN USING ONLY THEM:
+• PROTEINS: Pick exactly 2 or 3 proteins for the entire week. Use only these proteins, rotating them. No other protein sources may appear anywhere in the plan.
+• CARBS: Pick exactly 2 or 3 carb sources for the entire week. Repeat across multiple days.
+• VEGETABLES: Pick exactly 3 or 4 vegetables for the entire week. The same vegetables appear in multiple meals and multiple days.
+• TOTAL unique grocery items across all 7 days: NO MORE THAN 15–20 items.
+
+MEAL REPETITION RULES — ENFORCE EXACTLY:
+• BREAKFAST: Must be IDENTICAL every day, OR alternate between exactly 2 options (Days 1, 3, 5, 7 = Option A; Days 2, 4, 6 = Option B). No other breakfast variation.
+• LUNCH: Day 1 and Day 4 are IDENTICAL. Day 2 and Day 5 are IDENTICAL. Day 3 and Day 6 are IDENTICAL. Day 7 may match any of the above.
+• DINNER: Day 1 and Day 4 are IDENTICAL. Day 2 and Day 5 are IDENTICAL. Day 3 and Day 6 are IDENTICAL. Day 7 may match any of the above.
+• SNACKS: 1 or 2 options repeated all week.
+• DO NOT introduce variety for variety's sake. If days 1 and 4 have identical dinner, copy them word for word. That is correct.
 
 CALORIE TARGET: ${calorieTarget} calories per day. Each day's totalCalories must be within ±50 calories of this target.
 PORTIONS: Use ${portionSystem} with exact amounts.${prefsSection}
 
 RULES:
-1. Use SPECIFIC real foods only. Never write vague labels like "protein source", "lean protein", "complex carbohydrate", "healthy fat", or any category name. Write the actual food: "pan-fried chicken breast", "brown rice", "extra virgin olive oil", "unsalted almonds".
-2. Every portion must have an exact number: "150g chicken breast", "1/2 cup rolled oats", "2 large eggs", "1 tbsp almond butter", "1 medium banana (118g)".
-3. No two meals within the same day can be the same dish.
-4. Vary meaningfully across all ${days} days — each day should feel clearly different from the others.
-5. REPEAT CORE INGREDIENTS across multiple days to minimise the shopping list — one normal grocery trip should cover the entire week.
-6. SIMPLE PREPARATIONS ONLY: pan-fried, scrambled, baked, roasted, microwaved, steamed, raw. No complex techniques.
-7. All ingredients must be available at a standard supermarket.
-8. Each day has: breakfast, lunch, dinner, and snacks. Each slot contains 1–4 food items.
-9. Calorie counts per item must be accurate. All items within a day must sum to totalCalories within ±50 cal.
+1. Specific real foods only — never write "protein source", "lean protein", "complex carb", or any category label. Write: "pan-fried chicken breast", "cooked brown rice", "scrambled eggs".
+2. Every portion has an exact number: "6 oz chicken breast", "1 cup cooked brown rice", "2 large eggs", "1 tbsp olive oil".
+3. Simple preparations only: pan-fried, scrambled, baked, roasted, microwaved, steamed, raw.
+4. Standard supermarket ingredients only.
+5. Each day: breakfast, lunch, dinner, snacks. Each slot 1–4 items.
+6. Calorie counts must be accurate. All items in a day must sum to totalCalories ±50 cal.
 
-Respond with ONLY raw JSON — no markdown fences, no backticks, no text before or after. Use this exact schema:
+Respond with ONLY raw JSON — no markdown, no backticks, no text before or after:
 {"days":[{"day":1,"breakfast":[{"name":"string","portion":"string","calories":0}],"lunch":[{"name":"string","portion":"string","calories":0}],"dinner":[{"name":"string","portion":"string","calories":0}],"snacks":[{"name":"string","portion":"string","calories":0}],"totalCalories":0}]}`
 
   let parsedDays: DayPlan[]

@@ -185,6 +185,15 @@ function profileToDb(profile: UserProfile, userId: string, startDate: Date): Pro
   }
 }
 
+// Bump this string whenever the meal-plan prompt changes to force all clients to regenerate.
+const PLAN_CACHE_VERSION = '2'
+if (localStorage.getItem('ronin_plan_cache_version') !== PLAN_CACHE_VERSION) {
+  localStorage.removeItem('ronin_meal_plan')
+  localStorage.removeItem('ronin_grocery_list')
+  localStorage.removeItem('ronin_grocery_checked')
+  localStorage.setItem('ronin_plan_cache_version', PLAN_CACHE_VERSION)
+}
+
 function clearLocal() {
   localStorage.removeItem('ronin_committed')
   localStorage.removeItem('ronin_profile')
@@ -199,6 +208,7 @@ function clearLocal() {
   localStorage.removeItem('ronin_best_progress')
   localStorage.removeItem('ronin_goal_reached')
   localStorage.removeItem('ronin_skipped')
+  localStorage.removeItem('ronin_plan_cache_version')
   for (let i = localStorage.length - 1; i >= 0; i--) {
     const k = localStorage.key(i)
     if (k?.startsWith('ronin_dismissed_activities_')) localStorage.removeItem(k)

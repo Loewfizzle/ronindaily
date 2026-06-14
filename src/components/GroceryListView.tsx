@@ -17,8 +17,6 @@ interface GroceryListData {
   mealPlanTimestamp: string
 }
 
-// ── Storage helpers ───────────────────────────────────────────────────────────
-
 function loadCachedMealPlan(): MealPlanData | null {
   try { return JSON.parse(localStorage.getItem('ronin_meal_plan') || 'null') as MealPlanData | null }
   catch { return null }
@@ -40,8 +38,6 @@ function saveChecked(set: Set<string>): void {
   localStorage.setItem('ronin_grocery_checked', JSON.stringify([...set]))
 }
 
-// ── Checkbox ──────────────────────────────────────────────────────────────────
-
 function Checkbox({ checked }: { checked: boolean }) {
   return (
     <div style={{
@@ -60,20 +56,17 @@ function Checkbox({ checked }: { checked: boolean }) {
   )
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
-
 interface GroceryListViewProps {
   readyFooter?: ReactNode
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
-  const [status, setStatus]   = useState<'loading' | 'ready' | 'error'>('loading')
-  const [sections, setSections] = useState<GrocerySection[] | null>(null)
-  const [checked, setChecked]  = useState<Set<string>>(new Set())
-  const [error, setError]      = useState<string | null>(null)
-  const [mealPlan, setMealPlan] = useState<MealPlanData | null>(null)
+  const [status, setStatus]       = useState<'loading' | 'ready' | 'error'>('loading')
+  const [sections, setSections]   = useState<GrocerySection[] | null>(null)
+  const [checked, setChecked]     = useState<Set<string>>(new Set())
+  const [error, setError]         = useState<string | null>(null)
+  const [mealPlan, setMealPlan]   = useState<MealPlanData | null>(null)
+  const [openSection, setOpenSection] = useState<string | null>(null)
 
   const firedRef = useRef(false)
 
@@ -96,8 +89,10 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
       }
       localStorage.setItem('ronin_grocery_list', JSON.stringify(data))
       localStorage.removeItem('ronin_grocery_checked')
+      const firstSection = data.sections.find(s => s.items.length > 0)?.section ?? null
       setSections(data.sections)
       setChecked(new Set())
+      setOpenSection(firstSection)
       setStatus('ready')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to generate grocery list.')
@@ -120,8 +115,10 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
 
     const cached = loadCachedList()
     if (cached && cached.mealPlanTimestamp === plan.generatedAt) {
+      const firstSection = cached.sections.find(s => s.items.length > 0)?.section ?? null
       setSections(cached.sections)
       setChecked(loadChecked())
+      setOpenSection(firstSection)
       setStatus('ready')
       return
     }
@@ -145,7 +142,11 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
     localStorage.removeItem('ronin_grocery_checked')
   }
 
-  const checkedCount = checked.size
+  const toggleSection = (name: string) => {
+    setOpenSection(prev => prev === name ? null : name)
+  }
+
+  const totalChecked = checked.size
 
   if (status === 'loading') return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0 3rem', gap: '1.5rem' }}>
@@ -171,14 +172,18 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
 
   if (!sections) return null
 
+  const visibleSections = sections.filter(s => s.items.length > 0)
+
   return (
     <div>
-      {/* Clear checks row */}
+      {/* Top row: count + clear */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div style={{ fontSize: '0.8rem', color: 'var(--text-3)', letterSpacing: '0.08em' }}>
-          {checkedCount > 0 ? `${checkedCount} item${checkedCount === 1 ? '' : 's'} checked` : 'tap items to check off'}
+          {totalChecked > 0
+            ? `${totalChecked} item${totalChecked === 1 ? '' : 's'} checked`
+            : 'tap sections to expand'}
         </div>
-        {checkedCount > 0 && (
+        {totalChecked > 0 && (
           <button
             onClick={clearChecks}
             style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
@@ -188,42 +193,87 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
         )}
       </div>
 
-      {/* Sections */}
-      {sections.map(section => (
-        <div key={section.section} style={{ marginBottom: '1.75rem' }}>
-          <div style={{ fontSize: '0.75rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
-            {section.section}
-          </div>
-          {section.items.map(item => {
-            const key = `${section.section}:${item.name}`
-            const isChecked = checked.has(key)
-            return (
-              <div
-                key={key}
-                onClick={() => toggleItem(key)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.75rem',
-                  padding: '0.65rem 0', borderBottom: '1px solid var(--border)',
-                  cursor: 'pointer', userSelect: 'none',
-                  opacity: isChecked ? 0.38 : 1, transition: 'opacity 0.15s ease',
-                }}
-              >
-                <Checkbox checked={isChecked} />
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text)', textDecoration: isChecked ? 'line-through' : 'none', lineHeight: 1.35 }}>
-                    {item.name}
-                  </span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', flexShrink: 0 }}>
-                    {item.quantity}
-                  </span>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      ))}
+      {/* Collapsible sections */}
+      {visibleSections.map(section => {
+        const isOpen = openSection === section.section
+        const sectionCheckedCount = section.items.filter(
+          item => checked.has(`${section.section}:${item.name}`)
+        ).length
+        const allChecked = sectionCheckedCount === section.items.length
 
-      <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.25rem', paddingBottom: '0.5rem' }}>
+        return (
+          <div key={section.section} style={{ borderTop: '1px solid var(--border)' }}>
+            {/* Section header row */}
+            <button
+              onClick={() => toggleSection(section.section)}
+              style={{
+                width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '0.9rem 0', fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                {allChecked && (
+                  <span style={{ color: 'var(--red)', fontSize: '0.8rem', lineHeight: 1 }}>✓</span>
+                )}
+                <span style={{ fontSize: '0.85rem', color: 'var(--text)', letterSpacing: '0.04em' }}>
+                  {section.section}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>
+                  {sectionCheckedCount > 0
+                    ? `${sectionCheckedCount} of ${section.items.length} checked`
+                    : `${section.items.length} item${section.items.length === 1 ? '' : 's'}`}
+                </span>
+                <span style={{
+                  fontSize: '0.85rem', color: 'var(--text-3)', display: 'inline-block',
+                  transition: 'transform 0.2s ease',
+                  transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                }}>›</span>
+              </div>
+            </button>
+
+            {/* Expanded item list */}
+            <div style={{
+              overflow: 'hidden',
+              maxHeight: isOpen ? '600px' : '0',
+              transition: 'max-height 0.22s ease',
+            }}>
+              <div style={{ paddingBottom: '0.5rem' }}>
+                {section.items.map(item => {
+                  const key = `${section.section}:${item.name}`
+                  const isChecked = checked.has(key)
+                  return (
+                    <div
+                      key={key}
+                      onClick={() => toggleItem(key)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        padding: '0.65rem 0', borderBottom: '1px solid var(--border)',
+                        cursor: 'pointer', userSelect: 'none',
+                        opacity: isChecked ? 0.38 : 1, transition: 'opacity 0.15s ease',
+                      }}
+                    >
+                      <Checkbox checked={isChecked} />
+                      <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text)', textDecoration: isChecked ? 'line-through' : 'none', lineHeight: 1.35 }}>
+                          {item.name}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', flexShrink: 0 }}>
+                          {item.quantity}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )
+      })}
+
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.25rem', paddingBottom: '0.5rem', marginTop: '0.25rem' }}>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-3)', lineHeight: 1.65, margin: 0 }}>
           Quantities cover the full week. Adjust for what you already have on hand.
         </p>
