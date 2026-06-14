@@ -645,12 +645,12 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                         <div
                           key={slot}
                           style={{
-                            paddingTop: slotIdx > 0 ? '1.1rem' : '0.75rem',
+                            paddingTop: slotIdx > 0 ? '0.7rem' : '0.5rem',
                             borderTop: slotIdx > 0 ? '1px solid var(--border)' : 'none',
                           }}
                         >
                           {/* Slot header */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
                             <div style={{
                               fontSize: '0.75rem', letterSpacing: '0.28em', textTransform: 'uppercase',
                               color: isSlotError ? 'var(--red-bright)' : 'var(--text)',
@@ -682,16 +682,16 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                               key={i}
                               style={{
                                 display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                                padding: '0.6rem 0',
+                                padding: '0.4rem 0',
                                 borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
                                 gap: '1rem',
                               }}
                             >
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '0.9rem', color: 'var(--text)', lineHeight: 1.4 }}>{item.name}</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.18rem', lineHeight: 1.3 }}>{item.portion}</div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text)', lineHeight: 1.3 }}>{item.name}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.05rem', lineHeight: 1.3 }}>{item.portion}</div>
                               </div>
-                              <span style={{ fontSize: '0.85rem', color: 'var(--text-2)', flexShrink: 0, paddingTop: '0.1rem' }}>
+                              <span style={{ fontSize: '0.9rem', color: 'var(--text-2)', flexShrink: 0, paddingTop: '0.1rem' }}>
                                 {item.calories}
                               </span>
                             </div>

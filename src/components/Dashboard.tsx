@@ -1676,7 +1676,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
                 style={{
                   width: '100%', background: 'none', border: 'none', cursor: 'pointer',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '0.9rem 0', fontFamily: 'Inter, sans-serif',
+                  padding: '0.6rem 0', fontFamily: 'Inter, sans-serif',
                 }}
               >
                 <span style={{ fontSize: '0.78rem', letterSpacing: '0.18em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
@@ -1694,10 +1694,10 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
               <div style={{ overflow: 'hidden', maxHeight: isOpen ? '1200px' : '0', transition: 'max-height 0.25s ease' }}>
                 <div style={{ paddingBottom: '0.75rem' }}>
                   {items && items.length > 0 ? items.map((item, j) => (
-                    <div key={j} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '0.45rem 0' }}>
+                    <div key={j} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '0.4rem 0' }}>
                       <div style={{ flex: 1, paddingRight: '1rem' }}>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.4 }}>{item.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.1rem' }}>{item.portion}</div>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text)', lineHeight: 1.3 }}>{item.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.05rem' }}>{item.portion}</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', flexShrink: 0 }}>
                         <span style={{ fontSize: '0.9rem', color: 'var(--text-2)' }}>{item.calories}</span>
