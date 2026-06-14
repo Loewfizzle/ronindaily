@@ -209,6 +209,10 @@ function clearLocal() {
   localStorage.removeItem('ronin_best_progress')
   localStorage.removeItem('ronin_goal_reached')
   localStorage.removeItem('ronin_extreme_accepted')
+  localStorage.removeItem('ronin_hesitated')
+  localStorage.removeItem('ronin_pre_skip_streak')
+  localStorage.removeItem('ronin_dawn_count')
+  localStorage.removeItem('ronin_dawn_last_date')
   localStorage.removeItem('ronin_skipped')
   localStorage.removeItem('ronin_plan_cache_version')
   for (let i = localStorage.length - 1; i >= 0; i--) {

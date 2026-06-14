@@ -7,7 +7,7 @@ import MealPlanSheet from './MealPlanSheet'
 import BadgeBanner from './BadgeBanner'
 import BadgeDetailSheet from './BadgeDetailSheet'
 import { calculatePlan, formatMovementItem, getActivityInfo } from '../utils/calculate'
-import { checkAndAwardBadges, BADGE_KANJI } from '../utils/badges'
+import { checkAndAwardBadges, awardBadge, BADGE_KANJI } from '../utils/badges'
 import { supabase } from '../lib/supabase'
 import type { PlanResult, Meal, UnitSystem, MovementItem, MealPlanData } from '../types'
 import type { BadgeDef } from '../utils/badges'
@@ -281,6 +281,20 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         if (!user) return
 
         const today = localDateStr()
+
+        // Dawn badge — track early-morning opens (before 6 AM)
+        const now = new Date()
+        if (now.getHours() < 6) {
+          const dawnLastDate = localStorage.getItem('ronin_dawn_last_date')
+          if (dawnLastDate !== today) {
+            const yesterday = localDateStr(new Date(now.getTime() - 86400000))
+            const prevCount = parseInt(localStorage.getItem('ronin_dawn_count') || '0', 10)
+            const newCount = dawnLastDate === yesterday ? prevCount + 1 : 1
+            localStorage.setItem('ronin_dawn_count', String(Math.min(newCount, 3)))
+            localStorage.setItem('ronin_dawn_last_date', today)
+          }
+        }
+
         const skippedDate = localStorage.getItem('ronin_skipped')
         const skippedToday = skippedDate === today
 
@@ -334,9 +348,14 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             plan: currentPlan,
             hasCheckedIn,
             hasMealPlan,
+            dayNumber: currentPlan.dayNumber,
           })
           if (newBadges.length > 0) {
-            setBadgeQueue(newBadges)
+            setBadgeQueue(prev => [...prev, ...newBadges])
+            setEarnedBadges(prev => [
+              ...prev,
+              ...newBadges.map(b => ({ badge_id: b.id, earned_at: new Date().toISOString() })),
+            ])
           }
         }
 
@@ -429,6 +448,36 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     })()
   }, [])
 
+  const handleBadgesEarned = useCallback((badges: BadgeDef[]) => {
+    setBadgeQueue(prev => [...prev, ...badges])
+    setEarnedBadges(prev => [
+      ...prev,
+      ...badges.map(b => ({ badge_id: b.id, earned_at: new Date().toISOString() })),
+    ])
+  }, [])
+
+  // Accountable badge — fires when both cheat meal and full movement target are logged
+  useEffect(() => {
+    if (cheatEntries.length === 0) return
+    const p = planRef.current
+    if (!p) return
+    const actual = Object.entries(activityLog)
+      .filter(([id]) => p.movement.some(m => m.id === id))
+      .reduce((sum, [id, amount]) => {
+        const info = getActivityInfo(id)
+        return sum + (info ? Math.round(amount * info.rate) : 0)
+      }, 0)
+    if (actual < p.movementCal) return
+    ;(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const newBadge = await awardBadge(user.id, 'accountable')
+        if (newBadge) handleBadgesEarned([newBadge])
+      } catch { /* offline */ }
+    })()
+  }, [activityLog, cheatEntries, handleBadgesEarned])
+
   const handleBadgeDismiss = useCallback(() => {
     setBadgeQueue(prev => prev.slice(1))
   }, [])
@@ -491,6 +540,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
   const handleSkipConfirm = async () => {
     const today = localDateStr()
+    localStorage.setItem('ronin_pre_skip_streak', String(streak))
     setSkipOpen(false)
     setStreak(0)
     setLoggedDays(new Set())
@@ -748,9 +798,9 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       </BottomSheet>
 
       <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} streak={streak} plan={plan} />
-      <CheckinSheet open={checkinOpen} onClose={() => setCheckinOpen(false)} plan={plan} onCheckin={() => setRefreshKey(k => k + 1)} />
+      <CheckinSheet open={checkinOpen} onClose={() => setCheckinOpen(false)} plan={plan} onCheckin={() => setRefreshKey(k => k + 1)} onBadgesEarned={handleBadgesEarned} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} onAdjustGoal={onAdjustGoal} onReset={onReset} onSignOut={onSignOut} />
-      <MealPlanSheet open={mealPlanOpen} onClose={() => setMealPlanOpen(false)} calorieTarget={calorieTarget} unit={unit} />
+      <MealPlanSheet open={mealPlanOpen} onClose={() => setMealPlanOpen(false)} calorieTarget={calorieTarget} unit={unit} onBadgesEarned={handleBadgesEarned} />
 
       <BadgeDetailSheet badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
       <BadgeBanner badge={activeBadge} onDismiss={handleBadgeDismiss} />

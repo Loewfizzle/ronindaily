@@ -1,4 +1,3 @@
-import BottomSheet from './BottomSheet'
 import { BADGE_DEFS, BADGE_KANJI } from '../utils/badges'
 
 interface EarnedBadge {
@@ -11,160 +10,109 @@ interface BadgeDetailSheetProps {
   onClose: () => void
 }
 
-interface GoalRecord {
-  achievedAt: string
-  lostLbs: number
-  unit: string
-  totalDays: number
-}
-
 function formatDate(iso: string): string {
   const d = new Date(iso)
   return `${d.getDate()} ${d.toLocaleString('en-US', { month: 'short' }).toUpperCase()} ${d.getFullYear()}`
 }
 
-function loadGoalRecord(): GoalRecord | null {
-  try {
-    const raw = localStorage.getItem('ronin_goal_reached')
-    if (!raw || raw === 'true') return null
-    const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null
-    return parsed as GoalRecord
-  } catch { return null }
-}
+export default function BadgeDetailSheet({ badge, onClose }: BadgeDetailSheetProps) {
+  if (!badge) return null
 
-// ── Goal-reached special view ─────────────────────────────────────────────────
-
-function GoalDetail({ badge }: { badge: EarnedBadge }) {
-  const record = loadGoalRecord()
-
-  const achievedDate = record ? formatDate(record.achievedAt) : formatDate(badge.earned_at)
-
-  const lostLine = record
-    ? record.unit === 'metric'
-      ? `Lost ${(record.lostLbs / 2.20462).toFixed(1)} kg in ${Math.round(record.totalDays / 7)} weeks`
-      : `Lost ${Math.round(record.lostLbs)} lbs in ${Math.round(record.totalDays / 7)} weeks`
-    : null
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0.5rem 0 1rem' }}>
-
-      <div className="font-jp goal-glow" style={{
-        fontSize: '5rem',
-        lineHeight: 1,
-        color: 'var(--gold)',
-        marginBottom: '1.75rem',
-      }}>
-        完
-      </div>
-
-      <div style={{
-        width: '100%', height: '1px',
-        background: 'linear-gradient(to right, transparent, var(--gold), transparent)',
-        marginBottom: '1.75rem',
-      }} />
-
-      <div style={{
-        fontSize: '1.4rem', fontWeight: 200,
-        letterSpacing: '0.28em', textTransform: 'uppercase',
-        color: 'var(--gold)', lineHeight: 1,
-        marginBottom: '1rem', textAlign: 'center',
-      }}>
-        Mission Complete
-      </div>
-
-      <div style={{
-        fontSize: '0.82rem', color: 'var(--text-2)',
-        lineHeight: 1.85, textAlign: 'center',
-        maxWidth: '240px', marginBottom: '1.5rem',
-      }}>
-        The mission is over. Begin a new one.
-      </div>
-
-      {lostLine && (
-        <div style={{
-          fontSize: '0.75rem', color: 'var(--text-2)',
-          letterSpacing: '0.06em', marginBottom: '0.85rem',
-        }}>
-          {lostLine}
-        </div>
-      )}
-
-      <div style={{
-        fontSize: '0.75rem', letterSpacing: '0.3em',
-        color: 'var(--text-3)', textTransform: 'uppercase',
-      }}>
-        {achievedDate}
-      </div>
-
-    </div>
-  )
-}
-
-// ── Default badge view ────────────────────────────────────────────────────────
-
-function DefaultDetail({ badge }: { badge: EarnedBadge }) {
   const def   = BADGE_DEFS.find(b => b.id === badge.badge_id)
   const kanji = BADGE_KANJI[badge.badge_id] ?? '侍'
+
   if (!def) return null
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0.5rem 0 1rem' }}>
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0,0,0,0.85)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '1.5rem',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: '380px',
+          background: 'var(--surface)',
+          border: '1px solid var(--border-mid)',
+          padding: '2.5rem',
+          position: 'relative',
+          animation: 'badgeCardIn 0.3s ease-out',
+        }}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: 'absolute', top: 0, right: 0,
+            minWidth: '44px', minHeight: '44px',
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--text-3)', fontSize: '1rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          ✕
+        </button>
 
-      <div className="font-jp" style={{
-        fontSize: '5rem', lineHeight: 1, color: 'var(--red)',
-        textShadow: '0 0 20px rgba(176,40,40,0.9), 0 0 50px rgba(176,40,40,0.5), 0 0 100px rgba(139,28,28,0.3)',
-        marginBottom: '1.75rem',
-      }}>
-        {kanji}
+        {/* Kanji */}
+        <div
+          className="font-jp"
+          style={{
+            fontSize: '5rem', lineHeight: 1, color: 'var(--red)',
+            animation: 'kanjiGlowPulse 3s ease-in-out infinite',
+          }}
+        >
+          {kanji}
+        </div>
+
+        {/* Rank name */}
+        <div style={{
+          fontSize: '1.8rem', fontWeight: 700, color: 'var(--gold)',
+          letterSpacing: '0.3em', textTransform: 'uppercase',
+          marginTop: '1rem',
+        }}>
+          {def.name}
+        </div>
+
+        {/* Date */}
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', marginTop: '0.5rem' }}>
+          {formatDate(badge.earned_at)}
+        </div>
+
+        {/* Divider */}
+        <div style={{
+          height: '1px', background: 'var(--red)', opacity: 0.35,
+          marginTop: '1rem',
+        }} />
+
+        {/* Flavor text */}
+        <div style={{
+          fontSize: '0.95rem', color: 'var(--text-2)',
+          lineHeight: 1.8, fontStyle: 'italic',
+          marginTop: '1rem',
+        }}>
+          {def.flavor}
+        </div>
+
+        {/* How you earned this */}
+        <div style={{ marginTop: '1.5rem' }}>
+          <div style={{
+            fontSize: '0.72rem', color: 'var(--text-3)',
+            letterSpacing: '0.22em', textTransform: 'uppercase',
+            marginBottom: '0.5rem',
+          }}>
+            How You Earned This
+          </div>
+          <div style={{ fontSize: '0.875rem', color: 'var(--text-2)', lineHeight: 1.7 }}>
+            {def.explanation}
+          </div>
+        </div>
       </div>
-
-      <div style={{
-        width: '100%', height: '1px',
-        background: 'linear-gradient(to right, transparent, var(--gold), transparent)',
-        marginBottom: '1.75rem',
-      }} />
-
-      <div style={{
-        fontSize: '1.4rem', fontWeight: 200,
-        letterSpacing: '0.28em', textTransform: 'uppercase',
-        color: 'var(--gold)', lineHeight: 1,
-        marginBottom: '1rem', textAlign: 'center',
-      }}>
-        {def.name}
-      </div>
-
-      <div style={{
-        fontSize: '0.82rem', color: 'var(--text-2)',
-        lineHeight: 1.85, textAlign: 'center',
-        maxWidth: '240px', marginBottom: '1.75rem',
-      }}>
-        {def.flavor}
-      </div>
-
-      <div style={{
-        fontSize: '0.75rem', letterSpacing: '0.3em',
-        color: 'var(--text-3)', textTransform: 'uppercase',
-      }}>
-        Earned {formatDate(badge.earned_at)}
-      </div>
-
     </div>
-  )
-}
-
-// ── Sheet ─────────────────────────────────────────────────────────────────────
-
-export default function BadgeDetailSheet({ badge, onClose }: BadgeDetailSheetProps) {
-  const isGoal = badge?.badge_id === 'goal_reached'
-
-  return (
-    <BottomSheet open={!!badge} onClose={onClose} title="">
-      {badge && (
-        isGoal
-          ? <GoalDetail badge={badge} />
-          : <DefaultDetail badge={badge} />
-      )}
-    </BottomSheet>
   )
 }

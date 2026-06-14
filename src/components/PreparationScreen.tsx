@@ -230,6 +230,7 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
     if (dishonorPhase === 'hiding') return
     dishonorTimers.current.forEach(clearTimeout)
     dishonorTimers.current = []
+    localStorage.setItem('ronin_hesitated', 'true')
     setDishonorPhase('showing')
     dishonorTimers.current.push(
       setTimeout(() => setDishonorPhase('hiding'), 2500)

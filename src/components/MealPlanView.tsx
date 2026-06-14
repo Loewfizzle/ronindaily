@@ -3,6 +3,9 @@ import type { ReactNode } from 'react'
 import type { UnitSystem, MealItem, DayPlan, MealPlanData, MealPrefs, MealSlot } from '../types'
 import { MEAL_SLOTS } from '../types'
 import ExportSheet from './ExportSheet'
+import { awardBadge } from '../utils/badges'
+import type { BadgeDef } from '../utils/badges'
+import { supabase } from '../lib/supabase'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -139,6 +142,7 @@ interface MealPlanViewProps {
   calorieTarget: number
   unit: UnitSystem
   readyFooter?: ReactNode
+  onBadgesEarned?: (badges: BadgeDef[]) => void
 }
 
 export interface MealPlanViewHandle {
@@ -149,7 +153,7 @@ export interface MealPlanViewHandle {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function MealPlanView(
-  { calorieTarget, unit, readyFooter },
+  { calorieTarget, unit, readyFooter, onBadgesEarned },
   ref,
 ) {
   type Screen = 'prefs' | 'loading' | 'ready' | 'error'
@@ -169,12 +173,14 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   const [dislikes, setDislikes]         = useState('')
   const [description, setDescription]   = useState('')
 
-  const calorieTargetRef = useRef(calorieTarget)
-  const unitRef          = useRef(unit)
-  const mealPlanRef      = useRef<MealPlanData | null>(null)
-  calorieTargetRef.current = calorieTarget
-  unitRef.current          = unit
-  mealPlanRef.current      = mealPlan
+  const calorieTargetRef    = useRef(calorieTarget)
+  const unitRef             = useRef(unit)
+  const mealPlanRef         = useRef<MealPlanData | null>(null)
+  const onBadgesEarnedRef   = useRef(onBadgesEarned)
+  calorieTargetRef.current  = calorieTarget
+  unitRef.current           = unit
+  mealPlanRef.current       = mealPlan
+  onBadgesEarnedRef.current = onBadgesEarned
 
   const doGenerate = useCallback(async (prefs: MealPrefs) => {
     setScreen('loading')
@@ -194,6 +200,15 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
       setMealPlan(data)
       setOpenDay(1)
       setScreen('ready')
+      if (prefs.budget === 'raw_materials') {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const newBadge = await awardBadge(user.id, 'minimalist')
+            if (newBadge) onBadgesEarnedRef.current?.([newBadge])
+          }
+        } catch { /* offline */ }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to generate plan.')
       setScreen('error')

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import BottomSheet from './BottomSheet'
 import { supabase } from '../lib/supabase'
+import { awardBadge } from '../utils/badges'
+import type { BadgeDef } from '../utils/badges'
 import type { PlanResult } from '../types'
 
 interface CheckinSheetProps {
@@ -8,9 +10,10 @@ interface CheckinSheetProps {
   onClose: () => void
   plan: PlanResult | null
   onCheckin?: () => void
+  onBadgesEarned?: (badges: BadgeDef[]) => void
 }
 
-export default function CheckinSheet({ open, onClose, plan, onCheckin }: CheckinSheetProps) {
+export default function CheckinSheet({ open, onClose, plan, onCheckin, onBadgesEarned }: CheckinSheetProps) {
   const [weight, setWeight] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -81,6 +84,10 @@ export default function CheckinSheet({ open, onClose, plan, onCheckin }: Checkin
           },
           { onConflict: 'user_id,week_number', ignoreDuplicates: false },
         )
+        if (paceLine === 'Ahead of pace.') {
+          const newBadge = await awardBadge(user.id, 'overcomer')
+          if (newBadge) onBadgesEarned?.([newBadge])
+        }
       }
     } catch { /* offline — localStorage cache is set */ }
 

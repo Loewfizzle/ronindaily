@@ -3,12 +3,14 @@ import FullSheet from './FullSheet'
 import MealPlanView, { type MealPlanViewHandle } from './MealPlanView'
 import GroceryListSheet from './GroceryListSheet'
 import type { UnitSystem } from '../types'
+import type { BadgeDef } from '../utils/badges'
 
 interface MealPlanSheetProps {
   open: boolean
   onClose: () => void
   calorieTarget: number
   unit: UnitSystem
+  onBadgesEarned?: (badges: BadgeDef[]) => void
 }
 
 function PrefsIcon() {
@@ -29,7 +31,7 @@ function RefreshIcon() {
   )
 }
 
-export default function MealPlanSheet({ open, onClose, calorieTarget, unit }: MealPlanSheetProps) {
+export default function MealPlanSheet({ open, onClose, calorieTarget, unit, onBadgesEarned }: MealPlanSheetProps) {
   const [groceryOpen, setGroceryOpen] = useState(false)
   const mealPlanRef = useRef<MealPlanViewHandle>(null)
 
@@ -63,6 +65,7 @@ export default function MealPlanSheet({ open, onClose, calorieTarget, unit }: Me
           ref={mealPlanRef}
           calorieTarget={calorieTarget}
           unit={unit}
+          onBadgesEarned={onBadgesEarned}
           readyFooter={
             <div style={{ marginTop: '1.25rem', paddingBottom: '0.5rem' }}>
               <button

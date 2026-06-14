@@ -246,6 +246,17 @@ input[type='number'] {
   50%       { border-color: var(--red-bright); box-shadow: 0 0 12px rgba(176, 40, 40, 0.7); }
 }
 
+/* ── Badge detail overlay animations ── */
+@keyframes kanjiGlowPulse {
+  0%, 100% { text-shadow: none; }
+  50%       { text-shadow: 0 0 12px rgba(139, 28, 28, 0.7), 0 0 30px rgba(139, 28, 28, 0.35); }
+}
+
+@keyframes badgeCardIn {
+  from { transform: translateY(-30px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
 /* ── Ghost / secondary button ── */
 .ghost-btn {
   width: 100%;
