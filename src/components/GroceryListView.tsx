@@ -143,7 +143,7 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
   const [checked, setChecked]         = useState<Set<string>>(new Set())
   const [error, setError]             = useState<string | null>(null)
   const [mealPlan, setMealPlan]       = useState<MealPlanData | null>(null)
-  const [openSection, setOpenSection] = useState<string | null>(null)
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set())
   const [exportOpen, setExportOpen]   = useState(false)
 
   const firedRef = useRef(false)
@@ -167,10 +167,10 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
       }
       localStorage.setItem('ronin_grocery_list', JSON.stringify(data))
       localStorage.removeItem('ronin_grocery_checked')
-      const firstSection = data.sections.find(s => s.items.length > 0)?.section ?? null
+      const firstSection = data.sections.find(s => s.items.length > 0)?.section
       setSections(data.sections)
       setChecked(new Set())
-      setOpenSection(firstSection)
+      setOpenSections(firstSection ? new Set([firstSection]) : new Set())
       setStatus('ready')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to generate grocery list.')
@@ -193,10 +193,10 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
 
     const cached = loadCachedList()
     if (cached && cached.mealPlanTimestamp === plan.generatedAt) {
-      const firstSection = cached.sections.find(s => s.items.length > 0)?.section ?? null
+      const firstSection = cached.sections.find(s => s.items.length > 0)?.section
       setSections(cached.sections)
       setChecked(loadChecked())
-      setOpenSection(firstSection)
+      setOpenSections(firstSection ? new Set([firstSection]) : new Set())
       setStatus('ready')
       return
     }
@@ -221,7 +221,11 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
   }
 
   const toggleSection = (name: string) => {
-    setOpenSection(prev => prev === name ? null : name)
+    setOpenSections(prev => {
+      const next = new Set(prev)
+      next.has(name) ? next.delete(name) : next.add(name)
+      return next
+    })
   }
 
   const totalChecked = checked.size
@@ -292,7 +296,7 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
 
         {/* Collapsible sections */}
         {visibleSections.map(section => {
-          const isOpen = openSection === section.section
+          const isOpen = openSections.has(section.section)
           const sectionCheckedCount = section.items.filter(
             item => checked.has(`${section.section}:${item.name}`)
           ).length
