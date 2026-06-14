@@ -199,7 +199,7 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
     )
   }
 
-  const { unit, poundsToLose, calorieTarget, extremeMission } = plan
+  const { unit, poundsToLose, calorieTarget, extremeMission, pacePerWeek } = plan
 
   const handleExtremeAccept = () => {
     const next = !extremeAccepted
@@ -212,6 +212,10 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
   const loseDisplay = unit === 'metric'
     ? `${(poundsToLose / 2.20462).toFixed(1)} kg`
     : `${Math.round(poundsToLose)} lbs`
+
+  const paceDisplay = unit === 'metric'
+    ? `${(pacePerWeek / 2.20462).toFixed(1)} kg`
+    : `${pacePerWeek.toFixed(1)} lbs`
 
   const statBlocks = [
     { label: 'Daily Target', value: `${calorieTarget.toLocaleString()} cal` },
@@ -445,8 +449,8 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                   <div style={{ fontSize: '0.72rem', letterSpacing: '0.22em', color: 'var(--red)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
                     Extreme Mission
                   </div>
-                  <div style={{ fontSize: '1rem', color: 'var(--text)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
-                    This mission requires extreme discipline. Most will not finish it.
+                  <div style={{ fontSize: '1rem', color: 'var(--text)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+                    You are attempting to lose {loseDisplay} in {targetWeeks} weeks. That is {paceDisplay} per week — an aggressive pace that demands everything.
                   </div>
                   <div style={{ fontSize: '0.9rem', color: 'var(--text-2)', lineHeight: 1.85, marginBottom: '1rem' }}>
                     Hunger will be present.<br />
