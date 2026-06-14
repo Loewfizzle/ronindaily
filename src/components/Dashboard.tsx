@@ -9,6 +9,7 @@ import BadgeDetailSheet from './BadgeDetailSheet'
 import AccountabilitySheet from './AccountabilitySheet'
 import PatternSheet from './PatternSheet'
 import WeeklyRecapSheet from './WeeklyRecapSheet'
+import MonthlyRecapSheet from './MonthlyRecapSheet'
 import { calculatePlan, formatMovementItem, getActivityInfo } from '../utils/calculate'
 import { detectPatterns } from '../utils/patterns'
 import type { PatternReport } from '../utils/patterns'
@@ -204,6 +205,26 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     } catch { /* corrupt */ }
     return null
   })
+
+  interface MonthlyRecapData {
+    complete: number; partial: number; failed: number; streakHigh: number
+    weightStart: number | null; weightCurrent: number | null
+    strongestDay: string | null; weakestDay: string | null
+  }
+  const [monthlyRecapDismissed, setMonthlyRecapDismissed] = useState(() => {
+    try {
+      const p = loadPlan(); if (!p || p.dayNumber % 30 !== 0) return true
+      return !!localStorage.getItem(`ronin_monthly_recap_${p.dayNumber}`)
+    } catch { return true }
+  })
+  const [monthlyRecapData, setMonthlyRecapData] = useState<MonthlyRecapData | null>(() => {
+    try {
+      const p = loadPlan(); if (!p || p.dayNumber % 30 !== 0) return null
+      return JSON.parse(localStorage.getItem(`ronin_monthly_recap_data_${p.dayNumber}`) || 'null') as MonthlyRecapData | null
+    } catch { return null }
+  })
+  const [monthlyRecapOpen, setMonthlyRecapOpen] = useState(false)
+
   const [skipInput, setSkipInput]         = useState('')
   const skipConfirmTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
   const logDebounceRef                    = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
@@ -366,6 +387,81 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       } catch { /* offline */ }
     })()
   }, [weeklyRecapDismissed])
+
+  // Monthly recap: fetch past 30 days of accountability + checkins on milestone days.
+  useEffect(() => {
+    if (!plan || plan.dayNumber % 30 !== 0) return
+    if (monthlyRecapDismissed) return
+    const dn = plan.dayNumber
+    try {
+      const cached = JSON.parse(localStorage.getItem(`ronin_monthly_recap_data_${dn}`) || 'null')
+      if (cached) { setMonthlyRecapData(cached); return }
+    } catch { /* corrupt */ }
+    ;(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const today = localDateStr()
+        const startDate = new Date(); startDate.setDate(startDate.getDate() - 29)
+        const start = localDateStr(startDate)
+        const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+        const [{ data: accData }, { data: checkinData }] = await Promise.all([
+          (supabase as any)
+            .from('daily_accountability')
+            .select('result, logged_date')
+            .eq('user_id', user.id)
+            .gte('logged_date', start)
+            .lte('logged_date', today)
+            .order('logged_date', { ascending: true }),
+          supabase
+            .from('checkins')
+            .select('weight, checked_in_at')
+            .eq('user_id', user.id)
+            .order('checked_in_at', { ascending: true }),
+        ])
+
+        let complete = 0, partial = 0, failed = 0, streakHigh = 0, curRun = 0
+        const dowStrong: Record<number, number> = {}
+        const dowWeak: Record<number, number> = {}
+        const dowTotal: Record<number, number> = {}
+        for (const r of (accData ?? []) as Array<{ result: string; logged_date: string }>) {
+          if (r.result === 'complete') { complete++; curRun++; if (curRun > streakHigh) streakHigh = curRun }
+          else { if (r.result === 'partial') partial++; else failed++; curRun = 0 }
+          const dow = new Date(r.logged_date + 'T12:00:00').getDay()
+          dowTotal[dow] = (dowTotal[dow] ?? 0) + 1
+          if (r.result === 'complete') dowStrong[dow] = (dowStrong[dow] ?? 0) + 1
+          else dowWeak[dow] = (dowWeak[dow] ?? 0) + 1
+        }
+        let strongestDay: string | null = null, bestR = -1
+        let weakestDay: string | null = null, worstR = -1
+        for (const [ds, tot] of Object.entries(dowTotal)) {
+          if (tot < 2) continue
+          const d = Number(ds)
+          const sr = (dowStrong[d] ?? 0) / tot, wr = (dowWeak[d] ?? 0) / tot
+          if (sr > bestR) { bestR = sr; strongestDay = DAYS[d] }
+          if (wr > worstR) { worstR = wr; weakestDay = DAYS[d] }
+        }
+
+        // Weight: earliest checkin in window = start, latest = current
+        const windowStart = startDate.getTime()
+        const allCheckins = (checkinData ?? []) as Array<{ weight: number; checked_in_at: string }>
+        const windowCheckins = allCheckins.filter(c => new Date(c.checked_in_at).getTime() >= windowStart)
+        let weightStart: number | null = null, weightCurrent: number | null = null
+        if (windowCheckins.length > 0) {
+          weightStart = windowCheckins[0].weight
+          weightCurrent = windowCheckins[windowCheckins.length - 1].weight
+        } else {
+          weightCurrent = allCheckins.length > 0 ? allCheckins[allCheckins.length - 1].weight : plan.currentWeight
+          weightStart = plan.startWeight
+        }
+
+        const recap: MonthlyRecapData = { complete, partial, failed, streakHigh, weightStart, weightCurrent, strongestDay, weakestDay }
+        setMonthlyRecapData(recap)
+        localStorage.setItem(`ronin_monthly_recap_data_${dn}`, JSON.stringify(recap))
+      } catch { /* offline */ }
+    })()
+  }, [plan?.dayNumber, monthlyRecapDismissed])
 
   // Persist best progress whenever progressPct improves (not gated behind showCheckin).
   useEffect(() => {
@@ -781,6 +877,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     setWeeklyRecapOpen(false)
   }
 
+  const handleMonthlyRecapDismiss = () => {
+    localStorage.setItem(`ronin_monthly_recap_${dayNumber}`, '1')
+    setMonthlyRecapDismissed(true)
+    setMonthlyRecapOpen(false)
+  }
+
   const footerProps = { loggedDays, weekNumber, onShare: () => setShareOpen(true) }
 
   return (
@@ -875,6 +977,21 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             }}
           >
             <span style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>Week {weekNumber} complete. View your recap.</span>
+            <span style={{ color: 'var(--text-3)', fontSize: '1.1rem', lineHeight: 1 }}>›</span>
+          </div>
+        )}
+
+        {/* Monthly recap banner — milestone days (30, 60, 90…) before dismissed */}
+        {!monthlyRecapDismissed && monthlyRecapData !== null && dayNumber % 30 === 0 && (
+          <div
+            onClick={() => setMonthlyRecapOpen(true)}
+            style={{
+              margin: '0 1.5rem 1rem', padding: '0.9rem 1rem',
+              borderLeft: '2px solid var(--gold)', background: 'var(--elevated)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}
+          >
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>Day {dayNumber}. Month {dayNumber / 30} complete. View your recap.</span>
             <span style={{ color: 'var(--text-3)', fontSize: '1.1rem', lineHeight: 1 }}>›</span>
           </div>
         )}
@@ -1123,6 +1240,24 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           failed={weeklyRecapCounts.failed}
           patternMessage={patternReport?.hasEnoughData && patternReport.patternMessages.length > 0 ? patternReport.patternMessages[0] : null}
           onDismiss={handleRecapDismiss}
+        />
+      )}
+      {monthlyRecapData && (
+        <MonthlyRecapSheet
+          open={monthlyRecapOpen}
+          dayNumber={dayNumber}
+          monthNumber={dayNumber / 30}
+          complete={monthlyRecapData.complete}
+          partial={monthlyRecapData.partial}
+          failed={monthlyRecapData.failed}
+          streakHigh={monthlyRecapData.streakHigh}
+          weightStart={monthlyRecapData.weightStart}
+          weightCurrent={monthlyRecapData.weightCurrent}
+          expectedLossLbs={dailyDeficit * 30 / 3500}
+          unit={unit}
+          strongestDay={monthlyRecapData.strongestDay}
+          weakestDay={monthlyRecapData.weakestDay}
+          onDismiss={handleMonthlyRecapDismiss}
         />
       )}
       <BadgeBanner badge={activeBadge} onDismiss={handleBadgeDismiss} />

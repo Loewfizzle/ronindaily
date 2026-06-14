@@ -224,6 +224,7 @@ function clearLocal() {
     if (k?.startsWith('ronin_cheat_meal_')) localStorage.removeItem(k)
     if (k?.startsWith('ronin_accountability_')) localStorage.removeItem(k)
     if (k?.startsWith('ronin_weekly_recap_')) localStorage.removeItem(k)
+    if (k?.startsWith('ronin_monthly_recap_')) localStorage.removeItem(k)
   }
 }
 
