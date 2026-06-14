@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { BADGE_DEFS, BADGE_KANJI } from '../utils/badges'
 
 function CloseIcon() {
@@ -25,12 +26,29 @@ function formatDate(iso: string): string {
 }
 
 export default function BadgeDetailSheet({ badge, onClose }: BadgeDetailSheetProps) {
+  const [copied, setCopied] = useState(false)
+
   if (!badge) return null
 
   const def   = BADGE_DEFS.find(b => b.id === badge.badge_id)
   const kanji = BADGE_KANJI[badge.badge_id] ?? '侍'
 
   if (!def) return null
+
+  const shareText = `I earned the ${def.name} rank on Ronin Daily. ${def.flavor} ronindaily.app`
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Ronin Daily', text: shareText, url: 'https://ronindaily.app' }) }
+      catch { /* cancelled */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareText)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch { /* unavailable */ }
+    }
+  }
 
   return (
     <div
@@ -116,6 +134,27 @@ export default function BadgeDetailSheet({ badge, onClose }: BadgeDetailSheetPro
             {def.explanation}
           </div>
         </div>
+
+        {/* Share button */}
+        <button
+          onClick={handleShare}
+          style={{
+            marginTop: '1.5rem',
+            width: '100%',
+            minHeight: '44px',
+            padding: '1rem',
+            background: 'none',
+            border: '1px solid var(--border-mid)',
+            color: 'var(--text)',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '0.78rem',
+            letterSpacing: '0.28em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+          }}
+        >
+          {copied ? 'Copied.' : 'Share This Rank'}
+        </button>
       </div>
     </div>
   )

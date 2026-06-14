@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { BadgeDef } from '../utils/badges'
 import { BADGE_KANJI } from '../utils/badges'
 
@@ -11,6 +11,7 @@ const AUTO_DISMISS_MS = 12000
 
 export default function BadgeBanner({ badge, onDismiss }: BadgeBannerProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -21,14 +22,18 @@ export default function BadgeBanner({ badge, onDismiss }: BadgeBannerProps) {
 
   if (!badge) return null
 
-  const shareText = `Rank unlocked: ${badge.name}. ${badge.flavor} ronindaily.app`
+  const shareText = `I earned the ${badge.name} rank on Ronin Daily. ${badge.flavor} ronindaily.app`
 
   const handleShare = async () => {
     if (navigator.share) {
       try { await navigator.share({ title: 'Ronin Daily', text: shareText, url: 'https://ronindaily.app' }) }
       catch { /* cancelled */ }
     } else {
-      try { await navigator.clipboard.writeText(shareText) } catch { /* unavailable */ }
+      try {
+        await navigator.clipboard.writeText(shareText)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch { /* unavailable */ }
     }
   }
 
@@ -48,8 +53,10 @@ export default function BadgeBanner({ badge, onDismiss }: BadgeBannerProps) {
         <div className="badge-flavor">{badge.flavor}</div>
 
         <div className="badge-actions">
-          <button className="badge-share-btn" onClick={handleShare}>Share</button>
           <button className="commit-btn badge-dismiss-btn" onClick={onDismiss}>Dismiss</button>
+          <button className="badge-share-btn" onClick={handleShare}>
+            {copied ? 'Copied.' : 'Share This Rank'}
+          </button>
         </div>
 
         {/* Countdown bar — key matches badge.id so it re-animates for each new badge */}

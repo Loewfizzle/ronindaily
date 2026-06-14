@@ -999,30 +999,37 @@ input[type='number'] {
 
 .badge-actions {
   display: flex;
+  flex-direction: column;
   gap: 0.75rem;
   width: 100%;
 }
 
 .badge-share-btn {
-  flex: 1;
-  padding: 0.85rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 1rem;
   background: none;
   border: 1px solid var(--border-mid);
-  color: var(--text-2);
+  color: var(--text);
   font-family: 'Inter', sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.badge-share-btn:active {
+.badge-share-btn:hover {
   border-color: var(--text-3);
 }
 
+.badge-share-btn:active {
+  color: var(--text-2);
+  border-color: var(--border-mid);
+}
+
 .badge-dismiss-btn {
-  flex: 1;
+  width: 100%;
 }
 
 .badge-countdown-track {
