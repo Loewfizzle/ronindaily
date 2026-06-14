@@ -208,10 +208,12 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   const [mealPlan, setMealPlan]     = useState<MealPlanData | null>(null)
   const [openDay, setOpenDay]       = useState<number | null>(1)
   const [error, setError]           = useState<string | null>(null)
-  const [regenDays, setRegenDays]     = useState<Set<number>>(new Set())
   const [regenSlots, setRegenSlots]   = useState<Set<string>>(new Set())
   const [regenErrors, setRegenErrors] = useState<Set<string>>(new Set())
   const [exportOpen, setExportOpen]   = useState(false)
+  const [regenConfirmOpen, setRegenConfirmOpen] = useState(false)
+  const [slotToast, setSlotToast]     = useState<{ dayNum: number; slot: MealSlot } | null>(null)
+  const slotToastTimerRef             = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [budget, setBudget]             = useState<MealPrefs['budget']>('standard')
   const [restrictions, setRestrictions] = useState<string[]>([])
@@ -263,45 +265,6 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
     }
   }, [])
 
-  const doRegenerateDay = useCallback(async (dayNum: number) => {
-    setRegenDays(prev => new Set([...prev, dayNum]))
-    try {
-      const prefs = loadSavedPrefs()
-      const res = await fetch('/api/meal-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          calorieTarget: calorieTargetRef.current,
-          unit: unitRef.current,
-          days: 1,
-          dayNumber: dayNum,
-          prefs: prefs ?? undefined,
-        }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json() as { days: DayPlan[] }
-      if (!data.days?.[0]) throw new Error('Empty response')
-      const newDay: DayPlan = { ...data.days[0], day: dayNum }
-      newDay.totalCalories = calcDayTotal(newDay)
-      setMealPlan(prev => {
-        if (!prev) return prev
-        const updated: MealPlanData = {
-          ...prev,
-          days: prev.days.map(d => d.day === dayNum ? newDay : d),
-          generatedAt: new Date().toISOString(),
-        }
-        localStorage.setItem('ronin_meal_plan', JSON.stringify(updated))
-        return updated
-      })
-    } catch {
-      const key = `d${dayNum}`
-      setRegenErrors(prev => new Set([...prev, key]))
-      setTimeout(() => setRegenErrors(prev => { const n = new Set(prev); n.delete(key); return n }), 3000)
-    } finally {
-      setRegenDays(prev => { const n = new Set(prev); n.delete(dayNum); return n })
-    }
-  }, [])
-
   const doRegenerateSlot = useCallback(async (dayNum: number, slot: MealSlot) => {
     const key = `${dayNum}-${slot}`
     setRegenSlots(prev => new Set([...prev, key]))
@@ -345,6 +308,21 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
     }
   }, [])
 
+  const handleSlotRegenClick = useCallback((dayNum: number, slot: MealSlot) => {
+    if (slotToastTimerRef.current) clearTimeout(slotToastTimerRef.current)
+    setSlotToast({ dayNum, slot })
+    slotToastTimerRef.current = setTimeout(() => {
+      setSlotToast(null)
+      slotToastTimerRef.current = null
+      doRegenerateSlot(dayNum, slot)
+    }, 2000)
+  }, [doRegenerateSlot])
+
+  const handleUndoSlotRegen = useCallback(() => {
+    if (slotToastTimerRef.current) { clearTimeout(slotToastTimerRef.current); slotToastTimerRef.current = null }
+    setSlotToast(null)
+  }, [])
+
   useEffect(() => {
     const savedPrefs = loadSavedPrefs()
     if (savedPrefs) {
@@ -383,7 +361,12 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
 
   useImperativeHandle(ref, () => ({
     goToPrefs: () => setScreen('prefs'),
-    refresh: () => { const p = loadSavedPrefs(); if (p) doGenerate(p); else setScreen('prefs') },
+    refresh: () => {
+      const p = loadSavedPrefs()
+      if (!p) { setScreen('prefs'); return }
+      if (mealPlanRef.current) setRegenConfirmOpen(true)
+      else doGenerate(p)
+    },
   }), [doGenerate])
 
   const toggleRestriction = (id: string) =>
@@ -664,11 +647,8 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
 
       {/* Day accordion */}
       {mealPlan.days.map(day => {
-        const isOpen          = openDay === day.day
-        const isDayRegen      = regenDays.has(day.day)
-        const anySlotRegen    = Array.from(regenSlots).some(k => k.startsWith(`${day.day}-`))
-        const disableDayRegen = isDayRegen || anySlotRegen
-        const isDayError      = regenErrors.has(`d${day.day}`)
+        const isOpen       = openDay === day.day
+        const anySlotRegen = Array.from(regenSlots).some(k => k.startsWith(`${day.day}-`))
 
         return (
           <div key={day.day} ref={el => { dayRefs.current[day.day] = el }}>
@@ -689,23 +669,9 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                 Day {day.day}
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '0.82rem', color: isDayError ? 'var(--red-bright)' : 'var(--text-2)', minWidth: '5.5rem', textAlign: 'right' }}>
-                  {isDayRegen ? '—' : isDayError ? 'Failed' : day.totalCalories.toLocaleString() + ' cal'}
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-2)', minWidth: '5.5rem', textAlign: 'right' }}>
+                  {day.totalCalories.toLocaleString()} cal
                 </span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); if (!disableDayRegen) doRegenerateDay(day.day) }}
-                  aria-label={`Regenerate day ${day.day}`}
-                  disabled={disableDayRegen}
-                  style={{
-                    background: 'none', border: 'none',
-                    cursor: disableDayRegen ? 'default' : 'pointer',
-                    color: 'var(--text-3)', padding: '0.2rem',
-                    display: 'flex', alignItems: 'center', lineHeight: 1,
-                    opacity: disableDayRegen ? 0.3 : 1,
-                  }}
-                >
-                  <RefreshIcon size={12} />
-                </button>
                 <ChevronIcon open={isOpen} />
               </div>
             </div>
@@ -718,54 +684,49 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                 paddingBottom: '1.5rem',
                 marginBottom: '0.25rem',
               }}>
-                {isDayRegen ? (
-                  <div style={{ padding: '0.75rem 0 0.25rem', fontSize: '0.8rem', color: 'var(--text-3)', letterSpacing: '0.12em' }}>
-                    Regenerating...
-                  </div>
-                ) : (
-                  <>
-                    {(() => {
-                      const visibleSlots = MEAL_SLOTS.filter(s => (day[s] ?? []).length > 0 || regenSlots.has(`${day.day}-${s}`))
-                      return visibleSlots.map((slot: MealSlot, slotIdx: number) => {
-                      const slotKey      = `${day.day}-${slot}`
-                      const isSlotRegen  = regenSlots.has(slotKey)
-                      const isSlotError  = regenErrors.has(slotKey)
-                      const items        = day[slot] ?? []
+                <>
+                  {(() => {
+                    const visibleSlots = MEAL_SLOTS.filter(s => (day[s] ?? []).length > 0 || regenSlots.has(`${day.day}-${s}`))
+                    return visibleSlots.map((slot: MealSlot, slotIdx: number) => {
+                    const slotKey      = `${day.day}-${slot}`
+                    const isSlotRegen  = regenSlots.has(slotKey)
+                    const isSlotError  = regenErrors.has(slotKey)
+                    const items        = day[slot] ?? []
 
-                      return (
-                        <div
-                          key={slot}
-                          style={{
-                            paddingTop: slotIdx > 0 ? '0.7rem' : '0.5rem',
-                            borderTop: slotIdx > 0 ? '1px solid var(--border)' : 'none',
-                          }}
-                        >
-                          {/* Slot header */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                            <div style={{
-                              fontSize: '0.75rem', letterSpacing: '0.28em', textTransform: 'uppercase',
-                              color: isSlotError ? 'var(--red-bright)' : 'var(--text)',
-                              animation: isSlotRegen ? 'slotPulse 1.2s ease-in-out infinite' : 'none',
-                            }}>
-                              {slot}{isSlotError ? ' — failed' : ''}
-                            </div>
-                            {!isSlotRegen && (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); if (!(anySlotRegen || isDayRegen)) doRegenerateSlot(day.day, slot) }}
-                                aria-label={`Regenerate ${slot} for day ${day.day}`}
-                                disabled={anySlotRegen || isDayRegen}
-                                style={{
-                                  background: 'none', border: 'none',
-                                  cursor: (anySlotRegen || isDayRegen) ? 'default' : 'pointer',
-                                  color: 'var(--text-3)', padding: '0.2rem',
-                                  display: 'flex', alignItems: 'center', lineHeight: 1,
-                                  opacity: (anySlotRegen || isDayRegen) ? 0.2 : 0.75,
-                                }}
-                              >
-                                <RefreshIcon size={11} />
-                              </button>
-                            )}
+                    return (
+                      <div
+                        key={slot}
+                        style={{
+                          paddingTop: slotIdx > 0 ? '0.7rem' : '0.5rem',
+                          borderTop: slotIdx > 0 ? '1px solid var(--border)' : 'none',
+                        }}
+                      >
+                        {/* Slot header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                          <div style={{
+                            fontSize: '0.75rem', letterSpacing: '0.28em', textTransform: 'uppercase',
+                            color: isSlotError ? 'var(--red-bright)' : 'var(--text)',
+                            animation: isSlotRegen ? 'slotPulse 1.2s ease-in-out infinite' : 'none',
+                          }}>
+                            {slot}{isSlotError ? ' — failed' : ''}
                           </div>
+                          {!isSlotRegen && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); if (!anySlotRegen) handleSlotRegenClick(day.day, slot) }}
+                              aria-label={`Regenerate ${slot} for day ${day.day}`}
+                              disabled={anySlotRegen}
+                              style={{
+                                background: 'none', border: 'none',
+                                cursor: anySlotRegen ? 'default' : 'pointer',
+                                color: 'var(--text-3)', padding: '0.2rem',
+                                display: 'flex', alignItems: 'center', lineHeight: 1,
+                                opacity: anySlotRegen ? 0.2 : 0.75,
+                              }}
+                            >
+                              <RefreshIcon size={11} />
+                            </button>
+                          )}
+                        </div>
 
                           {/* Slot items */}
                           {!isSlotRegen && items.map((item, i) => (
@@ -804,7 +765,6 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                       </span>
                     </div>
                   </>
-                )}
               </div>
             )}
           </div>
@@ -829,6 +789,103 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
       plainText={formatMealPlanText(mealPlan, calorieTarget)}
       onPrint={() => printMealPlan(mealPlan, calorieTarget)}
     />
+
+    {/* Full-plan regen confirmation dialog */}
+    {regenConfirmOpen && (
+      <div
+        onClick={() => setRegenConfirmOpen(false)}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 10000,
+          background: 'rgba(0,0,0,0.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1.5rem',
+        }}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            width: '100%', maxWidth: '360px',
+            background: 'var(--surface)',
+            border: '1px solid var(--border-mid)',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{ height: '2px', background: 'var(--red)', width: '100%' }} />
+          <div style={{ padding: '2rem' }}>
+            <div
+              className="font-jp"
+              style={{ fontSize: '3rem', color: 'var(--red)', lineHeight: 1, marginBottom: '0.75rem', animation: 'kanjiPulse 4s ease-in-out infinite' }}
+            >
+              侍
+            </div>
+            <div style={{ fontSize: '0.72rem', letterSpacing: '0.28em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '1rem' }}>
+              Regenerate Meal Plan
+            </div>
+            <div style={{ height: '1px', background: 'var(--red)', opacity: 0.35, marginBottom: '1.25rem' }} />
+            <div style={{ fontSize: '1rem', color: 'var(--text)', lineHeight: 1.8, marginBottom: '2rem' }}>
+              <div>This will replace your entire 7-day meal plan.</div>
+              <div>Your grocery list will need to be regenerated.</div>
+              <div>This cannot be undone.</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                className="commit-btn"
+                style={{ width: '100%' }}
+                onClick={() => {
+                  setRegenConfirmOpen(false)
+                  const p = loadSavedPrefs()
+                  if (p) doGenerate(p); else setScreen('prefs')
+                }}
+              >
+                Regenerate
+              </button>
+              <button
+                onClick={() => setRegenConfirmOpen(false)}
+                style={{
+                  width: '100%', minHeight: '44px', padding: '0.75rem',
+                  background: 'none', border: '1px solid var(--border-mid)',
+                  color: 'var(--text-2)', fontSize: '0.78rem',
+                  letterSpacing: '0.28em', textTransform: 'uppercase',
+                  cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Keep Current Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Slot regen undo toast */}
+    {slotToast && (
+      <div
+        style={{
+          position: 'fixed', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 10001,
+          background: 'var(--elevated)',
+          border: '1px solid var(--border-mid)',
+          padding: '0.75rem 1rem',
+          display: 'flex', alignItems: 'center', gap: '0.75rem',
+          whiteSpace: 'nowrap',
+          animation: 'toastFadeIn 0.2s ease forwards',
+        }}
+      >
+        <span style={{ fontSize: '0.82rem', color: 'var(--text-2)' }}>
+          Regenerating {slotToast.slot.charAt(0).toUpperCase() + slotToast.slot.slice(1)}...
+        </span>
+        <button
+          onClick={handleUndoSlotRegen}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--red)', fontSize: '0.82rem',
+            padding: 0, fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          Undo
+        </button>
+      </div>
+    )}
     </>
   )
 })
