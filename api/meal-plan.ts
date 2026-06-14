@@ -21,6 +21,8 @@ interface MealPrefs {
   equipment?: string[]
   dislikes?: string
   description?: string
+  activeMeals?: string[]
+  mealAllocations?: Record<string, number>
 }
 
 interface RequestBody {
@@ -85,6 +87,18 @@ function buildPrefsSection(prefs: MealPrefs | undefined): string {
 
   if (prefs.description?.trim()) {
     parts.push(`USER PREFERENCE OVERRIDE — the user has described their ideal meals as follows. Respect these preferences above all other constraints except hard dietary restrictions and calorie targets:\n${prefs.description.trim()}`)
+  }
+
+  if (prefs.activeMeals && prefs.activeMeals.length > 0 && prefs.activeMeals.length < 4) {
+    const allMeals = ['breakfast', 'lunch', 'dinner', 'snacks']
+    const skipped = allMeals.filter(m => !prefs.activeMeals!.includes(m))
+    const activeList = prefs.activeMeals.map(m => {
+      const cal = prefs.mealAllocations?.[m]
+      const name = m.charAt(0).toUpperCase() + m.slice(1)
+      return cal ? `${name} (${cal} cal)` : name
+    }).join(', ')
+    const skippedList = skipped.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(' and ')
+    parts.push(`ACTIVE MEALS ONLY — CRITICAL: Only generate food items for: ${activeList}. Do NOT generate ${skippedList} — output empty arrays [] for skipped meals. The day JSON must include all four slot keys but skipped meals get empty arrays []. This overrides rule 5.`)
   }
 
   return parts.length > 0 ? '\n\n' + parts.join('\n\n') : ''

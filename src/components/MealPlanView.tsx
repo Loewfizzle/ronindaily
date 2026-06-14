@@ -52,6 +52,33 @@ const EQUIPMENT_OPTIONS = [
   { id: 'no_equipment',  label: 'No Equipment' },
 ]
 
+const MEAL_OPTIONS = [
+  { id: 'breakfast', label: 'Breakfast' },
+  { id: 'lunch',     label: 'Lunch'     },
+  { id: 'dinner',    label: 'Dinner'    },
+  { id: 'snacks',    label: 'Snacks'    },
+]
+
+const BASE_PCT: Record<string, number> = {
+  breakfast: 25,
+  lunch:     33,
+  dinner:    33,
+  snacks:    9,
+}
+
+function calcMealAllocations(meals: string[], target: number): Record<string, number> {
+  const totalPct = meals.reduce((s, m) => s + (BASE_PCT[m] ?? 0), 0)
+  const raws     = meals.map(m => (BASE_PCT[m] / totalPct) * target)
+  const floors   = raws.map(Math.floor)
+  let rem        = target - floors.reduce((a, b) => a + b, 0)
+  const fracs    = raws.map((r, i) => ({ i, frac: r - floors[i] }))
+  fracs.sort((a, b) => b.frac - a.frac)
+  fracs.slice(0, rem).forEach(f => floors[f.i]++)
+  const result: Record<string, number> = {}
+  meals.forEach((m, i) => { result[m] = floors[i] })
+  return result
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function loadSavedPrefs(): MealPrefs | null {
@@ -189,6 +216,8 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   const [budget, setBudget]             = useState<MealPrefs['budget']>('standard')
   const [restrictions, setRestrictions] = useState<string[]>([])
   const [equipment, setEquipment]       = useState<string[]>(['stovetop', 'microwave'])
+  const [activeMeals, setActiveMeals]   = useState<string[]>(['breakfast', 'lunch', 'dinner', 'snacks'])
+  const [mealSelectError, setMealSelectError] = useState(false)
   const [dislikes, setDislikes]         = useState('')
   const [description, setDescription]   = useState('')
 
@@ -322,6 +351,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
       setBudget(savedPrefs.budget)
       setRestrictions(savedPrefs.restrictions)
       setEquipment(savedPrefs.equipment)
+      setActiveMeals(savedPrefs.activeMeals ?? ['breakfast', 'lunch', 'dinner', 'snacks'])
       setDislikes(savedPrefs.dislikes ?? '')
       setDescription(savedPrefs.description ?? '')
 
@@ -339,7 +369,8 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   }, [])
 
   const handleSaveAndGenerate = () => {
-    const prefs: MealPrefs = { budget, restrictions, equipment, dislikes, description }
+    const mealAllocations = calcMealAllocations(activeMeals, calorieTarget)
+    const prefs: MealPrefs = { budget, restrictions, equipment, activeMeals, mealAllocations, dislikes, description }
     localStorage.setItem('ronin_meal_prefs', JSON.stringify(prefs))
     doGenerate(prefs)
   }
@@ -363,6 +394,20 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
       if (id === 'no_equipment') return ['no_equipment']
       return [...prev.filter(x => x !== 'no_equipment'), id]
     })
+
+  const toggleMeal = (id: string) => {
+    setActiveMeals(prev => {
+      if (prev.includes(id)) {
+        if (prev.length === 1) {
+          setMealSelectError(true)
+          setTimeout(() => setMealSelectError(false), 2500)
+          return prev
+        }
+        return prev.filter(x => x !== id)
+      }
+      return [...prev, id]
+    })
+  }
 
   const dayRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
@@ -420,6 +465,43 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
             )
           })}
         </div>
+      </div>
+
+      <div>
+        <div className="field-label">Meals You Eat</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-3)', marginBottom: '0.75rem' }}>
+          Deselect meals you skip. Calories redistribute automatically.
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          {MEAL_OPTIONS.map(opt => {
+            const isSelected = activeMeals.includes(opt.id)
+            return (
+              <button
+                key={opt.id}
+                onClick={() => toggleMeal(opt.id)}
+                style={{
+                  borderRadius: '999px',
+                  padding: '0.4rem 1rem',
+                  minHeight: '44px',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  background: isSelected ? 'var(--red)' : 'transparent',
+                  color: isSelected ? 'var(--text)' : 'var(--text-2)',
+                  border: isSelected ? '1px solid transparent' : '1px solid var(--border-mid)',
+                  transition: 'background 0.12s ease, color 0.12s ease',
+                }}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+        {mealSelectError && (
+          <div style={{ fontSize: '0.78rem', color: 'var(--red-bright)', marginTop: '0.5rem' }}>
+            Select at least one meal.
+          </div>
+        )}
       </div>
 
       <div>
@@ -642,7 +724,9 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                   </div>
                 ) : (
                   <>
-                    {MEAL_SLOTS.map((slot: MealSlot, slotIdx: number) => {
+                    {(() => {
+                      const visibleSlots = MEAL_SLOTS.filter(s => (day[s] ?? []).length > 0 || regenSlots.has(`${day.day}-${s}`))
+                      return visibleSlots.map((slot: MealSlot, slotIdx: number) => {
                       const slotKey      = `${day.day}-${slot}`
                       const isSlotRegen  = regenSlots.has(slotKey)
                       const isSlotError  = regenErrors.has(slotKey)
@@ -705,7 +789,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                           ))}
                         </div>
                       )
-                    })}
+                    })})()}
 
                     {/* Day total */}
                     <div style={{

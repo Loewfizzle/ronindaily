@@ -119,4 +119,6 @@ export interface MealPrefs {
   equipment: string[]
   dislikes: string
   description?: string
+  activeMeals?: string[]
+  mealAllocations?: Record<string, number>
 }
