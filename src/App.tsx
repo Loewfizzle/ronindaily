@@ -29,6 +29,15 @@ function LoginScreen({ connectionError }: LoginScreenProps) {
   const [sent, setSent]   = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const handleAppleSignIn = async () => {
+    setError(null)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin },
+    })
+    if (error) setError('Sign-in failed. Try again.')
+  }
+
   const handleGoogleSignIn = async () => {
     setError(null)
     const { error } = await supabase.auth.signInWithOAuth({
@@ -95,6 +104,31 @@ function LoginScreen({ connectionError }: LoginScreenProps) {
         </p>
       ) : (
         <>
+          {/* Apple — must appear first per Apple guidelines */}
+          <button
+            onClick={handleAppleSignIn}
+            style={{
+              width: '100%', maxWidth: '320px', padding: '0.85rem 1rem',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+              background: '#000', color: '#fff',
+              border: 'none', cursor: 'pointer',
+              fontSize: '0.82rem', letterSpacing: '0.1em', fontFamily: 'Inter, sans-serif',
+              minHeight: '44px',
+            }}
+          >
+            <svg width="17" height="20" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+              <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.453 2.208 3.09 3.792 3.033 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
+            </svg>
+            Continue with Apple
+          </button>
+
+          <div style={{ width: '100%', maxWidth: '320px', display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.25rem 0' }}>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+            <span style={{ fontSize: '0.75rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase' }}>or</span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+          </div>
+
+          {/* Google */}
           <button
             onClick={handleGoogleSignIn}
             className="commit-btn"
@@ -103,12 +137,13 @@ function LoginScreen({ connectionError }: LoginScreenProps) {
             Continue with Google
           </button>
 
-          <div style={{ width: '100%', maxWidth: '320px', display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.5rem 0' }}>
+          <div style={{ width: '100%', maxWidth: '320px', display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.25rem 0' }}>
             <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
             <span style={{ fontSize: '0.75rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase' }}>or</span>
             <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
           </div>
 
+          {/* Email */}
           <div style={{ width: '100%', maxWidth: '320px' }}>
             <input
               className="input-bare"
