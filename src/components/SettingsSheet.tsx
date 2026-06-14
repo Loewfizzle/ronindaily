@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import BottomSheet from './BottomSheet'
 
+function ChevronIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-3)', flexShrink: 0 }}>
+      <polyline points="6 4 12 9 6 14" />
+    </svg>
+  )
+}
+
 interface SettingsOption {
   id: 'signout' | 'adjust' | 'reset'
   label: string
@@ -119,7 +127,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
                   {opt.desc}
                 </div>
               </div>
-              <span style={{ fontSize: '1.1rem', color: 'var(--text-3)', flexShrink: 0, lineHeight: 1 }}>›</span>
+              <ChevronIcon />
             </button>
           )
         ))}

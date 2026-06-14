@@ -889,7 +889,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       )}
 
       <BottomSheet open={sheet === 'movement'} onClose={() => setSheet(null)} title="Movement">
-        <MovementDetail movement={movement} cal={movementCal} activityLog={activityLog} onLog={handleLogActivity} onUnlog={handleUnlogActivity} />
+        <MovementDetail movement={activePrescriptions} cal={movementCal} activityLog={activityLog} onLog={handleLogActivity} onUnlog={handleUnlogActivity} />
       </BottomSheet>
 
       <BottomSheet open={sheet === 'progress'} onClose={() => setSheet(null)} title="Progress">
@@ -1289,7 +1289,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
   const feedback   = todayTotal > 0 ? getCheatFeedback(todayTotal, data.target) : null
 
   const GROUP_LABEL: React.CSSProperties = {
-    fontSize: '0.65rem', letterSpacing: '0.22em', color: 'var(--text-3)',
+    fontSize: '0.72rem', letterSpacing: '0.22em', color: 'var(--text-3)',
     textTransform: 'uppercase', marginBottom: '0.5rem',
   }
 
@@ -1615,18 +1615,25 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
                   onClick={() => handleCheck(item)}
                   aria-label={isCheckedItem ? 'Uncheck' : 'Check'}
                   style={{
-                    width: '22px', height: '22px', flexShrink: 0,
+                    width: '44px', height: '44px', flexShrink: 0,
+                    background: 'none', border: 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', padding: 0,
+                  }}
+                >
+                  <div style={{
+                    width: '22px', height: '22px',
                     background: isCheckedItem ? 'var(--red)' : 'none',
                     border: `1px solid ${isCheckedItem ? 'var(--red)' : 'var(--border-mid)'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', padding: 0, transition: 'all 0.12s ease',
-                  }}
-                >
-                  {isCheckedItem && (
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
+                    transition: 'all 0.12s ease', flexShrink: 0,
+                  }}>
+                    {isCheckedItem && (
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
                 </button>
                 <span style={{ flex: 1, fontSize: '0.9rem', color: isCheckedItem ? 'var(--text)' : 'var(--text-2)', lineHeight: 1.4 }}>
                   {ACTIVITY_LABEL[item.id] ?? item.id}
@@ -1637,7 +1644,7 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
                       <span style={{ fontSize: '0.78rem', color: 'var(--green)' }}>+{surplusCal} cal</span>
                       <button
                         onClick={() => setExpandedExtra(item.id)}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.08em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', minHeight: '44px' }}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.08em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', minHeight: '44px', minWidth: '44px' }}
                       >edit</button>
                     </div>
                   ) : (
@@ -1665,7 +1672,7 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
                     onClick={() => handleExtraConfirm(item)}
                     style={{
                       background: 'none', border: '1px solid var(--border-mid)', color: 'var(--text-2)',
-                      fontSize: '0.7rem', letterSpacing: '0.14em', textTransform: 'uppercase',
+                      fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase',
                       cursor: 'pointer', padding: '0 0.6rem', fontFamily: 'Inter, sans-serif',
                       minHeight: '36px', flexShrink: 0,
                     }}

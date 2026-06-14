@@ -512,7 +512,7 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                 </button>
               </div>
               <div style={{
-                fontSize: '0.65rem', letterSpacing: '0.36em', color: 'var(--text)',
+                fontSize: '0.72rem', letterSpacing: '0.36em', color: 'var(--text)',
                 textTransform: 'uppercase', marginBottom: '1.75rem',
               }}>
                 Mission Rations
@@ -551,7 +551,7 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                 </button>
               </div>
               <div style={{
-                fontSize: '0.65rem', letterSpacing: '0.36em', color: 'var(--text)',
+                fontSize: '0.72rem', letterSpacing: '0.36em', color: 'var(--text)',
                 textTransform: 'uppercase', marginBottom: '1.75rem',
               }}>
                 Supply Run

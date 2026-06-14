@@ -2,6 +2,14 @@ import { useState } from 'react'
 import BottomSheet from './BottomSheet'
 import type { PlanResult } from '../types'
 
+function ChevronIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-3)', flexShrink: 0 }}>
+      <polyline points="6 4 12 9 6 14" />
+    </svg>
+  )
+}
+
 interface ShareSheetProps {
   open: boolean
   onClose: () => void
@@ -109,7 +117,7 @@ export default function ShareSheet({ open, onClose, streak, plan }: ShareSheetPr
                 {opt.desc}
               </div>
             </div>
-            <span style={{ fontSize: '1.1rem', color: 'var(--text-3)', flexShrink: 0, lineHeight: 1 }}>›</span>
+            <ChevronIcon />
           </button>
         ))}
       </div>
