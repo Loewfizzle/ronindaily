@@ -12,6 +12,7 @@ export interface PatternReport {
   totalFailed: number
   hasEnoughData: boolean
   patternMessages: string[]
+  needsBadge: string[]
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -30,6 +31,7 @@ function defaultReport(): PatternReport {
     totalFailed: 0,
     hasEnoughData: false,
     patternMessages: [],
+    needsBadge: [],
   }
 }
 
@@ -139,6 +141,30 @@ export async function detectPatterns(userId: string): Promise<PatternReport> {
       patternMessages.push('More partial days than complete. Close is not enough.')
     }
 
+    // Badge eligibility checks
+    const needsBadge: string[] = []
+
+    // pattern_breaker: last 4 occurrences of the weakest day are all complete
+    if (weakestDow !== null) {
+      const occurrences = rows.filter(r => new Date(r.logged_date + 'T12:00:00').getDay() === weakestDow)
+      if (occurrences.length >= 4 && occurrences.slice(-4).every(r => r.result === 'complete')) {
+        needsBadge.push('pattern_breaker')
+      }
+    }
+
+    // consistent: 30 consecutive logged dates with no gaps
+    if (rows.length >= 30) {
+      let maxConsec = 1, curConsec = 1
+      for (let i = 1; i < rows.length; i++) {
+        const prev = new Date(rows[i - 1].logged_date + 'T12:00:00')
+        const curr = new Date(rows[i].logged_date + 'T12:00:00')
+        const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000)
+        if (diffDays === 1) { curConsec++; if (curConsec > maxConsec) maxConsec = curConsec }
+        else curConsec = 1
+      }
+      if (maxConsec >= 30) needsBadge.push('consistent')
+    }
+
     return {
       weakestDayOfWeek,
       strongestDayOfWeek,
@@ -151,6 +177,7 @@ export async function detectPatterns(userId: string): Promise<PatternReport> {
       totalFailed,
       hasEnoughData: true,
       patternMessages,
+      needsBadge,
     }
   } catch {
     return defaultReport()

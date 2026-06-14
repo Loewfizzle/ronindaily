@@ -117,6 +117,24 @@ export const BADGE_DEFS: BadgeDef[] = [
     flavor: 'The plan said this long. You are moving faster.',
     explanation: 'Your weekly check-in showed you are ahead of your projected weight-loss pace.',
   },
+  {
+    id: 'honest',
+    name: 'Honest',
+    flavor: 'You logged a partial day instead of pretending. That is rare.',
+    explanation: 'Logged a partial accountability check-in instead of skipping or lying about the day.',
+  },
+  {
+    id: 'pattern_breaker',
+    name: 'Pattern Breaker',
+    flavor: 'You identified your weakness and eliminated it. Most never do.',
+    explanation: 'Had a recurring weak day identified by the pattern system, then hit complete on that same day four weeks in a row.',
+  },
+  {
+    id: 'consistent',
+    name: 'Consistent',
+    flavor: 'Thirty consecutive days of accountability. The habit is permanent now.',
+    explanation: 'Logged a daily accountability check-in for 30 consecutive days without missing once.',
+  },
   // ── Walking series (歩) ──────────────────────────────────────────────────────
   { id: 'walk_10',  name: 'First Steps',   flavor: 'Ten miles behind you. The road ahead is longer.',         explanation: 'Walked a cumulative total of 10 miles across your mission.'  },
   { id: 'walk_50',  name: 'Road Worn',     flavor: 'Fifty miles of pavement and discipline.',                  explanation: 'Walked a cumulative total of 50 miles across your mission.'  },
@@ -178,6 +196,9 @@ export const BADGE_KANJI: Record<string, string> = {
   ghost:           '影',
   minimalist:      '無',
   overcomer:       '越',
+  honest:          '真',
+  pattern_breaker: '破',
+  consistent:      '恒',
   // Walking
   walk_10:  '歩', walk_50:  '歩', walk_100: '歩', walk_500: '歩',
   // Cycling

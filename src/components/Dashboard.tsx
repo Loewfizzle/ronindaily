@@ -348,6 +348,10 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         const report = await detectPatterns(user.id)
         setPatternReport(report)
         localStorage.setItem('ronin_patterns', JSON.stringify({ date: today, report }))
+        for (const badgeId of report.needsBadge) {
+          const newBadge = await awardBadge(user.id, badgeId)
+          if (newBadge) handleBadgesEarnedRef.current([newBadge])
+        }
       } catch { /* offline */ }
     })()
   }, [])
@@ -861,6 +865,10 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         { user_id: user.id, logged_date: today, result, calories_hit: caloriesHit, movement_hit: movementHit },
         { onConflict: 'user_id,logged_date' }
       )
+      if (result === 'partial') {
+        const newBadge = await awardBadge(user.id, 'honest')
+        if (newBadge) handleBadgesEarnedRef.current([newBadge])
+      }
     } catch { /* offline */ }
   }
 
