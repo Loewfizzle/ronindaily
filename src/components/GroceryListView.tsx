@@ -210,9 +210,13 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
   const totalChecked = checked.size
 
   if (status === 'loading') return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0 3rem', gap: '1.5rem' }}>
-      <div className="font-jp onboarding-kanji" style={{ fontSize: '2.8rem', color: 'var(--red)', lineHeight: 1 }}>侍</div>
-      <div style={{ fontSize: '0.8rem', letterSpacing: '0.24em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem 0 2rem' }}>
+      <div className="font-jp" style={{ fontSize: '5rem', color: 'var(--red)', lineHeight: 1, marginBottom: '0.75rem', animation: 'kanjiPulse 4s ease-in-out infinite' }}>侍</div>
+      <div style={{ fontSize: '1.1rem', letterSpacing: '0.44em', color: 'var(--text)', fontWeight: 500, textTransform: 'uppercase', marginBottom: '1.25rem' }}>
+        Ronin Daily
+      </div>
+      <div style={{ width: '100%', height: '1px', background: 'var(--red)', opacity: 0.35, marginBottom: '1.5rem' }} />
+      <div style={{ fontSize: '1rem', letterSpacing: '0.24em', color: 'var(--text-2)', textTransform: 'uppercase' }}>
         Building your list...
       </div>
     </div>
