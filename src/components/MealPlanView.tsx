@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHand
 import type { ReactNode } from 'react'
 import type { UnitSystem, MealItem, DayPlan, MealPlanData, MealPrefs, MealSlot } from '../types'
 import { MEAL_SLOTS } from '../types'
+import ExportSheet from './ExportSheet'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,82 @@ function calcDayTotal(day: DayPlan): number {
   return MEAL_SLOTS.flatMap(s => day[s] ?? []).reduce((sum, it) => sum + it.calories, 0)
 }
 
+// ── Export helpers ────────────────────────────────────────────────────────────
+
+function formatMealPlanText(mealPlan: MealPlanData, calorieTarget: number): string {
+  const parts: string[] = [
+    'WEEKLY MEAL PLAN — RONIN DAILY',
+    `Daily Target: ${calorieTarget.toLocaleString()} calories`,
+    '',
+  ]
+  for (const day of mealPlan.days) {
+    parts.push(`DAY ${day.day}`)
+    for (const slot of MEAL_SLOTS) {
+      const items = day[slot] ?? []
+      if (!items.length) continue
+      const label = (slot as string).charAt(0).toUpperCase() + (slot as string).slice(1)
+      const text = items.map((i: MealItem) => `${i.name} (${i.portion}) — ${i.calories} cal`).join(', ')
+      parts.push(`${label}: ${text}`)
+    }
+    parts.push(`Total: ${day.totalCalories.toLocaleString()} cal`)
+    parts.push('')
+  }
+  return parts.join('\n').trimEnd()
+}
+
+function printMealPlan(mealPlan: MealPlanData, calorieTarget: number): void {
+  const daysHtml = mealPlan.days.map(day => {
+    const slotsHtml = MEAL_SLOTS.map(slot => {
+      const items = day[slot] ?? []
+      if (!items.length) return ''
+      const label = (slot as string).charAt(0).toUpperCase() + (slot as string).slice(1)
+      const text = items.map((i: MealItem) =>
+        `${i.name} <span class="portion">(${i.portion})</span> <span class="cal">— ${i.calories} cal</span>`
+      ).join(', ')
+      return `<p><strong>${label}:</strong> ${text}</p>`
+    }).filter(Boolean).join('\n')
+
+    return `<div class="day"><h2>Day ${day.day}</h2>${slotsHtml}<p class="total">Total: ${day.totalCalories.toLocaleString()} cal</p></div>`
+  }).join('\n')
+
+  const html = `<!DOCTYPE html><html><head>
+<title>Weekly Meal Plan — Ronin Daily</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; color: #000; background: #fff; padding: 2rem; }
+h1 { font-size: 1rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; }
+.target { font-size: 0.85rem; color: #555; margin: 0.2rem 0 2rem; }
+.day { margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid #ddd; }
+h2 { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 0.6rem; }
+p { font-size: 0.88rem; line-height: 1.6; margin-bottom: 0.3rem; }
+.portion { color: #555; }
+.cal { color: #666; }
+.total { font-weight: 600; color: #333; margin-top: 0.5rem; border-top: 1px solid #eee; padding-top: 0.4rem; }
+</style>
+</head><body>
+<h1>Ronin Daily</h1>
+<p class="target">Weekly Meal Plan · ${calorieTarget.toLocaleString()} calories/day</p>
+${daysHtml}
+</body></html>`
+
+  const w = window.open('', '_blank', 'width=700,height=900')
+  if (!w) return
+  w.document.write(html)
+  w.document.close()
+  w.focus()
+  w.print()
+}
+
+function ExportIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="7" y1="1" x2="7" y2="9"/>
+      <polyline points="4,4 7,1 10,4"/>
+      <polyline points="1,9 1,13 13,13 13,9"/>
+    </svg>
+  )
+}
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 function RefreshIcon({ size = 14 }: { size?: number }) {
@@ -83,6 +160,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   const [error, setError]           = useState<string | null>(null)
   const [regenDays, setRegenDays]   = useState<Set<number>>(new Set())
   const [regenSlots, setRegenSlots] = useState<Set<string>>(new Set())
+  const [exportOpen, setExportOpen] = useState(false)
 
   const [budget, setBudget]             = useState<MealPrefs['budget']>('standard')
   const [restrictions, setRestrictions] = useState<string[]>([])
@@ -353,10 +431,25 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   if (!mealPlan) return null
 
   return (
+    <>
     <div>
       {/* Plan info line */}
-      <div style={{ fontSize: '0.8rem', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: '1.5rem' }}>
-        7 days · {calorieTarget.toLocaleString()} cal/day
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ fontSize: '0.8rem', letterSpacing: '0.1em', color: 'var(--text-3)' }}>
+          7 days · {calorieTarget.toLocaleString()} cal/day
+        </div>
+        <button
+          onClick={() => setExportOpen(true)}
+          aria-label="Export meal plan"
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--text-3)', padding: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            minWidth: '44px', minHeight: '44px',
+          }}
+        >
+          <ExportIcon />
+        </button>
       </div>
 
       {/* Day accordion */}
@@ -517,6 +610,17 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
 
       {readyFooter}
     </div>
+
+    <ExportSheet
+      open={exportOpen}
+      onClose={() => setExportOpen(false)}
+      copyLabel="Copy Plan"
+      shareTitle="My Weekly Meal Plan — Ronin Daily"
+      emailSubject="My Weekly Meal Plan — Ronin Daily"
+      plainText={formatMealPlanText(mealPlan, calorieTarget)}
+      onPrint={() => printMealPlan(mealPlan, calorieTarget)}
+    />
+    </>
   )
 })
 
