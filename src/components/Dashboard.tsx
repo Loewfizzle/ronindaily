@@ -8,6 +8,7 @@ import BadgeBanner from './BadgeBanner'
 import BadgeDetailSheet from './BadgeDetailSheet'
 import AccountabilitySheet from './AccountabilitySheet'
 import PatternSheet from './PatternSheet'
+import WeeklyRecapSheet from './WeeklyRecapSheet'
 import { calculatePlan, formatMovementItem, getActivityInfo } from '../utils/calculate'
 import { detectPatterns } from '../utils/patterns'
 import type { PatternReport } from '../utils/patterns'
@@ -191,6 +192,18 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     return null
   })
   const [patternSheetOpen, setPatternSheetOpen] = useState(false)
+  const [weeklyRecapOpen, setWeeklyRecapOpen] = useState(false)
+  const [weeklyRecapDismissed, setWeeklyRecapDismissed] = useState(() =>
+    new Date().getDay() !== 0 || !!localStorage.getItem(`ronin_weekly_recap_${localDateStr()}`)
+  )
+  const [weeklyRecapCounts, setWeeklyRecapCounts] = useState<{ complete: number; partial: number; failed: number } | null>(() => {
+    if (new Date().getDay() !== 0) return null
+    try {
+      const cached = JSON.parse(localStorage.getItem(`ronin_weekly_recap_data_${localDateStr()}`) || 'null')
+      if (cached) return cached as { complete: number; partial: number; failed: number }
+    } catch { /* corrupt */ }
+    return null
+  })
   const [skipInput, setSkipInput]         = useState('')
   const skipConfirmTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
   const logDebounceRef                    = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
@@ -317,6 +330,42 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       } catch { /* offline */ }
     })()
   }, [])
+
+  // Weekly recap: fetch past 7 days of accountability on Sundays.
+  useEffect(() => {
+    if (new Date().getDay() !== 0) return
+    if (weeklyRecapDismissed) return
+    const sundayDate = localDateStr()
+    // Use cache if available
+    try {
+      const cached = JSON.parse(localStorage.getItem(`ronin_weekly_recap_data_${sundayDate}`) || 'null')
+      if (cached) { setWeeklyRecapCounts(cached); return }
+    } catch { /* corrupt */ }
+    ;(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const startDate = new Date()
+        startDate.setDate(startDate.getDate() - 6)
+        const { data } = await (supabase as any)
+          .from('daily_accountability')
+          .select('result')
+          .eq('user_id', user.id)
+          .gte('logged_date', localDateStr(startDate))
+          .lte('logged_date', sundayDate)
+        if (!data) return
+        let complete = 0, partial = 0, failed = 0
+        for (const r of data as Array<{ result: string }>) {
+          if (r.result === 'complete') complete++
+          else if (r.result === 'partial') partial++
+          else failed++
+        }
+        const counts = { complete, partial, failed }
+        setWeeklyRecapCounts(counts)
+        localStorage.setItem(`ronin_weekly_recap_data_${sundayDate}`, JSON.stringify(counts))
+      } catch { /* offline */ }
+    })()
+  }, [weeklyRecapDismissed])
 
   // Persist best progress whenever progressPct improves (not gated behind showCheckin).
   useEffect(() => {
@@ -726,6 +775,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     setSkipOpen(true)
   }
 
+  const handleRecapDismiss = () => {
+    localStorage.setItem(`ronin_weekly_recap_${localDateStr()}`, '1')
+    setWeeklyRecapDismissed(true)
+    setWeeklyRecapOpen(false)
+  }
+
   const footerProps = { loggedDays, weekNumber, onShare: () => setShareOpen(true) }
 
   return (
@@ -806,6 +861,21 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             style={{ margin: '0 1.5rem 1rem', padding: '0.9rem 1rem', borderLeft: '2px solid var(--red)', background: 'var(--elevated)', cursor: 'pointer' }}
           >
             <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>Week {weekNumber} complete. Log your weight.</span>
+          </div>
+        )}
+
+        {/* Weekly recap banner — Sundays only, before dismissed */}
+        {!weeklyRecapDismissed && weeklyRecapCounts !== null && dayNumber >= 7 && (
+          <div
+            onClick={() => setWeeklyRecapOpen(true)}
+            style={{
+              margin: '0 1.5rem 1rem', padding: '0.9rem 1rem',
+              borderLeft: '2px solid var(--red)', background: 'var(--elevated)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}
+          >
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>Week {weekNumber} complete. View your recap.</span>
+            <span style={{ color: 'var(--text-3)', fontSize: '1.1rem', lineHeight: 1 }}>›</span>
           </div>
         )}
 
@@ -1044,6 +1114,17 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         report={patternReport}
         onClose={() => setPatternSheetOpen(false)}
       />
+      {weeklyRecapCounts && (
+        <WeeklyRecapSheet
+          open={weeklyRecapOpen}
+          weekNumber={weekNumber}
+          complete={weeklyRecapCounts.complete}
+          partial={weeklyRecapCounts.partial}
+          failed={weeklyRecapCounts.failed}
+          patternMessage={patternReport?.hasEnoughData && patternReport.patternMessages.length > 0 ? patternReport.patternMessages[0] : null}
+          onDismiss={handleRecapDismiss}
+        />
+      )}
       <BadgeBanner badge={activeBadge} onDismiss={handleBadgeDismiss} />
 
       {/* ── Skip confirmation sheet ──────────────────────────────────── */}
