@@ -1588,7 +1588,7 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
         ))}
       </div>
 
-      <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+      <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', overflowX: 'hidden' }}>
         {/* Summary line */}
         {missionComplete && (
           <div style={{
@@ -1596,6 +1596,8 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
             background: 'var(--elevated)',
             padding: '0.75rem',
             marginBottom: '1.25rem',
+            width: '100%',
+            boxSizing: 'border-box',
           }}>
             <span style={{
               fontSize: '1.1rem', color: 'var(--red-bright)',
@@ -1639,12 +1641,13 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
           }
 
           return (
-            <div key={item.id} style={{ marginBottom: '0.75rem' }}>
+            <div key={item.id} style={{ marginBottom: '0.75rem', width: '100%', overflowX: 'hidden' }}>
               {/* Checkbox row */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem', minHeight: '44px',
                 paddingLeft: isCheckedItem ? '0.75rem' : '0',
                 borderLeft: isCheckedItem ? '2px solid var(--red)' : '2px solid transparent',
+                width: '100%', boxSizing: 'border-box',
               }}>
                 <button
                   onClick={() => handleCheck(item)}
@@ -1690,11 +1693,11 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
 
               {/* Inline total input (expanded) */}
               {isCheckedItem && isExpanded && (
-                <div style={{ marginTop: '0.5rem', paddingLeft: '3.5rem', maxWidth: '100%' }}>
+                <div style={{ marginTop: '0.5rem', paddingLeft: '3.5rem', width: '100%', boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-3)', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>
                     {getTotalLabel(item.id, info?.type ?? 'distance')}
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
                     <input
                       className="input-bare"
                       type="number"
@@ -1702,7 +1705,7 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
                       placeholder={plannedDisplay}
                       value={totalDrafts[item.id] ?? (confirmedTotal != null ? String(confirmedTotal) : '')}
                       onChange={e => setTotalDrafts(prev => ({ ...prev, [item.id]: e.target.value }))}
-                      style={{ width: '70px', textAlign: 'right', fontSize: '0.85rem', padding: '0 0.25rem', flexShrink: 0 }}
+                      style={{ width: '70px', textAlign: 'right', fontSize: '0.85rem', padding: '0 0.25rem', flexShrink: 0, minWidth: 0 }}
                       autoFocus
                     />
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', flexShrink: 0 }}>{unitLabel}</span>
@@ -1717,7 +1720,7 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
                     >Done</button>
                     <button
                       onClick={() => setExpandedId(null)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', minHeight: '44px' }}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', minHeight: '44px', flexShrink: 0 }}
                     >nevermind</button>
                   </div>
                 </div>
