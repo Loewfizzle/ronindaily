@@ -451,7 +451,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   }
 
   const {
-    unit, unsustainable, realisticEndDate,
+    unit, extremeMission,
     startWeight, currentWeight, goalWeight, poundsToLose,
     date, dayNumber, daysLeft, totalDays, weekNumber,
     maintenance, dailyDeficit, calorieTarget, exerciseBurn,
@@ -570,17 +570,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           </div>
         </div>
 
-        {/* Unsustainable warning */}
-        {unsustainable && realisticEndDate && (
-          <div style={{ margin: '0 1.5rem 1rem', padding: '0.9rem 1rem', borderLeft: '2px solid var(--red-bright)', background: 'var(--elevated)' }}>
-            <div style={{ fontSize: '0.75rem', letterSpacing: '0.18em', color: 'var(--red-bright)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-              Timeline Not Realistic
-            </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text)', lineHeight: 1.65, margin: 0 }}>
-              Your timeline is not realistic. Adjusted completion:{' '}
-              <span style={{ color: 'var(--text)', fontWeight: 500 }}>{formatDate(realisticEndDate)}</span>.
-              Commit to the math or change the goal.
-            </p>
+        {/* Extreme mission indicator */}
+        {extremeMission && (
+          <div style={{ padding: '0 1.5rem 0.75rem' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', letterSpacing: '0.06em' }}>
+              Extreme mission active.
+            </span>
           </div>
         )}
 
@@ -890,6 +885,14 @@ function BadgeRow({
       {badges.map(b =>
         b.badge_id === 'goal_reached' ? (
           <GoalBadgeCircle key={b.badge_id} badge={b} onSelect={onSelect} progressPct={progressPct} />
+        ) : b.badge_id === 'extreme_mission' ? (
+          <button
+            key={b.badge_id}
+            onClick={() => onSelect(b)}
+            style={{ ...CIRCLE_STYLE, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'extremePulse 3s ease-in-out infinite' }}
+          >
+            <span className="font-jp" style={{ fontSize: '1.1rem', color: 'var(--red)', lineHeight: 1 }}>鬼</span>
+          </button>
         ) : (
           <button
             key={b.badge_id}

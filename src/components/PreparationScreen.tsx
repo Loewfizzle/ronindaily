@@ -171,6 +171,7 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
   const [direction, setDirection] = useState<'forward'|'back'>('forward')
   const [beginning, setBeginning] = useState(false)
   const [dishonorPhase, setDishonorPhase] = useState<'hidden' | 'showing' | 'hiding'>('hidden')
+  const [extremeAccepted, setExtremeAccepted] = useState(() => !!localStorage.getItem('ronin_extreme_accepted'))
   const dishonorTimers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => () => {
@@ -198,7 +199,14 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
     )
   }
 
-  const { unit, poundsToLose, calorieTarget } = plan
+  const { unit, poundsToLose, calorieTarget, extremeMission } = plan
+
+  const handleExtremeAccept = () => {
+    const next = !extremeAccepted
+    setExtremeAccepted(next)
+    if (next) localStorage.setItem('ronin_extreme_accepted', '1')
+    else localStorage.removeItem('ronin_extreme_accepted')
+  }
   const targetWeeks = parseInt(profile!.targetWeeks, 10)
 
   const loseDisplay = unit === 'metric'
@@ -431,8 +439,52 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                 </button>
               </div>
 
+              {extremeMission && (
+                <div style={{ width: '100%', maxWidth: '400px', borderLeft: '2px solid var(--red)', background: 'var(--elevated)', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                  <div style={{ fontSize: '0.72rem', letterSpacing: '0.22em', color: 'var(--red)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+                    Extreme Mission
+                  </div>
+                  <div style={{ fontSize: '1rem', color: 'var(--text)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+                    This mission requires extreme discipline. Most will not finish it.
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-2)', lineHeight: 1.85, marginBottom: '1rem' }}>
+                    Hunger will be present.<br />
+                    Discomfort is the mission.<br />
+                    Most will quit. You are not most people.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleExtremeAccept}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', width: '100%', fontFamily: 'Inter, sans-serif' }}
+                  >
+                    <div style={{
+                      width: '15px', height: '15px', flexShrink: 0,
+                      border: `1px solid ${extremeAccepted ? 'var(--red)' : 'var(--border-mid)'}`,
+                      background: extremeAccepted ? 'var(--red)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.12s ease',
+                    }}>
+                      {extremeAccepted && (
+                        <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                          <polyline points="1.5,4.5 3.5,6.5 7.5,2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
+                      I understand the suffering required. I accept this mission.
+                    </span>
+                  </button>
+                </div>
+              )}
+
               <div style={{ width: '100%', maxWidth: '480px', paddingBottom: '0.5rem' }}>
-                <button type="button" className="commit-btn" onClick={() => go(2, 'forward')} disabled={beginning}>
+                <button
+                  type="button"
+                  className="commit-btn"
+                  onClick={() => go(2, 'forward')}
+                  disabled={beginning || (extremeMission && !extremeAccepted)}
+                  style={{ opacity: extremeMission && !extremeAccepted ? 0.4 : 1 }}
+                >
                   Review Meal Plan →
                 </button>
               </div>

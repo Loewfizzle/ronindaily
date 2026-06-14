@@ -13,8 +13,9 @@ export const BADGE_DEFS: BadgeDef[] = [
   { id: 'streak_50',      name: 'Disciplined',       flavor: 'Fifty days. Discipline is no longer a choice. It is who you are.' },
   { id: 'streak_100',     name: 'Hardened',          flavor: 'One hundred days. You have outlasted most.' },
   { id: 'first_checkin',  name: 'Accountable',       flavor: 'You faced the scale. Most do not.' },
-  { id: 'goal_reached',   name: 'Mission Complete',  flavor: 'The mission is over. Begin a new one.' },
-  { id: 'first_meal_plan', name: 'Prepared',         flavor: 'A warrior prepares before battle.' },
+  { id: 'goal_reached',    name: 'Mission Complete',  flavor: 'The mission is over. Begin a new one.' },
+  { id: 'first_meal_plan', name: 'Prepared',          flavor: 'A warrior prepares before battle.' },
+  { id: 'extreme_mission', name: 'Oni',               flavor: 'You chose the path others refused. And you finished it.' },
 ]
 
 export const BADGE_KANJI: Record<string, string> = {
@@ -25,6 +26,7 @@ export const BADGE_KANJI: Record<string, string> = {
   first_checkin:   '誠',
   goal_reached:    '完',
   first_meal_plan: '備',
+  extreme_mission: '鬼',
 }
 
 export function getBadgeDef(id: string): BadgeDef | undefined {
@@ -49,7 +51,10 @@ export async function checkAndAwardBadges({
   if (streak >= 50)        earned.push('streak_50')
   if (streak >= 100)       earned.push('streak_100')
   if (hasCheckedIn)        earned.push('first_checkin')
-  if (plan.poundsToLose <= 0) earned.push('goal_reached')
+  if (plan.poundsToLose <= 0) {
+    earned.push('goal_reached')
+    if (localStorage.getItem('ronin_extreme_accepted')) earned.push('extreme_mission')
+  }
   if (hasMealPlan)         earned.push('first_meal_plan')
 
   if (earned.length === 0) return []

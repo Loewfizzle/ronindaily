@@ -240,6 +240,12 @@ input[type='number'] {
   box-shadow: 0 1px 6px rgba(139, 28, 28, 0.3);
 }
 
+/* ── Extreme mission badge pulse ── */
+@keyframes extremePulse {
+  0%, 100% { border-color: var(--red); box-shadow: 0 0 4px rgba(139, 28, 28, 0.4); }
+  50%       { border-color: var(--red-bright); box-shadow: 0 0 12px rgba(176, 40, 40, 0.7); }
+}
+
 /* ── Ghost / secondary button ── */
 .ghost-btn {
   width: 100%;

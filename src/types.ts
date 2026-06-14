@@ -39,8 +39,7 @@ export interface Meal {
 /** Every property returned by calculatePlan. */
 export interface PlanResult {
   unit: UnitSystem
-  unsustainable: boolean
-  realisticEndDate: Date | null
+  extremeMission: boolean
   startWeight: number
   currentWeight: number
   goalWeight: number

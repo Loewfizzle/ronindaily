@@ -84,8 +84,8 @@ function daysBetween(a: Date, b: Date): number {
  *  2. Multiply BMR by ACTIVITY_FACTOR (1.2) to get sedentary TDEE.
  *  3. Derive the required daily deficit from (pounds remaining × CAL_PER_LB) ÷ days left.
  *     Before the first check-in, days left = full timeline; after check-in, days left = remaining.
- *  4. If the required deficit exceeds (TDEE − calorie floor), the plan is unsustainable:
- *     cap the deficit at the safe maximum and project a realistic end date at that rate.
+ *  4. If the required deficit exceeds (TDEE − calorie floor), the plan is an extreme mission:
+ *     cap the deficit at the safe maximum (user accepted the challenge on the prep screen).
  *  5. Split the capped deficit FOOD_DEFICIT_SPLIT / EXERCISE_DEFICIT_SPLIT (70 / 30).
  *  6. Build meal breakdown and movement prescription from the resulting targets.
  *     Movement is split evenly across the user's selected activities.
@@ -154,17 +154,13 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
   const minCal         = sex === 'M' ? MIN_CAL_MALE : MIN_CAL_FEMALE
   const maxSafeDeficit = tdee - minCal
 
-  let dailyDeficit: number, unsustainable: boolean, realisticEndDate: Date | null
+  let dailyDeficit: number
+  const extremeMission = requiredDailyDeficit > maxSafeDeficit
 
-  if (requiredDailyDeficit > maxSafeDeficit) {
-    unsustainable = true
-    dailyDeficit  = Math.max(0, Math.round(maxSafeDeficit))
-    const realisticDays = dailyDeficit > 0 ? Math.ceil(totalCalDeficit / dailyDeficit) : 9999
-    realisticEndDate = addDays(today, realisticDays)
+  if (extremeMission) {
+    dailyDeficit = Math.max(0, Math.round(maxSafeDeficit))
   } else {
-    unsustainable    = false
-    dailyDeficit     = Math.round(requiredDailyDeficit)
-    realisticEndDate = null
+    dailyDeficit = Math.round(requiredDailyDeficit)
   }
 
   const foodDeficit   = Math.round(dailyDeficit * FOOD_DEFICIT_SPLIT)
@@ -206,8 +202,7 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
 
   return {
     unit,
-    unsustainable,
-    realisticEndDate,
+    extremeMission,
 
     startWeight:   startWeightLbs,
     currentWeight: currentWeightLbs,
