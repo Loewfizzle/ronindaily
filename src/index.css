@@ -1069,3 +1069,37 @@ input[type='number'] {
   from { width: 100% }
   to   { width: 0 }
 }
+
+/* ── Daily Accountability overlay ────────────────────────────── */
+
+@keyframes accountabilityFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes accountabilityCardIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.accountability-option {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 0;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.1s ease;
+}
+
+.accountability-option:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.accountability-option:active {
+  background: rgba(255, 255, 255, 0.045);
+}

@@ -6,6 +6,7 @@ import ShareSheet from './ShareSheet'
 import MealPlanSheet from './MealPlanSheet'
 import BadgeBanner from './BadgeBanner'
 import BadgeDetailSheet from './BadgeDetailSheet'
+import AccountabilitySheet from './AccountabilitySheet'
 import { calculatePlan, formatMovementItem, getActivityInfo } from '../utils/calculate'
 import { checkAndAwardBadges, awardBadge, checkActivityMilestoneBadges, BADGE_KANJI, ACTIVITY_SERIES_TIERS } from '../utils/badges'
 import { supabase } from '../lib/supabase'
@@ -177,11 +178,13 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const [selectedBadge, setSelectedBadge] = useState<EarnedBadge | null>(null)
   const [skipOpen, setSkipOpen]           = useState(false)
   const [skipConfirmed, setSkipConfirmed] = useState(false)
+  const [showAccountability, setShowAccountability] = useState(false)
   const [skipInput, setSkipInput]         = useState('')
   const skipConfirmTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
   const logDebounceRef                    = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
   const activityPrevDailyRef             = useRef<Record<string, number>>({})
   const handleBadgesEarnedRef            = useRef<(badges: BadgeDef[]) => void>(() => {})
+  const checkAccountabilityRef          = useRef<() => void>(() => {})
   const [dismissed, setDismissed] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem(`ronin_dismissed_activities_${localDateStr()}`)
@@ -202,6 +205,18 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   const plan = useMemo(() => loadPlan(), [refreshKey])
   const planRef = useRef(plan)
   planRef.current = plan
+
+  // Accountability check runs every render so the ref is always fresh (same pattern as handleBadgesEarnedRef).
+  checkAccountabilityRef.current = () => {
+    const now = new Date()
+    if (now.getHours() < 20) return
+    const today = localDateStr()
+    if (localStorage.getItem(`ronin_accountability_${today}`)) return
+    if (localStorage.getItem('ronin_skipped') === today) return
+    const p = planRef.current
+    if (!p || p.dayNumber <= 0) return
+    setShowAccountability(true)
+  }
 
   // Compute progress metrics before the early return so they are available to hooks below.
   // (React requires all hooks to be called unconditionally, before any conditional return.)
@@ -258,6 +273,14 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         setCheatEntries(raw ? (JSON.parse(raw) as CheatEntry[]) : [])
       } catch { setCheatEntries([]) }
     }
+    document.addEventListener('visibilitychange', sync)
+    return () => document.removeEventListener('visibilitychange', sync)
+  }, [])
+
+  // Accountability: check on mount and when returning to foreground.
+  useEffect(() => {
+    checkAccountabilityRef.current()
+    const sync = () => { if (document.visibilityState === 'visible') checkAccountabilityRef.current() }
     document.addEventListener('visibilitychange', sync)
     return () => document.removeEventListener('visibilitychange', sync)
   }, [])
@@ -635,10 +658,39 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         await supabase.from('daily_logs').delete().eq('user_id', user.id).eq('logged_date', today)
+        // If user reached skip via "I failed today" in accountability, finalize the log.
+        if (localStorage.getItem(`ronin_accountability_${today}`) === 'pending') {
+          localStorage.setItem(`ronin_accountability_${today}`, JSON.stringify({ result: 'failed', caloriesHit: false, movementHit: false }))
+          await (supabase as any).from('daily_accountability').upsert(
+            { user_id: user.id, logged_date: today, result: 'failed', calories_hit: false, movement_hit: false },
+            { onConflict: 'user_id,logged_date' }
+          )
+        }
       }
     } catch { /* offline — streak already reset locally */ }
     setSkipConfirmed(true)
     skipConfirmTimerRef.current = setTimeout(() => setSkipConfirmed(false), 3000)
+  }
+
+  const handleAccountabilityLog = async (result: 'complete' | 'partial', caloriesHit: boolean, movementHit: boolean) => {
+    const today = localDateStr()
+    localStorage.setItem(`ronin_accountability_${today}`, JSON.stringify({ result, caloriesHit, movementHit }))
+    setShowAccountability(false)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      await (supabase as any).from('daily_accountability').upsert(
+        { user_id: user.id, logged_date: today, result, calories_hit: caloriesHit, movement_hit: movementHit },
+        { onConflict: 'user_id,logged_date' }
+      )
+    } catch { /* offline */ }
+  }
+
+  const handleAccountabilityFailed = () => {
+    const today = localDateStr()
+    localStorage.setItem(`ronin_accountability_${today}`, 'pending')
+    setShowAccountability(false)
+    setSkipOpen(true)
   }
 
   const footerProps = { loggedDays, weekNumber, onShare: () => setShareOpen(true) }
@@ -911,6 +963,12 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       <MealPlanSheet open={mealPlanOpen} onClose={() => setMealPlanOpen(false)} calorieTarget={calorieTarget} unit={unit} onBadgesEarned={handleBadgesEarned} />
 
       <BadgeDetailSheet badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
+      <AccountabilitySheet
+        open={showAccountability}
+        dayNumber={dayNumber}
+        onLog={handleAccountabilityLog}
+        onFailed={handleAccountabilityFailed}
+      />
       <BadgeBanner badge={activeBadge} onDismiss={handleBadgeDismiss} />
 
       {/* ── Skip confirmation sheet ──────────────────────────────────── */}
