@@ -170,3 +170,127 @@ Flow for all integrations:
 
 - Requires Apple Developer account ($99/year)
 - One session to implement once account is approved
+
+---
+
+## THE $15 VALUE MILESTONE — MUST BUILD BEFORE CHARGING
+
+These features must be live before introducing paid tiers. Together they push Ronin Daily clearly past the $15/month value threshold and justify the $6.99/month price point with room to spare.
+
+### 1. PUSH NOTIFICATIONS
+
+Daily mission reminder sent at a user-configured time each day.
+
+- User sets their preferred notification time in Settings (e.g. 7:00 AM)
+
+- Notification text: 'Your mission today. X calories. [activity prescription]. Day N.'
+
+- Weekly check-in reminder fires on day 7, 14, 21 etc: 'Week N complete. Log your weight.'
+
+- Streak milestone notifications: 'Day 7. You have not failed. Yet.'
+
+- Implementation: Web Push API for PWA (works on Android, limited on iOS until iOS 16.4+), Vercel serverless function to send, push subscription stored in Supabase
+
+- iOS users who have added the app to home screen from Safari get push notifications on iOS 16.4+
+
+### 2. WEEKLY PROGRESS EMAIL
+
+Every Sunday morning the app sends a weekly summary email to the user.
+
+- Subject: 'Week N complete. Here is where you stand.'
+
+- Content: current streak, weight change since last check-in, days on mission, meals hit, movement completed, next week calorie target, one line of brand voice copy
+
+- Implementation: Vercel serverless function + Resend or SendGrid for email delivery, triggered by a Vercel cron job every Sunday at 8 AM
+
+- User can opt out in Settings
+
+- Tone matches the app — cold, factual, no cheerleading
+
+### 3. AUTO-ROTATING WEEKLY MEAL PLAN
+
+Meal plan regenerates automatically every Monday with fresh meals.
+
+- Every Monday the cached meal plan is cleared and a new one is generated in the background using saved preferences
+
+- User opens the app Monday and their fresh plan is ready
+
+- If preferences have not been set yet the plan uses defaults
+
+- A subtle banner on the dashboard Monday morning: 'New week. New plan. Ready.'
+
+- User can still manually regenerate at any time
+
+- Implementation: Vercel cron job triggers api/meal-plan.ts every Monday at 6 AM for all active users
+
+### 4. CHEAT MEAL LOGGING
+
+Honest accounting for meals that go off plan.
+
+- Button on dashboard: 'Log a cheat meal'
+
+- User enters approximate calories of the cheat meal
+
+- App recalculates remaining calories for the day: daily target minus cheat meal calories
+
+- If cheat meal exceeds daily target: shows deficit for the day, suggests making it up over the next 3 days
+
+- Streak does NOT reset — being honest about a cheat meal is accountability, not failure
+
+- Tone: cold acknowledgment. 'Logged. X calories remaining today. Adjust accordingly.'
+
+- If cheat meal is truly catastrophic (2x+ daily target): 'That was not a cheat meal. That was a decision. Adjust the week.'
+
+- Stored in Supabase under a cheat_meals table
+
+### 5. MONETIZATION — STRIPE INTEGRATION
+
+After the above four features are live, introduce paid tiers.
+
+Free tier (forever):
+
+- Daily calorie target and movement prescription
+
+- Streak tracking
+
+- Weekly check-ins
+
+- Achievement badges
+
+- Skip day mechanic
+
+- Basic activity logging
+
+Premium tier ($6.99/month or $49.99/year):
+
+- AI meal planning with all budget tiers and preferences
+
+- Auto-rotating weekly meal plan
+
+- Grocery list with export
+
+- Weekly progress email
+
+- Push notifications
+
+- Wearable sync (Fitbit, Garmin, Whoop)
+
+- Per-meal and per-slot regeneration
+
+- Cheat meal logging
+
+- Activity preferences beyond walking
+
+Implementation:
+
+- Stripe for payment processing
+
+- Webhook to Vercel serverless function on successful payment
+
+- Function sets is_premium: true on the user's Supabase profile
+
+- App checks is_premium on load and gates premium features accordingly
+
+- Early users (beta testers) get is_premium: true set manually in Supabase — no charge
+
+- Paywall screen matches app aesthetic — dark, cold, no hype. Just: 'This is a premium feature. $6.99/month. No excuses.'
