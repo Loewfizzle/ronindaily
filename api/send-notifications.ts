@@ -7,12 +7,6 @@ import { toZonedTime } from 'date-fns-tz'
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? ''
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? ''
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT     ?? 'mailto:admin@example.com',
-  process.env.VAPID_PUBLIC_KEY  ?? '',
-  process.env.VAPID_PRIVATE_KEY ?? '',
-)
-
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface SubRow {
@@ -147,6 +141,19 @@ export default async function handler(req: Request): Promise<Response> {
       status: 401, headers: { 'Content-Type': 'application/json' },
     })
   }
+
+  const vapidPub  = process.env.VAPID_PUBLIC_KEY  ?? ''
+  const vapidPriv = process.env.VAPID_PRIVATE_KEY ?? ''
+  if (!vapidPub || !vapidPriv) {
+    return new Response(JSON.stringify({ error: 'VAPID keys not configured' }), {
+      status: 500, headers: { 'Content-Type': 'application/json' },
+    })
+  }
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT ?? 'mailto:admin@example.com',
+    vapidPub,
+    vapidPriv,
+  )
 
   if (req.method !== 'GET' && req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
