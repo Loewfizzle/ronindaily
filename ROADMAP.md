@@ -87,8 +87,43 @@ Content:
 - Submit for Google OAuth verification for unrestricted sign-in
 
 ### Wearable Sync
-- Priority order: Fitbit → Garmin → Whoop → Google Fit
-- Apple Health requires a native iOS wrapper (WKWebView) — cannot be done from a PWA
+
+> ⚠️ **Critical platform note:** The legacy Fitbit Web API is being deprecated. Google is sunsetting it in September 2026; existing OAuth tokens do not carry over. **Do NOT build against the legacy Fitbit Web API** — it would stop syncing data within months of launch. The replacement is the **Google Health API** (`health.googleapis.com`), which launched in spring 2026 and is registered/managed through Google Cloud Console with Google OAuth2.
+
+**Priority order:**
+1. **Google Health API** — covers Fitbit devices AND Google Fit data through a single integration. One OAuth flow, one API, largest user slice. Register in Google Cloud Console; uses Google OAuth2 scopes.
+2. **Garmin** — Garmin Connect API, OAuth. Dedicated fitness-first users with high-quality activity and calorie burn data.
+3. **Whoop** — WHOOP API, OAuth. Whoop users are core target audience: disciplined, data-driven, recovery-obsessed. Strong premium signal.
+4. **Apple Health / Apple Watch** — requires a native iOS wrapper with HealthKit entitlements. Gated behind the App Store build — cannot be done from the PWA.
+
+**Primary value:** Replace estimated calorie burn with actual burn from device sensors. This makes the daily deficit real and is the primary justification for building wearables at all (and for gating it behind premium).
+
+#### Sleep Data
+
+Sleep is **not** a separate integration — it is an additional data type available through the same OAuth connection as activity and calorie burn. The Google Health API (and Garmin, Whoop) exposes sleep alongside heart rate, activity, body weight, and breathing rate through one consent grant. Available sleep data includes: stage breakdown (deep / light / REM / wake) at 30-second granularity, total minutes asleep and awake, time to fall asleep, and a sleep efficiency score.
+
+Because the expensive work (OAuth, token storage and refresh, the daily morning pull cron) is shared with activity data, **sleep should be pulled from day one alongside burn data** once the wearable loop exists. Its marginal cost at that point is low.
+
+**Design note (concept stage — discuss before building):** Sleep does NOT feed the calorie-deficit math (unlike burn data). So it needs a deliberate, on-brand use rather than being a raw dashboard stat. Ideas to explore: cold accountability-voice framing around recovery (treating recovery as part of the mission, not a luxury); a sleep-consistency streak shown alongside the discipline streak. Do not ship sleep data without a design decision on how it's presented.
+
+**Build principle:** Get the burn loop tight first (OAuth → daily pull → replace estimated exercise burn on the dashboard). Sleep is a strong secondary signal layered on once the primary loop works. Do not ship multiple half-built data types.
+
+### Evolving Completion Rank (完)
+
+> Concept stage — discuss and design before building.
+
+**Intent:** A user who completes a full mission should carry a permanent, visible mark — and it should evolve as they complete more missions over time (a tier or a visible count that grows with each completed mission), rather than being a one-time state that resets.
+
+**Current behavior (confirmed from code):**
+- When `progressPct >= 100`, Dashboard.tsx writes `ronin_goal_reached` to localStorage and awards the `goal_reached` badge (`完`) in the Supabase `badges` table.
+- The `GoalBadgeCircle` component renders 完 with a progressive gold fill driven by `progressPct` — it fills as you approach the goal, then glows at 100%.
+- On **Start Over** (`handleReset` in App.tsx): `clearLocal()` removes `ronin_goal_reached` from localStorage, AND `handleReset` also deletes the entire `badges` table for the user (`supabase.from('badges').delete().eq('user_id', user.id)`). The completion state is completely erased — both locally and in Supabase.
+- The `goal_reached` badge does NOT survive a Start Over through any current path.
+
+**Implementation direction (not finalized):**
+- Track missions completed as a durable counter in Supabase (e.g. a `missions_completed integer` column on `profiles`, or a separate `completions` table), incremented when `goal_reached` is awarded and never deleted by Start Over.
+- Drive an evolving 完 rank from this counter (e.g. 完 I, 完 II, or a visual tier system).
+- This also enables Start Over to feel like a progression rather than an erasure.
 
 ### iOS App Store
 - WKWebView wrapper around ronindaily.app

@@ -58,6 +58,13 @@ Specific notes:
 - `ronin_best_progress` is a local cache. The authoritative value is in `profiles`.
 - Calorie target is computed live by `src/utils/calculate.ts` (Mifflin-St Jeor) from profile + latest check-in weight. It is never stored durably — always recomputed.
 
+**`ronin_goal_reached` and `ronin_personal_stats` — exact reset behavior (confirmed from App.tsx):**
+- `ronin_goal_reached` is **removed** by `clearLocal()` (line 247 of App.tsx). It is NOT preserved on Start Over.
+- Additionally, `handleReset` calls `supabase.from('badges').delete().eq('user_id', user.id)` — so the `goal_reached` badge row in Supabase is also wiped. Completion state is completely erased by Start Over through all paths.
+- `ronin_personal_stats` survives a Start Over because `handleReset` explicitly writes it to localStorage *before* calling `clearLocal()`, and `clearLocal()` does not touch it. It is not exempted inside `clearLocal()` — it is re-saved around it.
+- `ronin_personal_stats` is *not* preserved on Sign Out: `handleSignOut` calls `localStorage.removeItem('ronin_personal_stats')` explicitly after `clearLocal()`.
+- Correction to an earlier handoff note: `clearLocal()` does **not** preserve `ronin_goal_reached`. Any doc or note claiming it does is wrong.
+
 ---
 
 ## Server-Side Rate Limits
