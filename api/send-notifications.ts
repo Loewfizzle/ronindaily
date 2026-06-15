@@ -135,7 +135,7 @@ function inWindow(notificationTime: string, timezone: string): boolean {
 // ── Handler ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: Request): Promise<Response> {
-  const secret = req.headers.get('x-cron-secret')
+  const secret = (req.headers as unknown as Record<string, string | undefined>)['x-cron-secret']
   if (!secret || secret !== process.env.CRON_SECRET) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401, headers: { 'Content-Type': 'application/json' },
