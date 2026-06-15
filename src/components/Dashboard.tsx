@@ -31,6 +31,13 @@ interface CheatEntry {
   supabaseId?: string
 }
 
+interface MissionCompletion {
+  id: string
+  completed_at: string
+  mission_start_date: string | null
+  lost_amount: number | null
+  unit: string | null
+}
 
 function formatDate(d: Date): string {
   const day   = d.getDate()
@@ -197,6 +204,10 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       return !!localStorage.getItem(`ronin_new_plan_banner_${dateKey}`)
     } catch { return true }
   })
+
+  const [completionCount, setCompletionCount]           = useState(0)
+  const [completionRows, setCompletionRows]             = useState<MissionCompletion[]>([])
+  const [completionSheetOpen, setCompletionSheetOpen]   = useState(false)
 
   const [skipInput, setSkipInput]         = useState('')
   const skipConfirmTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -458,6 +469,36 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
         unit: p.unit,
         totalDays: p.dayNumber,
       }))
+      // Record this mission permanently — survives Start Over.
+      ;(async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) return
+          const startRaw = localStorage.getItem('ronin_start')
+          if (!startRaw) return
+          const missionStartDate = new Date(startRaw).toISOString().split('T')[0]
+          const { data: existing } = await supabase
+            .from('mission_completions')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('mission_start_date', missionStartDate)
+            .maybeSingle()
+          if (existing) return
+          const lostLbs = p.startWeight - p.currentWeight
+          const lostAmount = p.unit === 'metric'
+            ? parseFloat((lostLbs / 2.20462).toFixed(1))
+            : parseFloat(lostLbs.toFixed(1))
+          const { data: inserted } = await supabase
+            .from('mission_completions')
+            .insert({ user_id: user.id, mission_start_date: missionStartDate, lost_amount: lostAmount, unit: p.unit })
+            .select('id, completed_at, mission_start_date, lost_amount, unit')
+            .single()
+          if (inserted) {
+            setCompletionCount(prev => prev + 1)
+            setCompletionRows(prev => [...prev, inserted as MissionCompletion])
+          }
+        } catch { /* offline — mount effect will catch on next login */ }
+      })()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressPct])
@@ -603,6 +644,48 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       } catch { /* offline */ }
     }
     loadActivityTotals()
+  }, [])
+
+  // Load mission completion history on mount; resilience-inserts if offline on first reach.
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const { data } = await supabase
+          .from('mission_completions')
+          .select('id, completed_at, mission_start_date, lost_amount, unit')
+          .eq('user_id', user.id)
+          .order('completed_at', { ascending: true })
+        if (!data) return
+        setCompletionCount(data.length)
+        setCompletionRows(data as MissionCompletion[])
+        // Resilience: goal already reached but completion not yet recorded for this mission.
+        const p = planRef.current
+        if (p && p.poundsToLose <= 0) {
+          const startRaw = localStorage.getItem('ronin_start')
+          if (startRaw) {
+            const missionStartDate = new Date(startRaw).toISOString().split('T')[0]
+            if (!data.some(c => c.mission_start_date === missionStartDate)) {
+              const lostLbs = p.startWeight - p.currentWeight
+              const lostAmount = p.unit === 'metric'
+                ? parseFloat((lostLbs / 2.20462).toFixed(1))
+                : parseFloat(lostLbs.toFixed(1))
+              const { data: inserted } = await supabase
+                .from('mission_completions')
+                .insert({ user_id: user.id, mission_start_date: missionStartDate, lost_amount: lostAmount, unit: p.unit })
+                .select('id, completed_at, mission_start_date, lost_amount, unit')
+                .single()
+              if (inserted) {
+                setCompletionCount(prev => prev + 1)
+                setCompletionRows(prev => [...prev, inserted as MissionCompletion])
+              }
+            }
+          }
+        }
+      } catch { /* offline */ }
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleLogActivity = useCallback((id: string, amount: number) => {
@@ -880,19 +963,33 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
               <div className="dash-ronin">RONIN</div>
               <div className="dash-daily">DAILY</div>
             </div>
+            {/* Desktop: 完 mark lives below the wordmark in the brand column */}
+            <CompletionMark
+              count={completionCount}
+              onClick={() => setCompletionSheetOpen(true)}
+              className="completion-hdr-desktop"
+            />
           </div>
-          <button
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Settings"
-            className="dash-settings-btn"
-          >
-            <svg width="20" height="15" viewBox="0 0 16 12" fill="none">
-              <line x1="0" y1="2" x2="16" y2="2" stroke="currentColor" strokeWidth="1"/>
-              <circle cx="6" cy="2" r="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
-              <line x1="0" y1="10" x2="16" y2="10" stroke="currentColor" strokeWidth="1"/>
-              <circle cx="10" cy="10" r="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
-            </svg>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {/* Mobile: 完 mark sits inboard of the settings gear */}
+            <CompletionMark
+              count={completionCount}
+              onClick={() => setCompletionSheetOpen(true)}
+              className="completion-hdr-mobile"
+            />
+            <button
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Settings"
+              className="dash-settings-btn"
+            >
+              <svg width="20" height="15" viewBox="0 0 16 12" fill="none">
+                <line x1="0" y1="2" x2="16" y2="2" stroke="currentColor" strokeWidth="1"/>
+                <circle cx="6" cy="2" r="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
+                <line x1="0" y1="10" x2="16" y2="10" stroke="currentColor" strokeWidth="1"/>
+                <circle cx="10" cy="10" r="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Connection warning */}
@@ -1258,6 +1355,9 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
       <MealPlanSheet open={mealPlanOpen} onClose={() => setMealPlanOpen(false)} calorieTarget={calorieTarget} unit={unit} onBadgesEarned={handleBadgesEarned} />
 
       <BadgeDetailSheet badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
+      {completionSheetOpen && (
+        <MissionCompletionSheet completions={completionRows} onClose={() => setCompletionSheetOpen(false)} />
+      )}
       <AccountabilitySheet
         open={showAccountability}
         dayNumber={dayNumber}
@@ -2116,6 +2216,148 @@ function ProgressDetail({ plan }: { plan: PlanResult }) {
         <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.7, margin: 0 }}>
           Check in weekly. Weight logged every 7 days. The plan adjusts to reality.
         </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Mission completion header mark ────────────────────────────────────────────
+
+function CompletionMark({
+  count,
+  onClick,
+  className,
+}: {
+  count: number
+  onClick: () => void
+  className?: string
+}) {
+  if (count === 0) return null
+
+  // Tier 1 = first completion, tier 2 = 2–3, tier 3 = 4+ (visual plateau)
+  const tier = count === 1 ? 1 : count <= 3 ? 2 : 3
+  const goldColor = tier === 1 ? 'var(--gold)' : tier === 2 ? '#cd9e3a' : '#d1942c'
+
+  return (
+    <button
+      onClick={onClick}
+      aria-label={`${count} mission${count === 1 ? '' : 's'} complete — tap to view history`}
+      className={className}
+      style={{
+        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+        display: 'flex', alignItems: 'center', gap: '0.2rem',
+        minWidth: '44px', minHeight: '44px', justifyContent: 'center',
+        flexShrink: 0, position: 'relative',
+      }}
+    >
+      {/* Bounded halo — separate blurred copy so the glyph itself is never blurred */}
+      {tier >= 2 && (
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute', inset: 0, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', pointerEvents: 'none',
+          }}
+        >
+          <span className="font-jp" style={{
+            fontSize: '1.1rem', lineHeight: 1, color: goldColor,
+            filter: `blur(${tier === 2 ? 3 : 4}px)`,
+            opacity: tier === 2 ? 0.30 : 0.42,
+            userSelect: 'none',
+          }}>完</span>
+        </span>
+      )}
+      {/* Glyph — always fully opaque and sharp */}
+      <span className="font-jp" style={{
+        fontSize: '1.1rem', color: goldColor, lineHeight: 1,
+        position: 'relative', zIndex: 1,
+      }}>完</span>
+      {/* Count suffix — only at 2+ */}
+      {count >= 2 && (
+        <span style={{
+          fontSize: '0.58rem', color: goldColor, lineHeight: 1,
+          fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em',
+          position: 'relative', zIndex: 1,
+        }}>×{count}</span>
+      )}
+    </button>
+  )
+}
+
+function MissionCompletionSheet({
+  completions,
+  onClose,
+}: {
+  completions: MissionCompletion[]
+  onClose: () => void
+}) {
+  if (completions.length === 0) return null
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0,0,0,0.85)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '1.5rem',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: '380px',
+          background: 'var(--surface)', border: '1px solid var(--border-mid)',
+          padding: '2.5rem', position: 'relative',
+          animation: 'badgeCardIn 0.3s ease-out',
+        }}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="close-btn"
+          style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}
+        >
+          <CloseIcon />
+        </button>
+
+        <div className="font-jp" style={{ fontSize: '5rem', lineHeight: 1, color: 'var(--gold)' }}>完</div>
+
+        <div style={{
+          fontSize: '0.75rem', fontWeight: 700, color: 'var(--gold)',
+          letterSpacing: '0.44em', textTransform: 'uppercase', marginTop: '1rem',
+        }}>
+          MISSIONS COMPLETE
+        </div>
+
+        <div style={{ height: '1px', background: 'var(--red)', opacity: 0.35, marginTop: '1rem' }} />
+
+        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {completions.map((c, i) => (
+            <div key={c.id} style={{
+              display: 'flex', justifyContent: 'space-between',
+              alignItems: 'baseline', gap: '1rem',
+            }}>
+              <span style={{
+                fontSize: '0.75rem', color: 'var(--text-3)',
+                letterSpacing: '0.16em', textTransform: 'uppercase', flexShrink: 0,
+              }}>
+                Mission {i + 1}
+              </span>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>
+                  {formatDate(new Date(c.completed_at))}
+                </div>
+                {c.lost_amount != null && c.unit && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: '0.15rem' }}>
+                    {c.unit === 'metric'
+                      ? `${Number(c.lost_amount).toFixed(1)} kg lost`
+                      : `${Math.round(Number(c.lost_amount))} lbs lost`}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

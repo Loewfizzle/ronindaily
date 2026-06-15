@@ -331,6 +331,40 @@ export type Database = {
           },
         ]
       }
+      mission_completions: {
+        Row: {
+          id: string
+          user_id: string
+          completed_at: string
+          mission_start_date: string | null
+          lost_amount: number | null
+          unit: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          completed_at?: string
+          mission_start_date?: string | null
+          lost_amount?: number | null
+          unit?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          completed_at?: string
+          mission_start_date?: string | null
+          lost_amount?: number | null
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'mission_completions_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           id: string

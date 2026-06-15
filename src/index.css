@@ -460,6 +460,10 @@ input[type='number'] {
 .badge-row-desktop { display: none !important; }
 .badge-row-mobile  { display: block !important; }
 
+/* Mobile: completion mark — desktop variant hidden, mobile variant shows in header right cluster */
+.completion-hdr-desktop { display: none !important; }
+.completion-hdr-mobile  { display: flex !important; }
+
 /* ── Dashboard desktop layout ── */
 @media (min-width: 768px) {
   .dash-root {
@@ -530,6 +534,10 @@ input[type='number'] {
   /* Swap badge row visibility */
   .badge-row-desktop { display: block !important; }
   .badge-row-mobile  { display: none !important; }
+
+  /* Swap completion mark visibility */
+  .completion-hdr-desktop { display: flex !important; }
+  .completion-hdr-mobile  { display: none !important; }
 
   /* Mission blocks stack naturally on desktop — no space-between spreading */
   .dash-mission-blocks { justify-content: flex-start !important; }
