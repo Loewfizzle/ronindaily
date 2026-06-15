@@ -1744,6 +1744,10 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
         })}
       </div>
 
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', margin: '1.25rem 0 0', lineHeight: 1.7 }}>
+        Substitutions are fine. The math is the only rule. Hit your calorie number.
+      </p>
+
       {/* ── Cheat meal section ── */}
       <div style={{ marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
         <div className="field-label" style={{ marginBottom: '1.25rem' }}>Log a Cheat Meal</div>
