@@ -110,20 +110,14 @@ Because the expensive work (OAuth, token storage and refresh, the daily morning 
 
 ### Evolving Completion Rank (完)
 
-> Concept stage — discuss and design before building.
+**Shipped.** A durable 完 mark appears in the dashboard header when a user completes a mission. It accumulates across Start Over and escalates visually with each completed mission.
 
-**Intent:** A user who completes a full mission should carry a permanent, visible mark — and it should evolve as they complete more missions over time (a tier or a visible count that grows with each completed mission), rather than being a one-time state that resets.
-
-**Current behavior (confirmed from code):**
-- When `progressPct >= 100`, Dashboard.tsx writes `ronin_goal_reached` to localStorage and awards the `goal_reached` badge (`完`) in the Supabase `badges` table.
-- The `GoalBadgeCircle` component renders 完 with a progressive gold fill driven by `progressPct` — it fills as you approach the goal, then glows at 100%.
-- On **Start Over** (`handleReset` in App.tsx): `clearLocal()` removes `ronin_goal_reached` from localStorage, AND `handleReset` also deletes the entire `badges` table for the user (`supabase.from('badges').delete().eq('user_id', user.id)`). The completion state is completely erased — both locally and in Supabase.
-- The `goal_reached` badge does NOT survive a Start Over through any current path.
-
-**Implementation direction (not finalized):**
-- Track missions completed as a durable counter in Supabase (e.g. a `missions_completed integer` column on `profiles`, or a separate `completions` table), incremented when `goal_reached` is awarded and never deleted by Start Over.
-- Drive an evolving 完 rank from this counter (e.g. 完 I, 完 II, or a visual tier system).
-- This also enables Start Over to feel like a progression rather than an erasure.
+**How it works:**
+- `mission_completions` Supabase table (migration 013) holds one row per mission per user, keyed on `(user_id, mission_start_date)`. It is intentionally NOT deleted by `handleReset`.
+- When `progressPct` first hits 100, a row is inserted and the mark appears immediately without a reload. A resilience check on mount catches any completion that was missed due to an offline session.
+- `CompletionMark` component: gold deepens across three visual tiers (1 / 2–3 / 4+ missions); tier 2+ adds a bounded blurred halo (capped at blur 4px / opacity 0.42); `×N` count appears at 2+; the glyph itself is never blurred.
+- Tapping the mark opens `MissionCompletionSheet` — a list of each mission's completion date and weight lost.
+- Mobile: mark sits inboard of the settings gear. Desktop: mark appears below the RONIN/DAILY wordmark in the brand column.
 
 ### iOS App Store
 - WKWebView wrapper around ronindaily.app
