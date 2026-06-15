@@ -26,6 +26,7 @@ export type Database = {
           target_weeks: number
           start_date: string
           activities: string[] | null
+          meal_prefs: Json | null
         }
         Insert: {
           id: string
@@ -39,6 +40,7 @@ export type Database = {
           target_weeks: number
           start_date: string
           activities?: string[] | null
+          meal_prefs?: Json | null
         }
         Update: {
           id?: string
@@ -52,6 +54,7 @@ export type Database = {
           target_weeks?: number
           start_date?: string
           activities?: string[] | null
+          meal_prefs?: Json | null
         }
         Relationships: [
           {
@@ -296,6 +299,34 @@ export type Database = {
             foreignKeyName: 'daily_accountability_user_id_fkey'
             columns: ['user_id']
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      meal_plans: {
+        Row: {
+          id: string
+          user_id: string
+          plan: Json
+          generated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          plan: Json
+          generated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          plan?: Json
+          generated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'meal_plans_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'users'
             referencedColumns: ['id']
           },
         ]

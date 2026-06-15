@@ -182,6 +182,19 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
   })
   const [monthlyRecapOpen, setMonthlyRecapOpen] = useState(false)
 
+  const [newPlanBannerDismissed, setNewPlanBannerDismissed] = useState(() => {
+    try {
+      const raw = localStorage.getItem('ronin_meal_plan')
+      if (!raw) return true
+      const p = JSON.parse(raw) as { generatedAt?: string }
+      if (!p.generatedAt) return true
+      const ageHours = (Date.now() - new Date(p.generatedAt).getTime()) / 3_600_000
+      if (ageHours > 24) return true
+      const dateKey = new Date(p.generatedAt).toISOString().slice(0, 10)
+      return !!localStorage.getItem(`ronin_new_plan_banner_${dateKey}`)
+    } catch { return true }
+  })
+
   const [skipInput, setSkipInput]         = useState('')
   const skipConfirmTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
   const logDebounceRef                    = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
@@ -986,6 +999,35 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           >
             <span style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>Day {dayNumber}. Month {dayNumber / 30} complete. View your recap.</span>
             <span style={{ color: 'var(--text-3)', fontSize: '1.1rem', lineHeight: 1 }}>›</span>
+          </div>
+        )}
+
+        {/* New plan banner — visible for 24h after a Monday auto-rotation */}
+        {!newPlanBannerDismissed && (
+          <div
+            onClick={() => {
+              try {
+                const raw = localStorage.getItem('ronin_meal_plan')
+                if (raw) {
+                  const p = JSON.parse(raw) as { generatedAt?: string }
+                  if (p.generatedAt) {
+                    const dateKey = new Date(p.generatedAt).toISOString().slice(0, 10)
+                    localStorage.setItem(`ronin_new_plan_banner_${dateKey}`, '1')
+                  }
+                }
+              } catch { /* corrupt */ }
+              setNewPlanBannerDismissed(true)
+            }}
+            style={{
+              margin: '0 1.5rem 1rem', padding: '0.75rem 1rem',
+              borderLeft: '2px solid var(--gold)', background: 'var(--elevated)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}
+          >
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-2)', letterSpacing: '0.02em' }}>
+              New week. New plan. Ready.
+            </span>
+            <span style={{ color: 'var(--text-3)', fontSize: '1rem', lineHeight: 1, flexShrink: 0 }}>✕</span>
           </div>
         )}
 

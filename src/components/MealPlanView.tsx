@@ -347,6 +347,8 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
 
   useEffect(() => {
     const savedPrefs = loadSavedPrefs()
+    const cached     = loadCachedPlan()
+
     if (savedPrefs) {
       setBudget(savedPrefs.budget)
       setRestrictions(savedPrefs.restrictions)
@@ -355,7 +357,6 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
       setDislikes(savedPrefs.dislikes ?? '')
       setDescription(savedPrefs.description ?? '')
 
-      const cached = loadCachedPlan()
       if (cached && cached.calorieTarget === calorieTargetRef.current && cached.days?.length > 0) {
         setMealPlan(cached)
         setScreen('ready')
@@ -365,6 +366,32 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
     } else {
       setScreen('prefs')
     }
+
+    // Background: check Supabase for an auto-rotated plan newer than the local cache.
+    // Runs regardless of whether we have local prefs so a new device picks up the latest plan.
+    ;(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const { data } = await supabase
+          .from('meal_plans')
+          .select('plan, generated_at')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (!data?.plan) return
+        const sbDate    = new Date(data.generated_at as string)
+        const localDate = cached?.generatedAt ? new Date(cached.generatedAt) : new Date(0)
+        if (sbDate <= localDate) return
+        // Supabase has a fresher plan — adopt it
+        const plan = data.plan as MealPlanData
+        if (!plan.calorieTarget) plan.calorieTarget = calorieTargetRef.current
+        if (!plan.generatedAt)   plan.generatedAt   = data.generated_at as string
+        localStorage.setItem('ronin_meal_plan', JSON.stringify(plan))
+        setMealPlan(plan)
+        setOpenDay(1)
+        setScreen('ready')
+      } catch { /* offline — stick with local cache */ }
+    })()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -372,6 +399,13 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
     const mealAllocations = calcMealAllocations(activeMeals, calorieTarget)
     const prefs: MealPrefs = { budget, restrictions, equipment, activeMeals, mealAllocations, dislikes, description }
     localStorage.setItem('ronin_meal_prefs', JSON.stringify(prefs))
+    // Persist prefs to Supabase so the weekly cron can use them (fire-and-forget)
+    ;(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) await supabase.from('profiles').update({ meal_prefs: prefs }).eq('id', user.id)
+      } catch { /* offline — cron will use whatever was last saved */ }
+    })()
     doGenerate(prefs)
   }
 
