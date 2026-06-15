@@ -227,7 +227,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       const portionSystem = profile.unit === 'metric'
         ? 'metric units (grams, ml) — e.g. "150g chicken breast", "200ml whole milk"'
         : 'imperial units (oz, cups, tbsp, tsp, or count-based) — e.g. "6 oz chicken breast", "1/2 cup rolled oats", "2 large eggs"'
-      const prompt        = buildPrompt(cal, portionSystem, buildPrefsSection(prefs))
+      const prompt        = buildPrompt(cal, portionSystem, buildPrefsSection(prefs ?? undefined))
 
       // Generate plan via Anthropic
       const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
