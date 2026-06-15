@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, forwardRef, useImperativeHandle } from 'react'
 import type { ReactNode } from 'react'
 import type { UnitSystem, MealItem, DayPlan, MealPlanData, MealPrefs, MealSlot } from '../types'
+import type { Json } from '../types/database.types'
 import { MEAL_SLOTS } from '../types'
 import ExportSheet from './ExportSheet'
 import { awardBadge } from '../utils/badges'
@@ -385,16 +386,25 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
         const sbDate    = new Date(data.generated_at as string)
         const localDate = cached?.generatedAt ? new Date(cached.generatedAt) : new Date(0)
         if (sbDate <= localDate) return
-        // Supabase has a fresher plan — adopt it
-        const plan = data.plan as MealPlanData
+        // Supabase has a fresher plan — adopt it.
+        // data.plan is Json; narrow via unknown before trusting the shape.
+        const raw = data.plan as unknown
+        if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return
+        const planRaw = raw as Record<string, unknown>
+
         // Skip if the plan was generated for a different calorie target (different user goal)
-        if (plan.calorieTarget && plan.calorieTarget !== calorieTargetRef.current) return
+        if (planRaw.calorieTarget && planRaw.calorieTarget !== calorieTargetRef.current) return
         // Structural validation — must have 7 days each with the four required slots
-        if (!Array.isArray(plan.days) || plan.days.length === 0) return
-        const validDays = plan.days.every(
-          (d: Record<string, unknown>) => Array.isArray(d.breakfast) && Array.isArray(d.lunch) && Array.isArray(d.dinner) && Array.isArray(d.snacks),
-        )
+        if (!Array.isArray(planRaw.days) || planRaw.days.length === 0) return
+        const validDays = planRaw.days.every((d: unknown) => {
+          if (typeof d !== 'object' || d === null) return false
+          const day = d as Record<string, unknown>
+          return Array.isArray(day.breakfast) && Array.isArray(day.lunch) && Array.isArray(day.dinner) && Array.isArray(day.snacks)
+        })
         if (!validDays) return
+
+        // Shape is validated — treat as MealPlanData
+        const plan = planRaw as unknown as MealPlanData
         if (!plan.calorieTarget) plan.calorieTarget = calorieTargetRef.current
         if (!plan.generatedAt)   plan.generatedAt   = data.generated_at as string
         localStorage.setItem('ronin_meal_plan', JSON.stringify(plan))
@@ -414,7 +424,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
     ;(async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        if (user) await supabase.from('profiles').update({ meal_prefs: prefs }).eq('id', user.id)
+        if (user) await supabase.from('profiles').update({ meal_prefs: prefs as unknown as Json }).eq('id', user.id)
       } catch { /* offline — cron will use whatever was last saved */ }
     })()
     doGenerate(prefs)
