@@ -1763,7 +1763,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange, open }: Food
                 width: '100%', resize: 'none', marginBottom: '0.6rem', boxSizing: 'border-box',
                 background: 'var(--elevated)', border: '1px solid var(--border-mid)', borderRadius: 0,
                 color: 'var(--text)', fontFamily: 'Inter, sans-serif', fontSize: '0.85rem',
-                padding: '0.65rem 0.75rem', lineHeight: 1.5, outline: 'none',
+                padding: '0.65rem 0.75rem', lineHeight: 1.5, outline: 'none', minHeight: '64px',
               }}
               autoFocus
             />

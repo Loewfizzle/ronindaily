@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { subscribeToPush } from '../utils/push'
 
 interface PushBannerProps {
@@ -6,10 +7,17 @@ interface PushBannerProps {
 }
 
 export default function PushBanner({ userId, onDismiss }: PushBannerProps) {
+  const [subError, setSubError] = useState(false)
+
   const handleAllow = async () => {
+    setSubError(false)
     const permission = await Notification.requestPermission()
     if (permission === 'granted') {
-      await subscribeToPush(userId)
+      const ok = await subscribeToPush(userId)
+      if (!ok) {
+        setSubError(true)
+        return
+      }
     } else {
       localStorage.setItem('ronin_push_declined', '1')
     }
@@ -36,8 +44,8 @@ export default function PushBanner({ userId, onDismiss }: PushBannerProps) {
       justifyContent: 'space-between',
       gap: '1rem',
     }}>
-      <span style={{ fontSize: '0.82rem', color: 'var(--text-2)', letterSpacing: '0.03em', lineHeight: 1.4 }}>
-        Get your daily mission reminder.
+      <span style={{ fontSize: '0.82rem', color: subError ? 'var(--red-bright)' : 'var(--text-2)', letterSpacing: '0.03em', lineHeight: 1.4 }}>
+        {subError ? 'Could not enable notifications. Try again.' : 'Get your daily mission reminder.'}
       </span>
       <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
         <button
@@ -60,7 +68,7 @@ export default function PushBanner({ userId, onDismiss }: PushBannerProps) {
             minHeight: '44px', fontWeight: 600,
           }}
         >
-          Allow
+          {subError ? 'Retry' : 'Allow'}
         </button>
       </div>
     </div>

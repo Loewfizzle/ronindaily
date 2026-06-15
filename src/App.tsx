@@ -254,15 +254,18 @@ function clearLocal() {
   localStorage.removeItem('ronin_skipped')
   localStorage.removeItem('ronin_plan_cache_version')
   localStorage.removeItem('ronin_patterns')
-  for (let i = localStorage.length - 1; i >= 0; i--) {
+  localStorage.removeItem('ronin_push_declined')
+  // Snapshot keys first — deleting while iterating can skip items as indices shift
+  const prefixes = [
+    'ronin_dismissed_activities_', 'ronin_activity_log_', 'ronin_cheat_meal_',
+    'ronin_accountability_', 'ronin_weekly_recap_', 'ronin_monthly_recap_',
+  ]
+  const toDelete: string[] = []
+  for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i)
-    if (k?.startsWith('ronin_dismissed_activities_')) localStorage.removeItem(k)
-    if (k?.startsWith('ronin_activity_log_')) localStorage.removeItem(k)
-    if (k?.startsWith('ronin_cheat_meal_')) localStorage.removeItem(k)
-    if (k?.startsWith('ronin_accountability_')) localStorage.removeItem(k)
-    if (k?.startsWith('ronin_weekly_recap_')) localStorage.removeItem(k)
-    if (k?.startsWith('ronin_monthly_recap_')) localStorage.removeItem(k)
+    if (k && prefixes.some(p => k.startsWith(p))) toDelete.push(k)
   }
+  toDelete.forEach(k => localStorage.removeItem(k))
 }
 
 function resolveScreen(): 'dashboard' | 'preparation' | 'onboarding' {

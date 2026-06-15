@@ -54,17 +54,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     Accept:         'application/vnd.pgrst.object+json',
   }
 
-  const subRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${userId}&is_active=eq.true&select=endpoint,p256dh,auth`,
-    { headers: SB_HEADERS },
-  )
-
-  if (!subRes.ok || subRes.status === 406) {
-    res.status(404).json({ error: 'No active subscription found for this user' })
+  let sub: SubRow | null = null
+  try {
+    const subRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${userId}&is_active=eq.true&select=endpoint,p256dh,auth`,
+      { headers: SB_HEADERS },
+    )
+    if (!subRes.ok) {
+      res.status(404).json({ error: 'No active subscription found for this user' })
+      return
+    }
+    sub = await subRes.json() as SubRow | null
+  } catch {
+    res.status(502).json({ error: 'Failed to reach database' })
     return
   }
 
-  const sub = await subRes.json() as SubRow | null
   if (!sub?.endpoint) {
     res.status(404).json({ error: 'No active subscription found for this user' })
     return

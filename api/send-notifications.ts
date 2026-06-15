@@ -180,10 +180,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       )
       if (!profile) { failed++; continue }
 
+      if (!profile.start_date) { failed++; continue }
+
       const checkins = await sbGet<CheckinRow[]>(
         `checkins?user_id=eq.${sub.user_id}&select=weight&order=week_number.desc&limit=1`,
       )
       const weight = checkins?.[0]?.weight ?? profile.start_weight
+      if (!weight || isNaN(weight)) { failed++; continue }
 
       const day  = dayNumber(profile.start_date)
       const cal  = calorieTarget(profile, weight)

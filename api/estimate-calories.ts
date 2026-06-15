@@ -70,7 +70,7 @@ Food: ${description}`
     if (s0 === -1 || e0 <= s0) throw new Error('No JSON in response')
     const parsed = JSON.parse(raw.slice(s0, e0 + 1)) as { calories: number }
     const calories = Math.round(Number(parsed.calories))
-    if (!calories || calories < 0) throw new Error('Invalid calorie value')
+    if (!calories || calories < 0 || calories > 10000) throw new Error('Invalid calorie value')
 
     return new Response(JSON.stringify({ calories }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
