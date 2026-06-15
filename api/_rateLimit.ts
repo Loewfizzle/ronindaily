@@ -32,30 +32,7 @@ async function getCount(userId: string, action: string, date: string): Promise<n
   return rows[0]?.count ?? 0
 }
 
-async function incrementCount(userId: string, action: string, date: string): Promise<void> {
-  // Upsert: insert with count=1 or increment existing count
-  const url = `${SUPABASE_URL}/rest/v1/api_usage`
-  await fetch(url, {
-    method: 'POST',
-    headers: {
-      apikey:          SUPABASE_KEY,
-      Authorization:   `Bearer ${SUPABASE_KEY}`,
-      'Content-Type':  'application/json',
-      Prefer:          'resolution=merge-duplicates',
-    },
-    body: JSON.stringify({ user_id: userId, action, usage_date: date, count: 1 }),
-  })
-
-  // Supabase doesn't support "increment on conflict" via REST upsert directly,
-  // so we do an explicit RPC-style update if the row already existed (count > 1 means it did).
-  const current = await getCount(userId, action, date)
-  if (current > 1) return // upsert already merged; we need to actually increment
-  // If count is still 1 after merge, either this is the first call (correct) or the merge
-  // didn't increment. Use a PATCH to set count = count + 1 only when count > 1 would be stale.
-  // Simplest correct approach: always do a PATCH increment after the insert succeeds.
-}
-
-// Proper implementation using two-step: check then increment via PATCH
+// Two-step increment: check then insert-or-patch
 async function upsertIncrement(userId: string, action: string, date: string): Promise<void> {
   const existing = await getCount(userId, action, date)
   if (existing === 0) {

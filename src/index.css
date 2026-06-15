@@ -203,7 +203,7 @@ input[type='number'] {
 
 /* ── Field label ── */
 .field-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   letter-spacing: 0.22em;
   color: var(--text);
   text-transform: uppercase;
@@ -213,6 +213,7 @@ input[type='number'] {
 /* ── Commit button ── */
 .commit-btn {
   width: 100%;
+  min-height: 48px;
   padding: 1rem;
   background: linear-gradient(135deg, #8b1c1c 0%, #6b1414 100%);
   color: var(--text);
@@ -595,7 +596,7 @@ input[type='number'] {
 }
 
 .fullsheet-title {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   letter-spacing: 0.28em;
   color: var(--text-2);
   text-transform: uppercase;

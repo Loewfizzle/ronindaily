@@ -68,8 +68,10 @@ export default function CheckinSheet({ open, onClose, plan, onCheckin, onBadgesE
     let storedProfile: UserProfile | null = null
     try { storedProfile = JSON.parse(localStorage.getItem('ronin_profile') || 'null') as UserProfile | null }
     catch { /* corrupt — still proceed with weight update */ }
-    if (storedProfile) storedProfile.currentWeightLbs = String(parsedW)
-    localStorage.setItem('ronin_profile', JSON.stringify(storedProfile ?? {}))
+    if (storedProfile) {
+      storedProfile.currentWeightLbs = String(parsedW)
+      localStorage.setItem('ronin_profile', JSON.stringify(storedProfile))
+    }
     localStorage.setItem('ronin_last_checkin', String(plan.weekNumber))
 
     try {

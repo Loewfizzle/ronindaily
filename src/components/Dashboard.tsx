@@ -917,7 +917,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           <div style={{ padding: '0.25rem 1.5rem 0.75rem' }}>
             <span style={{
               display: 'inline-block',
-              background: 'var(--red)',
+              background: 'var(--red-bright)',
               color: 'var(--text)',
               borderRadius: '999px',
               padding: '0.3rem 0.85rem',
@@ -1176,7 +1176,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           </div>
           <div style={{ height: '1px', background: 'var(--red)', marginTop: '1.25rem' }} />
         </div>
-        <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} dayNumber={dayNumber} cheatEntries={cheatEntries} onCheatChange={handleCheatChange} />
+        <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} dayNumber={dayNumber} cheatEntries={cheatEntries} onCheatChange={handleCheatChange} open={sheet === 'food'} />
       </FullSheet>
 
       <FullSheet open={sheet === 'movement'} onClose={() => setSheet(null)} title="Movement">
@@ -1538,18 +1538,27 @@ interface FoodDetailProps {
   dayNumber: number
   cheatEntries: CheatEntry[]
   onCheatChange: (entries: CheatEntry[]) => void
+  open: boolean
 }
 
-function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetailProps) {
+function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange, open }: FoodDetailProps) {
   const [expanded, setExpanded]     = useState<Set<string>>(new Set())
   const [cheatOpen, setCheatOpen]   = useState(false)
   const [cheatInput, setCheatInput] = useState('')
   const [cheatState, setCheatState] = useState<
     | { status: 'idle' }
     | { status: 'loading' }
-    | { status: 'result'; calories: number; remaining: number }
+    | { status: 'result'; calories: number; remaining: number; overBy: number }
     | { status: 'error'; message: string }
   >({ status: 'idle' })
+
+  useEffect(() => {
+    if (!open) {
+      setCheatOpen(false)
+      setCheatInput('')
+      setCheatState({ status: 'idle' })
+    }
+  }, [open])
 
   const mealPlan = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('ronin_meal_plan') || 'null') as MealPlanData | null }
@@ -1572,7 +1581,11 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
     setCheatState({ status: 'loading' })
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      const userId = user?.id ?? ''
+      if (!user?.id) {
+        setCheatState({ status: 'error', message: 'Not signed in. Please sign out and back in.' })
+        return
+      }
+      const userId = user.id
       const res  = await fetch('/api/estimate-calories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1583,10 +1596,12 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
         setCheatState({ status: 'error', message: json.error ?? 'Could not estimate calories.' })
         return
       }
-      const calories  = json.calories
+      const calories   = json.calories
       const todaySoFar = cheatEntries.reduce((s, e) => s + e.calories, 0)
-      const remaining  = Math.max(0, data.target - todaySoFar - calories)
-      setCheatState({ status: 'result', calories, remaining })
+      const net        = data.target - todaySoFar - calories
+      const remaining  = Math.max(0, net)
+      const overBy     = net < 0 ? Math.abs(net) : 0
+      setCheatState({ status: 'result', calories, remaining, overBy })
 
       // Log entry
       const today    = localDateStr()
@@ -1690,7 +1705,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
         })}
       </div>
 
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', margin: '1.25rem 0 0', lineHeight: 1.7 }}>
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', textAlign: 'center', margin: '1.25rem 0 0.5rem', lineHeight: 1.7 }}>
         Substitutions are fine. The math is the only rule. Hit your calorie number.
       </p>
 
@@ -1740,12 +1755,16 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
         ) : (
           <div>
             <textarea
-              className="input-bare"
               placeholder="What did you eat?"
               value={cheatInput}
               onChange={e => setCheatInput(e.target.value)}
               rows={2}
-              style={{ width: '100%', resize: 'none', marginBottom: '0.6rem', boxSizing: 'border-box' }}
+              style={{
+                width: '100%', resize: 'none', marginBottom: '0.6rem', boxSizing: 'border-box',
+                background: 'var(--elevated)', border: '1px solid var(--border-mid)', borderRadius: 0,
+                color: 'var(--text)', fontFamily: 'Inter, sans-serif', fontSize: '0.85rem',
+                padding: '0.65rem 0.75rem', lineHeight: 1.5, outline: 'none',
+              }}
               autoFocus
             />
             {cheatState.status === 'result' && (
@@ -1753,7 +1772,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
                 Estimated {cheatState.calories.toLocaleString()} calories.{' '}
                 {cheatState.remaining > 0
                   ? <>{cheatState.remaining.toLocaleString()} calories remaining today.</>
-                  : <>Over budget by {Math.abs(data.target - todayTotal).toLocaleString()} calories.</>
+                  : <>Over budget by {cheatState.overBy.toLocaleString()} calories.</>
                 }
               </div>
             )}
