@@ -1,14 +1,11 @@
 // Node.js runtime — web-push requires Node.js crypto (not Edge-compatible)
 // Testing endpoint only — not exposed in the UI
 
+import { VercelRequest, VercelResponse } from '@vercel/node'
 import webpush from 'web-push'
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? ''
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? ''
-
-interface RequestBody {
-  user_id: string
-}
 
 interface SubRow {
   endpoint: string
@@ -16,20 +13,18 @@ interface SubRow {
   auth: string
 }
 
-export default async function handler(req: Request): Promise<Response> {
-  const secret = (req.headers as unknown as Record<string, string | undefined>)['x-cron-secret']
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const secret = req.headers['x-cron-secret']
   if (!secret || secret !== process.env.CRON_SECRET) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(401).json({ error: 'Unauthorized' })
+    return
   }
 
   const vapidPub  = process.env.VAPID_PUBLIC_KEY  ?? ''
   const vapidPriv = process.env.VAPID_PRIVATE_KEY ?? ''
   if (!vapidPub || !vapidPriv) {
-    return new Response(JSON.stringify({ error: 'VAPID keys not configured' }), {
-      status: 500, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(500).json({ error: 'VAPID keys not configured' })
+    return
   }
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT ?? 'mailto:admin@example.com',
@@ -38,20 +33,18 @@ export default async function handler(req: Request): Promise<Response> {
   )
 
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(405).json({ error: 'Method not allowed' })
+    return
   }
 
   let userId: string
   try {
-    const body = await req.json() as RequestBody
+    const body = req.body as { user_id?: string }
     if (!body.user_id?.trim()) throw new Error('Missing user_id')
     userId = body.user_id.trim()
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid request body' }), {
-      status: 400, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(400).json({ error: 'Invalid request body' })
+    return
   }
 
   const SB_HEADERS = {
@@ -67,16 +60,14 @@ export default async function handler(req: Request): Promise<Response> {
   )
 
   if (!subRes.ok || subRes.status === 406) {
-    return new Response(JSON.stringify({ error: 'No active subscription found for this user' }), {
-      status: 404, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(404).json({ error: 'No active subscription found for this user' })
+    return
   }
 
   const sub = await subRes.json() as SubRow | null
   if (!sub?.endpoint) {
-    return new Response(JSON.stringify({ error: 'No active subscription found for this user' }), {
-      status: 404, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(404).json({ error: 'No active subscription found for this user' })
+    return
   }
 
   try {
@@ -88,13 +79,9 @@ export default async function handler(req: Request): Promise<Response> {
         url:   'https://ronindaily.app',
       }),
     )
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(200).json({ ok: true })
   } catch (err) {
     const statusCode = (err as { statusCode?: number }).statusCode
-    return new Response(JSON.stringify({ error: 'Failed to send notification', statusCode }), {
-      status: 502, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(502).json({ error: 'Failed to send notification', statusCode })
   }
 }

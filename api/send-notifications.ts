@@ -1,6 +1,7 @@
 // Node.js runtime — web-push requires Node.js crypto (not Edge-compatible)
 // No runtime: 'edge' config — Vercel defaults to Node.js
 
+import { VercelRequest, VercelResponse } from '@vercel/node'
 import webpush from 'web-push'
 import { toZonedTime } from 'date-fns-tz'
 
@@ -134,20 +135,18 @@ function inWindow(notificationTime: string, timezone: string): boolean {
 
 // ── Handler ──────────────────────────────────────────────────────────────────
 
-export default async function handler(req: Request): Promise<Response> {
-  const secret = (req.headers as unknown as Record<string, string | undefined>)['x-cron-secret']
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const secret = req.headers['x-cron-secret']
   if (!secret || secret !== process.env.CRON_SECRET) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(401).json({ error: 'Unauthorized' })
+    return
   }
 
   const vapidPub  = process.env.VAPID_PUBLIC_KEY  ?? ''
   const vapidPriv = process.env.VAPID_PRIVATE_KEY ?? ''
   if (!vapidPub || !vapidPriv) {
-    return new Response(JSON.stringify({ error: 'VAPID keys not configured' }), {
-      status: 500, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(500).json({ error: 'VAPID keys not configured' })
+    return
   }
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT ?? 'mailto:admin@example.com',
@@ -156,16 +155,14 @@ export default async function handler(req: Request): Promise<Response> {
   )
 
   if (req.method !== 'GET' && req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(405).json({ error: 'Method not allowed' })
+    return
   }
 
   const subs = await sbGet<SubRow[]>('push_subscriptions?is_active=eq.true&select=*')
   if (!subs) {
-    return new Response(JSON.stringify({ error: 'Failed to fetch subscriptions' }), {
-      status: 500, headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(500).json({ error: 'Failed to fetch subscriptions' })
+    return
   }
 
   let sent = 0, failed = 0, skipped = 0
@@ -224,8 +221,5 @@ export default async function handler(req: Request): Promise<Response> {
     }
   }
 
-  return new Response(
-    JSON.stringify({ sent, failed, skipped, total: subs.length }),
-    { status: 200, headers: { 'Content-Type': 'application/json' } },
-  )
+  res.status(200).json({ sent, failed, skipped, total: subs.length })
 }
