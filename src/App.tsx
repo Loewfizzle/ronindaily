@@ -147,7 +147,7 @@ function LoginScreen({ connectionError }: LoginScreenProps) {
               placeholder="your@email.com"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(null) }}
-              style={{ width: '100%', border: '1px solid var(--border-mid)', background: 'var(--elevated)' }}
+              style={{ width: '100%', border: '1px solid var(--border-mid)', background: 'var(--elevated)', textAlign: 'center' }}
             />
             {error && (
               <div style={{ fontSize: '0.72rem', color: 'var(--red-bright)', marginTop: '0.45rem', letterSpacing: '0.02em' }}>
