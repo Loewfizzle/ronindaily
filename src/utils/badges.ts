@@ -132,8 +132,8 @@ export const BADGE_DEFS: BadgeDef[] = [
   {
     id: 'consistent',
     name: 'Consistent',
-    flavor: 'Thirty consecutive days of accountability. The habit is permanent now.',
-    explanation: 'Logged a daily accountability check-in for 30 consecutive days without missing once.',
+    flavor: 'Thirty consecutive days. You showed up without fail.',
+    explanation: 'Opened the app every day for 30 consecutive days without missing once.',
   },
   // ── Walking series (歩) ──────────────────────────────────────────────────────
   { id: 'walk_10',  name: 'First Steps',   flavor: 'Ten miles behind you. The road ahead is longer.',         explanation: 'Walked a cumulative total of 10 miles across your mission.'  },
