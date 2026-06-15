@@ -310,6 +310,7 @@ export type Database = {
           notification_time: string
           is_active: boolean
           created_at: string
+          milestone_notifications_sent: string[]
         }
         Insert: {
           id?: string
@@ -320,6 +321,7 @@ export type Database = {
           notification_time?: string
           is_active?: boolean
           created_at?: string
+          milestone_notifications_sent?: string[]
         }
         Update: {
           id?: string
@@ -330,6 +332,7 @@ export type Database = {
           notification_time?: string
           is_active?: boolean
           created_at?: string
+          milestone_notifications_sent?: string[]
         }
         Relationships: [
           {
