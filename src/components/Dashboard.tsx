@@ -184,13 +184,16 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
   const [newPlanBannerDismissed, setNewPlanBannerDismissed] = useState(() => {
     try {
+      if (new Date().getDay() !== 1) return true
       const raw = localStorage.getItem('ronin_meal_plan')
       if (!raw) return true
       const p = JSON.parse(raw) as { generatedAt?: string }
       if (!p.generatedAt) return true
-      const ageHours = (Date.now() - new Date(p.generatedAt).getTime()) / 3_600_000
+      const genDate = new Date(p.generatedAt)
+      if (isNaN(genDate.getTime())) return true
+      const ageHours = (Date.now() - genDate.getTime()) / 3_600_000
       if (ageHours > 24) return true
-      const dateKey = new Date(p.generatedAt).toISOString().slice(0, 10)
+      const dateKey = genDate.toISOString().slice(0, 10)
       return !!localStorage.getItem(`ronin_new_plan_banner_${dateKey}`)
     } catch { return true }
   })
@@ -1019,7 +1022,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
               setNewPlanBannerDismissed(true)
             }}
             style={{
-              margin: '0 1.5rem 1rem', padding: '0.75rem 1rem',
+              margin: '0 1.5rem 1rem', padding: '0.9rem 1rem',
               borderLeft: '2px solid var(--gold)', background: 'var(--elevated)',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}
@@ -1027,7 +1030,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             <span style={{ fontSize: '0.8rem', color: 'var(--text-2)', letterSpacing: '0.02em' }}>
               New week. New plan. Ready.
             </span>
-            <span style={{ color: 'var(--text-3)', fontSize: '1rem', lineHeight: 1, flexShrink: 0 }}>✕</span>
+            <span style={{ color: 'var(--text-3)', fontSize: '1rem', lineHeight: 1, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }}>✕</span>
           </div>
         )}
 

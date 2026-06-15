@@ -68,8 +68,9 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
         .then(({ data }) => {
           if (data) {
             setHasSubscription(true)
-            // DB stores HH:MM:SS — slice to HH:MM for the time input
-            setNotifTime((data.notification_time as string).slice(0, 5))
+            // DB stores HH:MM:SS — split and rejoin to get HH:MM for the time input
+            const [h, m] = (data.notification_time as string).split(':')
+            setNotifTime(`${h}:${m}`)
           } else {
             setHasSubscription(false)
           }

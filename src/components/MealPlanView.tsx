@@ -384,6 +384,14 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
         if (sbDate <= localDate) return
         // Supabase has a fresher plan — adopt it
         const plan = data.plan as MealPlanData
+        // Skip if the plan was generated for a different calorie target (different user goal)
+        if (plan.calorieTarget && plan.calorieTarget !== calorieTargetRef.current) return
+        // Structural validation — must have 7 days each with the four required slots
+        if (!Array.isArray(plan.days) || plan.days.length === 0) return
+        const validDays = plan.days.every(
+          (d: Record<string, unknown>) => Array.isArray(d.breakfast) && Array.isArray(d.lunch) && Array.isArray(d.dinner) && Array.isArray(d.snacks),
+        )
+        if (!validDays) return
         if (!plan.calorieTarget) plan.calorieTarget = calorieTargetRef.current
         if (!plan.generatedAt)   plan.generatedAt   = data.generated_at as string
         localStorage.setItem('ronin_meal_plan', JSON.stringify(plan))

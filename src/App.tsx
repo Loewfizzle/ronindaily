@@ -259,6 +259,7 @@ function clearLocal() {
   const prefixes = [
     'ronin_dismissed_activities_', 'ronin_activity_log_', 'ronin_cheat_meal_',
     'ronin_accountability_', 'ronin_weekly_recap_', 'ronin_monthly_recap_',
+    'ronin_new_plan_banner_',
   ]
   const toDelete: string[] = []
   for (let i = 0; i < localStorage.length; i++) {

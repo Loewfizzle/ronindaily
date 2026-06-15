@@ -173,6 +173,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return
   }
 
+  if (!SUPABASE_KEY) {
+    res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY not configured' })
+    return
+  }
+
   // Configure webpush — non-fatal if VAPID keys missing (push skipped per user)
   const vapidPub  = process.env.VAPID_PUBLIC_KEY  ?? ''
   const vapidPriv = process.env.VAPID_PRIVATE_KEY ?? ''
@@ -212,11 +217,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         { headers: SB_HEADERS },
       )
       const checkins = checkinR.ok ? await checkinR.json() as CheckinRow[] : []
-      const weight   = checkins[0]?.weight ?? profile.start_weight
+      const weight   = Number(checkins[0]?.weight ?? profile.start_weight)
       if (!weight || isNaN(weight)) { failed++; continue }
 
       const cal           = calorieTarget(profile, weight)
-      const prefs         = profile.meal_prefs!
+      const prefs         = profile.meal_prefs
       const portionSystem = profile.unit === 'metric'
         ? 'metric units (grams, ml) — e.g. "150g chicken breast", "200ml whole milk"'
         : 'imperial units (oz, cups, tbsp, tsp, or count-based) — e.g. "6 oz chicken breast", "1/2 cup rolled oats", "2 large eggs"'
@@ -245,6 +250,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       if (s0 === -1 || e0 <= s0) { failed++; continue }
       const parsed = JSON.parse(raw.slice(s0, e0 + 1)) as { days: unknown[] }
       if (!Array.isArray(parsed.days) || parsed.days.length === 0) { failed++; continue }
+      const validDays = (parsed.days as Array<Record<string, unknown>>).every(
+        d => Array.isArray(d.breakfast) && Array.isArray(d.lunch) && Array.isArray(d.dinner) && Array.isArray(d.snacks),
+      )
+      if (!validDays) { failed++; continue }
 
       const generatedAt = new Date().toISOString()
       const planData    = { days: parsed.days, calorieTarget: cal, generatedAt }
@@ -268,10 +277,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           if (subR.ok) {
             const sub = await subR.json() as PushSubRow | null
             if (sub?.endpoint) {
-              await webpush.sendNotification(
-                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-                JSON.stringify({ title: 'RONIN DAILY', body: 'New week. New plan. Ready.', url: 'https://ronindaily.app' }),
-              )
+              try {
+                await webpush.sendNotification(
+                  { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                  JSON.stringify({ title: 'RONIN DAILY', body: 'New week. New plan. Ready.', url: 'https://ronindaily.app' }),
+                )
+              } catch (pushErr) {
+                const status = (pushErr as { statusCode?: number }).statusCode
+                if (status === 410) {
+                  await fetch(
+                    `${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(sub.endpoint)}`,
+                    { method: 'PATCH', headers: SB_HEADERS, body: JSON.stringify({ is_active: false }) },
+                  )
+                }
+              }
             }
           }
         } catch { /* push failure is non-fatal */ }
