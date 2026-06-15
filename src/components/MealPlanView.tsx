@@ -27,10 +27,11 @@ function ChevronIcon({ open = false }: { open?: boolean }) {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const BUDGET_OPTIONS: { id: MealPrefs['budget']; label: string }[] = [
-  { id: 'raw_materials', label: 'Bare Bones'       },
-  { id: 'budget',        label: 'Budget Friendly'  },
-  { id: 'standard',      label: 'Everyday'         },
-  { id: 'flexible',      label: 'No Limits'        },
+  { id: 'raw_materials', label: 'Bare Bones'      },
+  { id: 'budget',        label: 'Budget Friendly' },
+  { id: 'standard',      label: 'Standard'        },
+  { id: 'flexible',      label: 'No Limits'       },
+  { id: 'fast_food',     label: 'Fast Food'       },
 ]
 
 const RESTRICTION_OPTIONS = [

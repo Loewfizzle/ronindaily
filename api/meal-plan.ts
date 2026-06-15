@@ -18,7 +18,7 @@ interface DayPlan {
 }
 
 interface MealPrefs {
-  budget?: 'raw_materials' | 'budget' | 'standard' | 'flexible'
+  budget?: 'raw_materials' | 'budget' | 'standard' | 'flexible' | 'fast_food'
   restrictions?: string[]
   equipment?: string[]
   dislikes?: string
@@ -49,6 +49,7 @@ function buildPrefsSection(prefs: MealPrefs | undefined): string {
     budget:        'BUDGET TIER — Use only affordable staple ingredients: rolled oats, eggs, canned beans, lentils, canned tuna, canned sardines, frozen vegetables (broccoli, spinach, mixed veg), chicken thighs, ground beef (80/20), rice, sweet potatoes, bananas, apples, peanut butter, whole milk, store-brand Greek yogurt. Prioritise cheap high-volume foods and repeat ingredients across days to keep the shopping list short and cheap.',
     standard:      'STANDARD TIER — Use common supermarket ingredients available at any grocery store: chicken breast, ground turkey, eggs, canned fish, fresh and frozen vegetables, seasonal fruits, brown rice, pasta, rolled oats, Greek yogurt, cottage cheese, milk, olive oil, cheddar cheese, whole wheat bread.',
     flexible:      'FLEXIBLE TIER — Any ingredients are acceptable including salmon, shrimp, steak, specialty produce, quinoa, almond butter, specialty cheeses, and premium items. Prioritise nutrition and variety.',
+    fast_food:     'FAST FOOD TIER — CRITICAL: All meals must come entirely from fast food chains and convenience sources. No cooking, no kitchen, no grocery store ingredients whatsoever. Every single food item must be a real, orderable menu item from a specific chain: McDonald\'s, Chipotle, Subway, Taco Bell, Wawa, Chick-fil-A, Burger King, Panera, 7-Eleven, or similar. For snacks use protein bars (Quest, RXBAR, Kind), energy drinks, or convenience store packaged items. Name the chain in the meal name (e.g. "Chipotle chicken bowl", "McDonald\'s Egg McMuffin", "Quest chocolate chip protein bar"). Still hit the daily calorie target. Still split across the active meal slots. Repeat the same fast food orders across multiple days exactly as the repetition rules require.',
   }
   if (prefs.budget && budgetMap[prefs.budget as keyof typeof budgetMap]) parts.push(budgetMap[prefs.budget as keyof typeof budgetMap])
 
