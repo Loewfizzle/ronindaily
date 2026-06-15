@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { MealPlanData } from '../types'
 import ExportSheet from './ExportSheet'
+import { supabase } from '../lib/supabase'
 
 interface GroceryItem {
   name: string
@@ -152,10 +153,16 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
     setStatus('loading')
     setError(null)
     try {
+      let userId: string | undefined
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        userId = user?.id
+      } catch { /* offline */ }
+
       const res = await fetch('/api/grocery-list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mealPlan: plan }),
+        body: JSON.stringify({ mealPlan: plan, userId }),
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: string }

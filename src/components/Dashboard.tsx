@@ -31,50 +31,6 @@ interface CheatEntry {
   supabaseId?: string
 }
 
-const CHEAT_PICKS: Array<{ group: string; items: Array<{ id: string; label: string; cal: number }> }> = [
-  { group: 'DRINKS', items: [
-    { id: 'beer',          label: 'Beer (12oz)',        cal: 150  },
-    { id: 'wine',          label: 'Glass of wine',      cal: 125  },
-    { id: 'cocktail',      label: 'Cocktail',            cal: 200  },
-    { id: 'shot',          label: 'Shot of liquor',      cal: 100  },
-    { id: 'energy_drink',  label: 'Energy drink',        cal: 160  },
-    { id: 'soda',          label: 'Soda (12oz can)',      cal: 150  },
-  ]},
-  { group: 'FAST FOOD', items: [
-    { id: 'burger',           label: 'Burger',            cal: 550  },
-    { id: 'fries',            label: 'Large fries',       cal: 490  },
-    { id: 'chicken_sandwich', label: 'Chicken sandwich',  cal: 500  },
-    { id: 'combo',            label: 'Combo meal',        cal: 1100 },
-  ]},
-  { group: 'PIZZA', items: [
-    { id: 'one_slice',  label: 'One slice',  cal: 300 },
-    { id: 'two_slices', label: 'Two slices', cal: 600 },
-  ]},
-  { group: 'DESSERT', items: [
-    { id: 'cake',      label: 'Slice of cake',      cal: 350 },
-    { id: 'ice_cream', label: 'Ice cream (1 cup)',  cal: 300 },
-    { id: 'cookies',   label: 'Cookies (3)',         cal: 250 },
-  ]},
-  { group: 'OTHER', items: [
-    { id: 'chips',      label: 'Bag of chips',   cal: 300 },
-    { id: 'candy',      label: 'Candy bar',       cal: 250 },
-    { id: 'late_night', label: 'Late night run',  cal: 600 },
-  ]},
-]
-
-function getCheatFeedback(totalCheatCal: number, dailyTarget: number): { text: string; color: string } {
-  if (totalCheatCal >= dailyTarget * 2) {
-    return { text: 'The mission is compromised. Recommit tomorrow.', color: 'var(--red-bright)' }
-  }
-  const remaining = dailyTarget - totalCheatCal
-  if (remaining > 0) {
-    return { text: `${remaining.toLocaleString()} calories remaining today. Stay on target.`, color: 'var(--text-2)' }
-  }
-  const over = Math.abs(remaining)
-  if (over <= 200) return { text: 'You are at your limit. No more today.', color: 'var(--text-2)' }
-  if (over <= 500) return { text: `You are ${over.toLocaleString()} calories over. Reduce tomorrow by ${over.toLocaleString()}.`, color: 'var(--text-2)' }
-  return { text: 'That was not a cheat meal. That was a decision. Adjust the rest of the week.', color: 'var(--red-bright)' }
-}
 
 function formatDate(d: Date): string {
   const day   = d.getDate()
@@ -1585,12 +1541,15 @@ interface FoodDetailProps {
 }
 
 function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetailProps) {
-  const [expanded, setExpanded]             = useState<Set<string>>(new Set())
-  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set())
-  const [selectedPicks, setSelectedPicks]   = useState<Set<string>>(new Set())
-  const [customItems, setCustomItems]       = useState<Array<{ id: string; desc: string; cal: number }>>([])
-  const [customDesc, setCustomDesc]         = useState('')
-  const [customCal, setCustomCal]           = useState('')
+  const [expanded, setExpanded]     = useState<Set<string>>(new Set())
+  const [cheatOpen, setCheatOpen]   = useState(false)
+  const [cheatInput, setCheatInput] = useState('')
+  const [cheatState, setCheatState] = useState<
+    | { status: 'idle' }
+    | { status: 'loading' }
+    | { status: 'result'; calories: number; remaining: number }
+    | { status: 'error'; message: string }
+  >({ status: 'idle' })
 
   const mealPlan = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('ronin_meal_plan') || 'null') as MealPlanData | null }
@@ -1607,59 +1566,52 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
     return next
   })
 
-  const pickTotal   = Array.from(selectedPicks).reduce((sum, id) => {
-    for (const g of CHEAT_PICKS) { const it = g.items.find(i => i.id === id); if (it) return sum + it.cal }
-    return sum
-  }, 0)
-  const customTotal = customItems.reduce((s, i) => s + i.cal, 0)
-  const sessionTotal = pickTotal + customTotal
+  const handleCheatSubmit = async () => {
+    const desc = cheatInput.trim()
+    if (!desc) return
+    setCheatState({ status: 'loading' })
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const userId = user?.id ?? ''
+      const res  = await fetch('/api/estimate-calories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: desc, userId }),
+      })
+      const json = await res.json() as { calories?: number; error?: string }
+      if (!res.ok || !json.calories) {
+        setCheatState({ status: 'error', message: json.error ?? 'Could not estimate calories.' })
+        return
+      }
+      const calories  = json.calories
+      const todaySoFar = cheatEntries.reduce((s, e) => s + e.calories, 0)
+      const remaining  = Math.max(0, data.target - todaySoFar - calories)
+      setCheatState({ status: 'result', calories, remaining })
 
-  const togglePick = (id: string) => setSelectedPicks(prev => {
-    const next = new Set(prev)
-    if (next.has(id)) next.delete(id); else next.add(id)
-    return next
-  })
-
-  const handleAddCustom = () => {
-    const cal = parseInt(customCal, 10)
-    if (!customDesc.trim() || !cal) return
-    setCustomItems(prev => [...prev, { id: `c-${Date.now()}`, desc: customDesc.trim(), cal }])
-    setCustomDesc(''); setCustomCal('')
-  }
-
-  const handleLog = () => {
-    if (!sessionTotal) return
-    const today = localDateStr()
-    const ts = Date.now()
-    const newEntries: CheatEntry[] = [
-      ...Array.from(selectedPicks).map((id, i) => {
-        const item = CHEAT_PICKS.flatMap(g => g.items).find(it => it.id === id)!
-        return { id: `${ts + i}-${id}`, description: item.label, calories: item.cal, loggedAt: new Date().toISOString() }
-      }),
-      ...customItems.map(item => ({ id: item.id, description: item.desc, calories: item.cal, loggedAt: new Date().toISOString() })),
-    ]
-    const allEntries = [...cheatEntries, ...newEntries]
-    localStorage.setItem(`ronin_cheat_meal_${today}`, JSON.stringify(allEntries))
-    onCheatChange(allEntries)
-    setSelectedPicks(new Set())
-    setCustomItems([])
-    ;(async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        const { data: inserted } = await supabase.from('cheat_meals').insert(
-          newEntries.map(e => ({ user_id: user.id, logged_date: today, description: e.description, calories: e.calories }))
-        ).select()
-        if (!inserted?.length) return
-        // Backfill Supabase UUIDs so removeEntry can issue deletes
-        const withIds = [...cheatEntries, ...newEntries.map((e, i) => ({
-          ...e,
-          supabaseId: (inserted[i] as { id: string } | undefined)?.id,
-        }))]
-        localStorage.setItem(`ronin_cheat_meal_${today}`, JSON.stringify(withIds))
-        onCheatChange(withIds)
-      } catch { /* offline */ }
-    })()
+      // Log entry
+      const today    = localDateStr()
+      const newEntry: CheatEntry = { id: `${Date.now()}`, description: desc, calories, loggedAt: new Date().toISOString() }
+      const allEntries = [...cheatEntries, newEntry]
+      localStorage.setItem(`ronin_cheat_meal_${today}`, JSON.stringify(allEntries))
+      onCheatChange(allEntries)
+      setCheatInput('')
+      if (user) {
+        ;(async () => {
+          try {
+            const { data: inserted } = await supabase.from('cheat_meals').insert(
+              [{ user_id: user.id, logged_date: today, description: desc, calories }]
+            ).select()
+            if (!inserted?.length) return
+            const supabaseId = (inserted[0] as { id: string } | undefined)?.id
+            const withId = allEntries.map(e => e.id === newEntry.id ? { ...e, supabaseId } : e)
+            localStorage.setItem(`ronin_cheat_meal_${today}`, JSON.stringify(withId))
+            onCheatChange(withId)
+          } catch { /* offline */ }
+        })()
+      }
+    } catch {
+      setCheatState({ status: 'error', message: 'Could not estimate calories.' })
+    }
   }
 
   const removeEntry = (id: string) => {
@@ -1681,12 +1633,6 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
   }
 
   const todayTotal = cheatEntries.reduce((s, e) => s + e.calories, 0)
-  const feedback   = todayTotal > 0 ? getCheatFeedback(todayTotal, data.target) : null
-
-  const GROUP_LABEL: React.CSSProperties = {
-    fontSize: '0.72rem', letterSpacing: '0.22em', color: 'var(--text-3)',
-    textTransform: 'uppercase', marginBottom: '0.5rem',
-  }
 
   return (
     <div>
@@ -1750,7 +1696,6 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
 
       {/* ── Cheat meal section ── */}
       <div style={{ marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
-        <div className="field-label" style={{ marginBottom: '1.25rem' }}>Log a Cheat Meal</div>
 
         {/* Logged today */}
         {cheatEntries.length > 0 && (
@@ -1773,118 +1718,72 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange }: FoodDetail
                 </button>
               </div>
             ))}
-            {feedback && (
-              <div style={{ fontSize: '0.85rem', color: feedback.color, letterSpacing: '0.04em', lineHeight: 1.65, marginTop: '0.75rem', marginBottom: '0.25rem' }}>
-                {feedback.text}
-              </div>
-            )}
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-3)', marginTop: '0.5rem' }}>
+              {todayTotal.toLocaleString()} cal logged today
+            </div>
           </div>
         )}
 
-        {/* Quick picks — collapsible categories */}
-        <div style={{ borderTop: '1px solid var(--border)' }}>
-          {CHEAT_PICKS.map(group => {
-            const isCatOpen = openCategories.has(group.group)
-            return (
-              <div key={group.group}>
-                <button
-                  onClick={() => setOpenCategories(prev => {
-                    const next = new Set(prev)
-                    if (next.has(group.group)) next.delete(group.group)
-                    else next.add(group.group)
-                    return next
-                  })}
-                  style={{
-                    width: '100%', background: 'none', border: 'none', cursor: 'pointer',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '0.9rem 0', borderBottom: '1px solid var(--border)',
-                    fontFamily: 'Inter, sans-serif',
-                  }}
-                >
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{group.group}</span>
-                  <ChevronIcon open={isCatOpen} />
-                </button>
-                <div style={{ overflow: 'hidden', maxHeight: isCatOpen ? '600px' : '0', transition: 'max-height 0.25s ease' }}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', padding: '0.75rem 0 1rem' }}>
-                    {group.items.map(item => (
-                      <button
-                        key={item.id}
-                        className={`toggle-btn${selectedPicks.has(item.id) ? ' active' : ''}`}
-                        onClick={() => togglePick(item.id)}
-                        style={{ minHeight: '44px', lineHeight: 1.3 }}
-                      >
-                        {item.label} — {item.cal}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+        {/* LOG A CHEAT MEAL button / form */}
+        {!cheatOpen ? (
+          <button
+            onClick={() => { setCheatOpen(true); setCheatState({ status: 'idle' }) }}
+            style={{
+              width: '100%', background: 'none', border: '1px solid var(--border-mid)',
+              color: 'var(--text-2)', fontSize: '0.72rem', letterSpacing: '0.18em',
+              textTransform: 'uppercase', cursor: 'pointer', padding: '0.85rem 1rem',
+              fontFamily: 'Inter, sans-serif', minHeight: '48px',
+            }}
+          >
+            Log a Cheat Meal
+          </button>
+        ) : (
+          <div>
+            <textarea
+              className="input-bare"
+              placeholder="What did you eat?"
+              value={cheatInput}
+              onChange={e => setCheatInput(e.target.value)}
+              rows={2}
+              style={{ width: '100%', resize: 'none', marginBottom: '0.6rem', boxSizing: 'border-box' }}
+              autoFocus
+            />
+            {cheatState.status === 'result' && (
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+                Estimated {cheatState.calories.toLocaleString()} calories.{' '}
+                {cheatState.remaining > 0
+                  ? <>{cheatState.remaining.toLocaleString()} calories remaining today.</>
+                  : <>Over budget by {Math.abs(data.target - todayTotal).toLocaleString()} calories.</>
+                }
               </div>
-            )
-          })}
-        </div>
-
-        {/* Running total */}
-        <div style={{
-          fontSize: '1rem', fontWeight: 400,
-          color: sessionTotal > 0 ? 'var(--text)' : 'var(--text-3)',
-          letterSpacing: '0.04em', paddingTop: '0.75rem', marginTop: '0.25rem', marginBottom: '1.25rem',
-        }}>
-          Total: {sessionTotal.toLocaleString()} cal
-        </div>
-
-        {/* Custom entry */}
-        <div style={{ marginBottom: '1.25rem' }}>
-          <div style={GROUP_LABEL}>Add Custom</div>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-            <input
-              className="input-bare"
-              type="text"
-              placeholder="Description"
-              value={customDesc}
-              onChange={e => setCustomDesc(e.target.value)}
-              style={{ flex: 1 }}
-            />
-            <input
-              className="input-bare"
-              type="number"
-              placeholder="cal"
-              value={customCal}
-              onChange={e => setCustomCal(e.target.value)}
-              style={{ width: '64px' }}
-              min="1"
-            />
-            <button
-              onClick={handleAddCustom}
-              style={{
-                background: 'none', border: '1px solid var(--border-mid)', color: 'var(--text-2)',
-                fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase',
-                cursor: 'pointer', padding: '0 0.75rem', fontFamily: 'Inter, sans-serif',
-                minHeight: '44px', flexShrink: 0,
-              }}
-            >Add</button>
-          </div>
-          {customItems.length > 0 && (
-            <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              {customItems.map(item => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-2)' }}>
-                  <span>{item.desc} — {item.cal} cal</span>
-                  <button onClick={() => setCustomItems(prev => prev.filter(i => i.id !== item.id))} aria-label="Remove" className="close-btn">
-                    <CloseIcon />
-                  </button>
-                </div>
-              ))}
+            )}
+            {cheatState.status === 'error' && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--red-bright)', marginBottom: '0.6rem' }}>
+                {cheatState.message}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                className="commit-btn"
+                onClick={handleCheatSubmit}
+                disabled={cheatState.status === 'loading' || !cheatInput.trim()}
+                style={{ flex: 1, opacity: (!cheatInput.trim() || cheatState.status === 'loading') ? 0.4 : 1 }}
+              >
+                {cheatState.status === 'loading' ? 'Estimating…' : 'Submit'}
+              </button>
+              <button
+                onClick={() => { setCheatOpen(false); setCheatInput(''); setCheatState({ status: 'idle' }) }}
+                style={{
+                  background: 'none', border: '1px solid var(--border-mid)', color: 'var(--text-3)',
+                  fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+                  cursor: 'pointer', padding: '0 1rem', fontFamily: 'Inter, sans-serif', minHeight: '48px',
+                }}
+              >
+                Cancel
+              </button>
             </div>
-          )}
-        </div>
-
-        {/* LOG IT */}
-        <button
-          className="commit-btn"
-          onClick={handleLog}
-          style={{ opacity: sessionTotal > 0 ? 1 : 0.4 }}
-        >
-          Log It
-        </button>
+          </div>
+        )}
       </div>
 
       {/* Note box */}

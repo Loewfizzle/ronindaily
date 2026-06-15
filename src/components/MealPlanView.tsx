@@ -238,10 +238,16 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
     setScreen('loading')
     setError(null)
     try {
+      let userId: string | undefined
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        userId = user?.id
+      } catch { /* offline */ }
+
       const res = await fetch('/api/meal-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ calorieTarget: calorieTargetRef.current, unit: unitRef.current, days: 7, prefs }),
+        body: JSON.stringify({ calorieTarget: calorieTargetRef.current, unit: unitRef.current, days: 7, prefs, userId }),
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: string }
@@ -252,13 +258,10 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
       setMealPlan(data)
       setOpenDay(1)
       setScreen('ready')
-      if (prefs.budget === 'raw_materials') {
+      if (prefs.budget === 'raw_materials' && userId) {
         try {
-          const { data: { user } } = await supabase.auth.getUser()
-          if (user) {
-            const newBadge = await awardBadge(user.id, 'minimalist')
-            if (newBadge) onBadgesEarnedRef.current?.([newBadge])
-          }
+          const newBadge = await awardBadge(userId, 'minimalist')
+          if (newBadge) onBadgesEarnedRef.current?.([newBadge])
         } catch { /* offline */ }
       }
     } catch (e) {
@@ -275,6 +278,12 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
       const dayData = mealPlanRef.current?.days.find(d => d.day === dayNum)
       if (!dayData) throw new Error('Day not found')
 
+      let slotUserId: string | undefined
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        slotUserId = user?.id
+      } catch { /* offline */ }
+
       const res = await fetch('/api/meal-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -284,6 +293,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
           slotName: slot,
           dayContext: dayData,
           prefs: prefs ?? undefined,
+          userId: slotUserId,
         }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)

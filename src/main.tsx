@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import App from './App'
 
+// REMINDER: run supabase/migrations/008_api_usage.sql in Supabase SQL editor before deploying
 const rootEl = document.getElementById('root')
 if (!rootEl) throw new Error('Root element not found')
 

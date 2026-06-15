@@ -2,6 +2,8 @@ export const config = { runtime: 'edge', maxDuration: 30 }
 
 declare const process: { env: Record<string, string | undefined> }
 
+import { checkAndIncrement, rateLimitExceededResponse } from './_rateLimit'
+
 interface MealItem {
   name: string
   portion: string
@@ -33,6 +35,7 @@ interface RequestBody {
   days?: number
   dayNumber?: number
   prefs?: MealPrefs
+  userId?: string
   // Slot regeneration mode
   slotName?: 'breakfast' | 'lunch' | 'dinner' | 'snacks'
   dayContext?: DayPlan
@@ -117,6 +120,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   let calorieTarget: number, unit: string, days: number, dayNumber: number | undefined
   let prefs: MealPrefs | undefined, slotName: string | undefined, dayCtx: DayPlan | undefined
+  let userId: string | undefined
   try {
     const body = await req.json() as RequestBody
     calorieTarget = body.calorieTarget
@@ -124,6 +128,7 @@ export default async function handler(req: Request): Promise<Response> {
     days          = body.days ?? 7
     dayNumber     = body.dayNumber
     prefs         = body.prefs
+    userId        = body.userId
     slotName      = body.slotName
     dayCtx        = body.dayContext
   } catch {
@@ -138,6 +143,12 @@ export default async function handler(req: Request): Promise<Response> {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     })
+  }
+
+  if (userId) {
+    const action = slotName ? 'meal_plan_slot' : 'meal_plan_full'
+    const { allowed } = await checkAndIncrement(userId, action)
+    if (!allowed) return rateLimitExceededResponse()
   }
 
   const apiKey: string | undefined = process.env.ANTHROPIC_API_KEY

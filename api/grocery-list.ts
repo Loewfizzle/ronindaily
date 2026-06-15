@@ -2,6 +2,8 @@ export const config = { runtime: 'edge', maxDuration: 30 }
 
 declare const process: { env: Record<string, string | undefined> }
 
+import { checkAndIncrement, rateLimitExceededResponse } from './_rateLimit'
+
 interface MealItem {
   name: string
   portion: string
@@ -30,6 +32,7 @@ interface GroceryItem {
 
 interface RequestBody {
   mealPlan: MealPlanData
+  userId?: string
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -41,15 +44,22 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   let mealPlan: MealPlanData
+  let userId: string | undefined
   try {
     const body = await req.json() as RequestBody
     if (!body.mealPlan?.days?.length) throw new Error('No meal plan')
     mealPlan = body.mealPlan
+    userId   = body.userId
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid request body' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     })
+  }
+
+  if (userId) {
+    const { allowed } = await checkAndIncrement(userId, 'grocery_list')
+    if (!allowed) return rateLimitExceededResponse()
   }
 
   const apiKey: string | undefined = process.env.ANTHROPIC_API_KEY
