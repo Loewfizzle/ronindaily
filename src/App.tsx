@@ -466,6 +466,7 @@ export default function App() {
         await supabase.from('daily_accountability').delete().eq('user_id', user.id)
         await supabase.from('checkins').delete().eq('user_id', user.id)
         await supabase.from('profiles').delete().eq('id', user.id)
+        await supabase.from('push_subscriptions').delete().eq('user_id', user.id)
       } catch { /* offline */ }
     }
     // Preserve physical stats across resets so user doesn't re-enter them

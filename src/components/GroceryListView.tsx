@@ -293,7 +293,7 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
             {totalChecked > 0 && (
               <button
                 onClick={clearChecks}
-                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer', padding: '0 0 0 0.25rem', fontFamily: 'Inter, sans-serif' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer', padding: '0 0 0 0.25rem', minHeight: '44px', fontFamily: 'Inter, sans-serif' }}
               >
                 Clear Checks
               </button>
@@ -351,6 +351,7 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
                         style={{
                           display: 'flex', alignItems: 'center', gap: '0.75rem',
                           padding: '0.65rem 0', borderBottom: '1px solid var(--border)',
+                          minHeight: '44px',
                           cursor: 'pointer', userSelect: 'none',
                           opacity: isChecked ? 0.38 : 1, transition: 'opacity 0.15s ease',
                         }}

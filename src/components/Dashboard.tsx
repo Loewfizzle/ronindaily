@@ -573,7 +573,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           const hasMealPlan = localStorage.getItem('ronin_meal_plan') !== null
           const newBadges = await checkAndAwardBadges({
             userId: user.id,
-            streak: count,
+            streak: finalStreak,
             plan: currentPlan,
             hasCheckedIn,
             hasMealPlan,
@@ -1093,7 +1093,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             onClick={() => setMonthlyRecapOpen(true)}
             style={{
               margin: '0 1.5rem 1rem', padding: '0.9rem 1rem',
-              borderLeft: '2px solid var(--gold)', background: 'var(--elevated)',
+              borderLeft: '2px solid var(--red)', background: 'var(--elevated)',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}
           >
@@ -1120,14 +1120,16 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             }}
             style={{
               margin: '0 1.5rem 1rem', padding: '0.9rem 1rem',
-              borderLeft: '2px solid var(--gold)', background: 'var(--elevated)',
+              borderLeft: '2px solid var(--red)', background: 'var(--elevated)',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}
           >
             <span style={{ fontSize: '0.8rem', color: 'var(--text-2)', letterSpacing: '0.02em' }}>
               New week. New plan. Ready.
             </span>
-            <span style={{ color: 'var(--text-3)', fontSize: '1rem', lineHeight: 1, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }}>✕</span>
+            <span style={{ color: 'var(--text-3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }}>
+              <CloseIcon />
+            </span>
           </div>
         )}
 
@@ -1428,7 +1430,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             <div style={{ textAlign: 'center' }}>
               <button
                 onClick={() => setSkipOpen(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.8rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.8rem', letterSpacing: '0.12em', cursor: 'pointer', padding: 0, minHeight: '44px', fontFamily: 'Inter, sans-serif' }}
               >
                 I did not skip.
               </button>

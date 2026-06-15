@@ -175,7 +175,7 @@ export default function AccountabilitySheet({ open, dayNumber, onLog, onFailed }
         {/* Footer */}
         <div style={{ textAlign: 'center', paddingTop: '1.5rem' }}>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', lineHeight: 1.6 }}>
-            You can also log this later from settings.
+            Choose what best reflects your day.
           </div>
         </div>
 

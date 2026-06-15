@@ -341,7 +341,7 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
           <button
             onClick={onSkip}
             style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              display: 'flex', justifyContent: 'flex-start', alignItems: 'center',
               gap: '1rem', width: '100%', background: 'none', border: 'none',
               borderTop: 'none',
               cursor: 'pointer', padding: '1.25rem 0', textAlign: 'left', fontFamily: 'inherit',
@@ -355,7 +355,6 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
                 Resets your streak to zero. Mission continues.
               </div>
             </div>
-            <ChevronIcon />
           </button>
         )}
 
