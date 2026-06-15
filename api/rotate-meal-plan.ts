@@ -3,6 +3,8 @@
 
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import webpush from 'web-push'
+import { computeCalorieTarget } from '../src/utils/calorieCore'
+import type { CalorieProfile } from '../src/utils/calorieCore'
 
 const SUPABASE_URL  = process.env.VITE_SUPABASE_URL  ?? process.env.SUPABASE_URL  ?? ''
 const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
@@ -48,17 +50,6 @@ interface PushSubRow {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function calorieTarget(p: ProfileRow, weight: number): number {
-  const kg           = weight * 0.453592
-  const bmr          = p.sex === 'M'
-    ? 10 * kg + 6.25 * p.height_cm - 5 * p.age + 5
-    : 10 * kg + 6.25 * p.height_cm - 5 * p.age - 161
-  const maint        = bmr * 1.4
-  const totalCal     = (p.start_weight - p.goal_weight) * 3500
-  const dailyDeficit = Math.min(1000, totalCal / (p.target_weeks * 7))
-  return Math.max(1200, Math.round(maint - dailyDeficit))
-}
 
 // Copied from api/meal-plan.ts so rotate-meal-plan has no cross-function imports.
 function buildPrefsSection(prefs: MealPrefs | undefined): string {
@@ -216,11 +207,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         `${SUPABASE_URL}/rest/v1/checkins?user_id=eq.${profile.id}&select=weight&order=week_number.desc&limit=1`,
         { headers: SB_HEADERS },
       )
-      const checkins = checkinR.ok ? await checkinR.json() as CheckinRow[] : []
-      const weight   = Number(checkins[0]?.weight ?? profile.start_weight)
-      if (!weight || isNaN(weight)) { failed++; continue }
+      const checkins      = checkinR.ok ? await checkinR.json() as CheckinRow[] : []
+      const checkinWeight = checkins[0]?.weight != null ? Number(checkins[0].weight) : null
+      if (!profile.start_weight || isNaN(Number(profile.start_weight))) { failed++; continue }
 
-      const cal           = calorieTarget(profile, weight)
+      const calProfile: CalorieProfile = {
+        sex:           profile.sex,
+        age:           profile.age,
+        heightCm:      profile.height_cm,
+        startWeight:   profile.start_weight,
+        goalWeight:    profile.goal_weight,
+        currentWeight: checkinWeight,
+        targetWeeks:   profile.target_weeks,
+        unit:          profile.unit,
+        startDate:     profile.start_date,
+      }
+      const cal           = computeCalorieTarget(calProfile).calorieTarget
       const prefs         = profile.meal_prefs
       const portionSystem = profile.unit === 'metric'
         ? 'metric units (grams, ml) — e.g. "150g chicken breast", "200ml whole milk"'

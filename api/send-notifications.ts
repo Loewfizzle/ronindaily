@@ -4,6 +4,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import webpush from 'web-push'
 import { toZonedTime } from 'date-fns-tz'
+import { computeCalorieTarget } from '../src/utils/calorieCore'
+import type { CalorieProfile } from '../src/utils/calorieCore'
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? ''
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? ''
@@ -29,6 +31,7 @@ interface ProfileRow {
   goal_weight: number
   target_weeks: number
   start_date: string               // YYYY-MM-DD
+  unit: 'imperial' | 'metric'
 }
 
 interface CheckinRow { weight: number }
@@ -67,17 +70,6 @@ function dayNumber(startDate: string): number {
   const today = new Date()
   today.setUTCHours(0, 0, 0, 0)
   return Math.max(1, Math.floor((today.getTime() - start.getTime()) / 86_400_000) + 1)
-}
-
-function calorieTarget(p: ProfileRow, currentWeight: number): number {
-  const kg           = currentWeight * 0.453592
-  const bmr          = p.sex === 'M'
-    ? 10 * kg + 6.25 * p.height_cm - 5 * p.age + 5
-    : 10 * kg + 6.25 * p.height_cm - 5 * p.age - 161
-  const maint        = bmr * 1.4
-  const totalCal     = (p.start_weight - p.goal_weight) * 3500
-  const dailyDeficit = Math.min(1000, totalCal / (p.target_weeks * 7))
-  return Math.max(1200, Math.round(maint - dailyDeficit))
 }
 
 async function streak(userId: string): Promise<number> {
@@ -175,21 +167,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     try {
       const profile = await sbGet<ProfileRow>(
-        `profiles?id=eq.${sub.user_id}&select=sex,age,height_cm,start_weight,goal_weight,target_weeks,start_date`,
+        `profiles?id=eq.${sub.user_id}&select=sex,age,height_cm,start_weight,goal_weight,target_weeks,start_date,unit`,
         true,
       )
       if (!profile) { failed++; continue }
 
       if (!profile.start_date) { failed++; continue }
+      if (!profile.start_weight || isNaN(Number(profile.start_weight))) { failed++; continue }
 
-      const checkins = await sbGet<CheckinRow[]>(
+      const checkins      = await sbGet<CheckinRow[]>(
         `checkins?user_id=eq.${sub.user_id}&select=weight&order=week_number.desc&limit=1`,
       )
-      const weight = checkins?.[0]?.weight ?? profile.start_weight
-      if (!weight || isNaN(weight)) { failed++; continue }
+      const checkinWeight = checkins?.[0]?.weight != null ? Number(checkins[0].weight) : null
 
+      const calProfile: CalorieProfile = {
+        sex:           profile.sex,
+        age:           profile.age,
+        heightCm:      profile.height_cm,
+        startWeight:   profile.start_weight,
+        goalWeight:    profile.goal_weight,
+        currentWeight: checkinWeight,
+        targetWeeks:   profile.target_weeks,
+        unit:          profile.unit ?? 'imperial',
+        startDate:     profile.start_date,
+      }
       const day  = dayNumber(profile.start_date)
-      const cal  = calorieTarget(profile, weight)
+      const cal  = computeCalorieTarget(calProfile).calorieTarget
       const str  = await streak(sub.user_id)
       const body = buildBody(day, str, cal)
 

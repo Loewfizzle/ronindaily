@@ -1,11 +1,6 @@
 import type { UserProfile, PlanResult, Meal, Sex, MovementItem } from '../types'
-
-const CAL_PER_LB = 3500
-const ACTIVITY_FACTOR = 1.2
-const FOOD_DEFICIT_SPLIT = 0.70
-const EXERCISE_DEFICIT_SPLIT = 0.30
-const MIN_CAL_MALE = 1500
-const MIN_CAL_FEMALE = 1200
+import { computeCalorieTarget, addDays, daysBetween } from './calorieCore'
+import type { CalorieProfile } from './calorieCore'
 
 export const DEFAULT_ACTIVITIES = ['walk', 'resistance']
 
@@ -52,28 +47,8 @@ export function formatMovementItem(id: string, cal: number): MovementItem {
   return { id, text: `${mins} min ${cfg.timeLabel}.`, cal }
 }
 
-function lbsToKg(lbs: number): number { return lbs / 2.20462 }
-
 function ftInToCm(ft: string, inches: string = ''): number {
   return (parseFloat(ft) * 12 + parseFloat(inches || '0')) * 2.54
-}
-
-function mifflinBmr(weightKg: number, heightCm: number, age: number, sex: Sex): number {
-  const base = 10 * weightKg + 6.25 * heightCm - 5 * age
-  return sex === 'M' ? base + 5 : base - 161
-}
-
-function addDays(date: Date, n: number): Date {
-  const d = new Date(date)
-  d.setDate(d.getDate() + n)
-  return d
-}
-
-function daysBetween(a: Date, b: Date): number {
-  const msPerDay = 86400000
-  const aUtc = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())
-  const bUtc = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate())
-  return Math.round((bUtc - aUtc) / msPerDay)
 }
 
 /**
@@ -89,51 +64,53 @@ function daysBetween(a: Date, b: Date): number {
  *  5. Split the capped deficit FOOD_DEFICIT_SPLIT / EXERCISE_DEFICIT_SPLIT (70 / 30).
  *  6. Build meal breakdown and movement prescription from the resulting targets.
  *     Movement is split evenly across the user's selected activities.
+ *
+ * All calorie constants live in calorieCore.ts — this function delegates the
+ * BMR/TDEE/deficit math to computeCalorieTarget() to stay in sync with the crons.
  */
 export function calculatePlan(profile: UserProfile, startDate: Date = new Date()): PlanResult {
-  const sex         = profile.sex
-  const age         = parseInt(profile.age, 10)
+  const sex         = profile.sex as Sex
   const unit        = profile.unit
   const targetWeeks = parseInt(profile.targetWeeks, 10)
 
-  // Normalise original (committed) weights.
-  // Field naming quirk: weightLbs/goalWeightLbs hold kg values when unit === 'metric'.
-  let startWeightLbs: number, goalWeightLbs: number, startWeightKg: number, heightCm: number
+  // ── Normalise weights (client naming quirk: *Lbs fields hold kg when metric) ──
+  let startWeightLbs: number, goalWeightLbs: number, heightCm: number
 
   if (unit === 'imperial') {
     startWeightLbs = parseFloat(profile.weightLbs)
     goalWeightLbs  = parseFloat(profile.goalWeightLbs)
-    startWeightKg  = lbsToKg(startWeightLbs)
     heightCm       = ftInToCm(profile.heightFt, profile.heightIn)
   } else {
-    startWeightKg  = parseFloat(profile.weightLbs)
+    const startKg  = parseFloat(profile.weightLbs)   // stores kg despite name
     const goalKg   = parseFloat(profile.goalWeightLbs)
-    startWeightLbs = startWeightKg * 2.20462
-    goalWeightLbs  = goalKg * 2.20462
+    startWeightLbs = startKg * 2.20462
+    goalWeightLbs  = goalKg  * 2.20462
     heightCm       = parseFloat(profile.heightCm)
   }
 
-  // Current weight — updated by weekly check-ins, stored under the same unit as weightLbs.
-  let currentWeightLbs: number, currentWeightKg: number
-
+  // Resolve currentWeight in native unit (null = no check-in yet).
+  let currentWeightNative: number | null = null
   if (profile.currentWeightLbs != null) {
     const raw = parseFloat(profile.currentWeightLbs)
-    if (isNaN(raw) || raw <= 0) {
-      currentWeightLbs = startWeightLbs
-      currentWeightKg  = startWeightKg
-    } else if (unit === 'imperial') {
-      currentWeightLbs = raw
-      currentWeightKg  = lbsToKg(raw)
-    } else {
-      currentWeightKg  = raw
-      currentWeightLbs = raw * 2.20462
-    }
-  } else {
-    currentWeightLbs = startWeightLbs
-    currentWeightKg  = startWeightKg
+    if (!isNaN(raw) && raw > 0) currentWeightNative = raw
   }
 
-  // Timeline
+  // ── Delegate calorie math to the single shared implementation ────────────────
+  const calProfile: CalorieProfile = {
+    sex,
+    age:           parseInt(profile.age, 10),
+    heightCm,
+    startWeight:   parseFloat(profile.weightLbs),      // native unit (quirk handled inside)
+    goalWeight:    parseFloat(profile.goalWeightLbs),  // native unit
+    currentWeight: currentWeightNative,
+    targetWeeks,
+    unit,
+    startDate:     startDate.toISOString().slice(0, 10),
+  }
+
+  const cal = computeCalorieTarget(calProfile)
+
+  // ── Date display values (used in return shape; not part of calorie math) ──────
   const today             = new Date()
   const originalTotalDays = targetWeeks * 7
   const targetDate        = addDays(startDate, originalTotalDays)
@@ -141,37 +118,11 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
   const daysLeft          = Math.max(0, daysBetween(today, targetDate))
   const weekNumber        = Math.ceil(dayNumber / 7)
 
-  // Deficit: use remaining days after first check-in so the plan adapts to real weight.
-  const poundsToLose         = Math.max(0, currentWeightLbs - goalWeightLbs)
-  const totalCalDeficit      = poundsToLose * CAL_PER_LB
-  const hasCheckedIn         = profile.currentWeightLbs != null
-  const deficitDays          = hasCheckedIn ? Math.max(1, daysLeft) : originalTotalDays
-  const requiredDailyDeficit = deficitDays > 0 ? totalCalDeficit / deficitDays : 0
-
-  const bmr  = mifflinBmr(currentWeightKg, heightCm, age, sex)
-  const tdee = Math.round(bmr * ACTIVITY_FACTOR)
-
-  const minCal         = sex === 'M' ? MIN_CAL_MALE : MIN_CAL_FEMALE
-  const maxSafeDeficit = tdee - minCal
-
-  let dailyDeficit: number
-  const extremeMission = requiredDailyDeficit > maxSafeDeficit
-
-  if (extremeMission) {
-    dailyDeficit = Math.max(0, Math.round(maxSafeDeficit))
-  } else {
-    dailyDeficit = Math.round(requiredDailyDeficit)
-  }
-
-  const foodDeficit   = Math.round(dailyDeficit * FOOD_DEFICIT_SPLIT)
-  const exerciseBurn  = Math.round(dailyDeficit * EXERCISE_DEFICIT_SPLIT)
-  const calorieTarget = Math.max(minCal, tdee - foodDeficit)
-
-  // Meal breakdown (fixed proportions)
-  const breakfast = Math.round(calorieTarget * 0.25)
-  const lunch     = Math.round(calorieTarget * 0.33)
-  const dinner    = Math.round(calorieTarget * 0.33)
-  const snacks    = calorieTarget - breakfast - lunch - dinner
+  // ── Meal breakdown (fixed proportions of calorieTarget) ─────────────────────
+  const breakfast = Math.round(cal.calorieTarget * 0.25)
+  const lunch     = Math.round(cal.calorieTarget * 0.33)
+  const dinner    = Math.round(cal.calorieTarget * 0.33)
+  const snacks    = cal.calorieTarget - breakfast - lunch - dinner
   const meals: Meal[] = [
     { name: 'Breakfast', cal: breakfast },
     { name: 'Lunch',     cal: lunch     },
@@ -179,35 +130,34 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
     { name: 'Snacks',    cal: snacks    },
   ]
 
-  // Movement prescription — split burn target evenly across selected activities.
-  // Falls back to DEFAULT_ACTIVITIES for users who pre-date this feature.
+  // ── Movement prescription — split burn target across selected activities ─────
   const selectedActivities = (profile.activities && profile.activities.length > 0)
     ? profile.activities
     : DEFAULT_ACTIVITIES
 
   const movement: MovementItem[] = []
-  if (exerciseBurn >= 50) {
-    const perActivity = Math.round(exerciseBurn / selectedActivities.length)
+  if (cal.exerciseBurn >= 50) {
+    const perActivity = Math.round(cal.exerciseBurn / selectedActivities.length)
     for (const id of selectedActivities) {
       movement.push(formatMovementItem(id, perActivity))
     }
   } else {
-    // Very low deficit — show minimum prescription from first selected activity
-    movement.push(formatMovementItem(selectedActivities[0], Math.max(50, exerciseBurn)))
+    // Very low deficit — show minimum prescription from first selected activity.
+    movement.push(formatMovementItem(selectedActivities[0], Math.max(50, cal.exerciseBurn)))
   }
 
   const pacePerWeek = daysLeft > 0
-    ? parseFloat(((poundsToLose / daysLeft) * 7).toFixed(1))
+    ? parseFloat(((cal.poundsToLose / daysLeft) * 7).toFixed(1))
     : 0
 
   return {
     unit,
-    extremeMission,
+    extremeMission: cal.extremeMission,
 
     startWeight:   startWeightLbs,
-    currentWeight: currentWeightLbs,
+    currentWeight: cal.currentWeightLbs,
     goalWeight:    goalWeightLbs,
-    poundsToLose,
+    poundsToLose:  cal.poundsToLose,
 
     date: today,
     startDate: new Date(startDate),
@@ -217,14 +167,14 @@ export function calculatePlan(profile: UserProfile, startDate: Date = new Date()
     daysLeft,
     weekNumber,
 
-    maintenance:   tdee,
-    dailyDeficit,
-    calorieTarget,
-    exerciseBurn,
+    maintenance:   cal.tdee,
+    dailyDeficit:  cal.dailyDeficit,
+    calorieTarget: cal.calorieTarget,
+    exerciseBurn:  cal.exerciseBurn,
     meals,
 
     movement,
-    movementCal: exerciseBurn,
+    movementCal: cal.exerciseBurn,
 
     pacePerWeek,
   }
