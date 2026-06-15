@@ -7,6 +7,8 @@ import TermsOfService from './components/TermsOfService'
 import Onboarding from './components/Onboarding'
 import PreparationScreen from './components/PreparationScreen'
 import Dashboard from './components/Dashboard'
+import PushBanner from './components/PushBanner'
+import { hasPushSubscription } from './utils/push'
 import type { Database } from './types/database.types'
 import type { UserProfile, Screen, ProfileRow } from './types'
 
@@ -275,10 +277,25 @@ export default function App() {
   const [initialProfile, setInitialProfile] = useState<UserProfile | null>(null)
   const [connectionError, setConnectionError] = useState(false)
   const [profileError, setProfileError]   = useState(false)
+  const [showPushBanner, setShowPushBanner] = useState(false)
 
   // Incremented by handleCommit to cancel any in-flight loadProfile calls.
   // Prevents a stale loadProfile response from overwriting the 'preparation' screen.
   const loadGen = useRef(0)
+
+  // After landing on the dashboard, check once whether we should prompt for push permission.
+  useEffect(() => {
+    if (screen !== 'dashboard' || !user) return
+    if (localStorage.getItem('ronin_push_declined')) return
+    if (!('Notification' in window) || Notification.permission === 'denied') return
+
+    const timer = setTimeout(async () => {
+      const already = await hasPushSubscription(user.id)
+      if (!already) setShowPushBanner(true)
+    }, 3000)
+
+    return () => clearTimeout(timer)
+  }, [screen, user])
 
   useEffect(() => {
     let settled = false
@@ -492,12 +509,17 @@ export default function App() {
         <PreparationScreen onBegin={handleBegin} onReset={handleReset} onAdjustGoal={handleAdjustGoal} />
       )}
       {screen === 'dashboard' && (
-        <Dashboard
-          onReset={handleReset}
-          onAdjustGoal={handleAdjustGoal}
-          onSignOut={handleSignOut}
-          connectionWarning={profileError ? 'Could not reach the server. Showing saved data.' : null}
-        />
+        <>
+          <Dashboard
+            onReset={handleReset}
+            onAdjustGoal={handleAdjustGoal}
+            onSignOut={handleSignOut}
+            connectionWarning={profileError ? 'Could not reach the server. Showing saved data.' : null}
+          />
+          {showPushBanner && user && (
+            <PushBanner userId={user.id} onDismiss={() => setShowPushBanner(false)} />
+          )}
+        </>
       )}
     </div>
   )

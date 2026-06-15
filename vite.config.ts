@@ -9,8 +9,9 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      // includeAssets removed — globPatterns already precaches *.{ico,png,svg,woff2}
-      // Having both caused every icon to appear twice in the SW precache manifest
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       manifest: {
         name: 'Ronin Daily',
         short_name: 'Ronin',
@@ -35,39 +36,11 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
+      injectManifest: {
         // Precache static assets with stable filenames.
-        // PNGs are excluded from the glob — pwa-192/512 are added automatically
-        // via manifest.icons, so globbing *.png would create duplicate entries.
-        // apple-touch-icon.png is listed explicitly so it is still precached.
-        // HTML and JS/CSS are excluded and served network-first (see below).
+        // PNGs excluded from glob — pwa-192/512 added via manifest.icons automatically.
+        // HTML and JS/CSS served network-first from the SW runtime cache below.
         globPatterns: ['**/*.{ico,svg,woff2}', 'apple-touch-icon.png'],
-        skipWaiting: true,
-        clientsClaim: true,
-        runtimeCaching: [
-          {
-            // HTML navigation — always try network first so new deploys
-            // are seen on the very next page load, not after a SW cycle.
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'pages',
-              networkTimeoutSeconds: 3,
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            // JS + CSS bundles — network-first so updated bundles are
-            // fetched on each load; cached for offline fallback.
-            urlPattern: /\.(?:js|css)$/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'app-shell',
-              networkTimeoutSeconds: 3,
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
       },
     }),
   ],
