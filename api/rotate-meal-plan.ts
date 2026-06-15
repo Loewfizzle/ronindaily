@@ -1,6 +1,8 @@
 // Node.js runtime — uses web-push (requires Node.js crypto) and Anthropic API
 // Runs every Monday at 06:00 UTC to generate fresh 7-day meal plans for all active users.
 
+export const config = { maxDuration: 300 }
+
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import webpush from 'web-push'
 import { computeCalorieTarget } from '../src/utils/calorieCore'

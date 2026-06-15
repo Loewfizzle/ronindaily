@@ -36,7 +36,6 @@ interface ProfileRow {
 
 interface CheckinRow { weight: number }
 
-interface AccountabilityRow { logged_date: string; result: string }
 
 // ── Supabase REST helpers ────────────────────────────────────────────────────
 
@@ -73,19 +72,18 @@ function dayNumber(startDate: string): number {
 }
 
 async function streak(userId: string): Promise<number> {
-  const rows = await sbGet<AccountabilityRow[]>(
-    `daily_accountability?user_id=eq.${userId}&select=logged_date,result&order=logged_date.desc&limit=120`,
+  const rows = await sbGet<{ logged_date: string }[]>(
+    `daily_logs?user_id=eq.${userId}&select=logged_date&order=logged_date.desc&limit=365`,
   )
   if (!rows?.length) return 0
-  const map = new Map(rows.map(r => [r.logged_date, r.result]))
+  const dateSet = new Set(rows.map(r => r.logged_date))
   const cur = new Date()
   cur.setUTCHours(0, 0, 0, 0)
-  cur.setUTCDate(cur.getUTCDate() - 1) // start from yesterday — today not logged yet
+  cur.setUTCDate(cur.getUTCDate() - 1) // yesterday — today's log not yet created at notification time
   let count = 0
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 365; i++) {
     const key = cur.toISOString().slice(0, 10)
-    const r   = map.get(key)
-    if (!r || r === 'failed') break
+    if (!dateSet.has(key)) break
     count++
     cur.setUTCDate(cur.getUTCDate() - 1)
   }

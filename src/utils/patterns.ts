@@ -147,12 +147,18 @@ export async function detectPatterns(userId: string): Promise<PatternReport> {
       }
     }
 
-    // consistent: 30 consecutive logged dates with no gaps
-    if (rows.length >= 30) {
+    // consistent: 30 consecutive days the app was opened (daily_logs — same source as streak)
+    const { data: logRows } = await supabase
+      .from('daily_logs')
+      .select('logged_date')
+      .eq('user_id', userId)
+      .order('logged_date', { ascending: true })
+
+    if (logRows && logRows.length >= 30) {
       let maxConsec = 1, curConsec = 1
-      for (let i = 1; i < rows.length; i++) {
-        const prev = new Date(rows[i - 1].logged_date + 'T12:00:00')
-        const curr = new Date(rows[i].logged_date + 'T12:00:00')
+      for (let i = 1; i < logRows.length; i++) {
+        const prev = new Date(logRows[i - 1].logged_date + 'T12:00:00')
+        const curr = new Date(logRows[i].logged_date + 'T12:00:00')
         const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000)
         if (diffDays === 1) { curConsec++; if (curConsec > maxConsec) maxConsec = curConsec }
         else curConsec = 1
