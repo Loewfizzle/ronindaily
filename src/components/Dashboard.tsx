@@ -1294,17 +1294,6 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           <FooterContent {...footerProps} />
         </div>
 
-        {/* Skip button — only day 2+ onward, subtle and below the fold */}
-        {dayNumber > 1 && (
-          <div style={{ textAlign: 'center', paddingTop: '0.85rem', paddingBottom: '0.5rem' }}>
-            <button
-              onClick={() => setSkipOpen(true)}
-              style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', opacity: 0.5, minHeight: '44px', minWidth: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              I skipped today.
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ── Sheets ──────────────────────────────────────────────────── */}
@@ -1351,7 +1340,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
 
       <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} streak={streak} plan={plan} />
       <CheckinSheet open={checkinOpen} onClose={() => setCheckinOpen(false)} plan={plan} onCheckin={() => setRefreshKey(k => k + 1)} onBadgesEarned={handleBadgesEarned} />
-      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} onAdjustGoal={onAdjustGoal} onReset={onReset} onSignOut={onSignOut} />
+      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} onAdjustGoal={onAdjustGoal} onReset={onReset} onSignOut={onSignOut} onSkip={dayNumber > 1 ? () => { setSettingsOpen(false); setSkipOpen(true) } : undefined} />
       <MealPlanSheet open={mealPlanOpen} onClose={() => setMealPlanOpen(false)} calorieTarget={calorieTarget} unit={unit} onBadgesEarned={handleBadgesEarned} />
 
       <BadgeDetailSheet badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
@@ -1408,8 +1397,11 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             <div style={{ fontSize: '1.35rem', fontWeight: 300, color: 'var(--text)', letterSpacing: '0.02em', lineHeight: 1.3, marginBottom: '0.9rem' }}>
               You have failed.
             </div>
-            <div style={{ fontSize: '0.88rem', color: 'var(--text-2)', lineHeight: 1.85, marginBottom: '1.5rem' }}>
-              You have dishonored your name and your family.
+            <div style={{ fontSize: '0.88rem', color: 'var(--text-2)', lineHeight: 1.85, marginBottom: '0.85rem' }}>
+              A ronin keeps his word or he does not. Today, you did not.
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-3)', lineHeight: 1.65, marginBottom: '1.5rem' }}>
+              Your streak resets to zero. Your mission, goal, and all progress remain.
             </div>
             <div style={{ marginBottom: '1.75rem' }}>
               <div style={{ fontSize: '0.72rem', letterSpacing: '0.22em', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
@@ -1458,7 +1450,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             letterSpacing: '0.3em', textTransform: 'uppercase',
             textAlign: 'center', lineHeight: 2.6,
           }}>
-            Streak reset.<br />Begin again tomorrow.
+            The streak dies here.<br />Rebuild it from nothing, starting tomorrow.
           </div>
         </div>
       )}

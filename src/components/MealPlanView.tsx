@@ -190,6 +190,7 @@ interface MealPlanViewProps {
   unit: UnitSystem
   readyFooter?: ReactNode
   onBadgesEarned?: (badges: BadgeDef[]) => void
+  onBudgetChange?: (budget: MealPrefs['budget']) => void
 }
 
 export interface MealPlanViewHandle {
@@ -200,7 +201,7 @@ export interface MealPlanViewHandle {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function MealPlanView(
-  { calorieTarget, unit, readyFooter, onBadgesEarned },
+  { calorieTarget, unit, readyFooter, onBadgesEarned, onBudgetChange },
   ref,
 ) {
   type Screen = 'prefs' | 'loading' | 'ready' | 'error'
@@ -233,6 +234,8 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   unitRef.current           = unit
   mealPlanRef.current       = mealPlan
   onBadgesEarnedRef.current = onBadgesEarned
+
+  useEffect(() => { onBudgetChange?.(budget) }, [budget, onBudgetChange])
 
   const doGenerate = useCallback(async (prefs: MealPrefs) => {
     setScreen('loading')

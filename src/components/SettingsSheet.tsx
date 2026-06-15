@@ -35,7 +35,7 @@ type ConfirmId = 'adjust' | 'signout' | 'reset'
 const CONFIRM: Record<ConfirmId, { label: string; message: string }> = {
   adjust:  { label: 'Adjust Goal', message: 'Start date is preserved. Only your goal changes. This cannot be undone.' },
   signout: { label: 'Sign Out',    message: 'You will be signed out. Your data will remain.' },
-  reset:   { label: 'Start Over',  message: 'All data will be erased. This cannot be undone.' },
+  reset:   { label: 'Start Over',  message: 'This ends your current mission permanently. Your profile, weight history, logs, and badges will be erased. You will return to the start to build a new mission. This cannot be undone.' },
 }
 
 interface SettingsSheetProps {
@@ -44,9 +44,10 @@ interface SettingsSheetProps {
   onAdjustGoal: () => void
   onReset: () => void
   onSignOut: () => void
+  onSkip?: () => void   // only passed when dayNumber > 1; opens skip sheet in Dashboard
 }
 
-export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, onSignOut }: SettingsSheetProps) {
+export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, onSignOut, onSkip }: SettingsSheetProps) {
   const [confirming, setConfirming]           = useState<ConfirmId | null>(null)
   const [notifTime, setNotifTime]             = useState('07:00')
   const [notifTimeSaved, setNotifTimeSaved]   = useState(false)
@@ -205,7 +206,6 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
                 onClick={() => pickerOpen ? setPickerOpen(false) : openPicker()}
                 aria-label="Change notification time"
                 style={{
-                  flex: 1,
                   background: 'var(--elevated)',
                   border: `1px solid ${pickerOpen ? 'var(--red)' : 'var(--border-mid)'}`,
                   color: 'var(--text)',
@@ -214,7 +214,6 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
                   padding: '0.5rem 0.85rem',
                   minHeight: '44px',
                   cursor: 'pointer',
-                  textAlign: 'left',
                   letterSpacing: '0.04em',
                   transition: 'border-color 0.15s ease',
                 }}
@@ -333,11 +332,36 @@ export default function SettingsSheet({ open, onClose, onAdjustGoal, onReset, on
           hasBorderTop: false,
         })}
 
-        {/* ── DANGER SECTION: Start Over ────────────────────────────────── */}
+        {/* ── DANGER SECTION: Skip + Start Over ────────────────────────── */}
         {/* Faint red-tinted separator signals the weight of what's below */}
         <div style={{ height: '1px', background: 'rgba(139, 28, 28, 0.30)', margin: '0.25rem 0 0' }} />
 
-        {renderRow('reset', 'Start Over', 'Erase all data. Begin again.', {
+        {/* I Skipped Today — only when onSkip is provided (dayNumber > 1 in Dashboard) */}
+        {onSkip && (
+          <button
+            onClick={onSkip}
+            style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              gap: '1rem', width: '100%', background: 'none', border: 'none',
+              borderTop: 'none',
+              cursor: 'pointer', padding: '1.25rem 0', textAlign: 'left', fontFamily: 'inherit',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text)', letterSpacing: '0.06em', marginBottom: '0.35rem' }}>
+                I Skipped Today
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', lineHeight: 1.5 }}>
+                Resets your streak to zero. Mission continues.
+              </div>
+            </div>
+            <ChevronIcon />
+          </button>
+        )}
+
+        {onSkip && <div style={{ height: '1px', background: 'var(--border)' }} />}
+
+        {renderRow('reset', 'Start Over', 'Ends the current mission. All data erased.', {
           hasBorderTop: false,
           labelColor: 'var(--text-2)',
           descColor: 'var(--text-3)',

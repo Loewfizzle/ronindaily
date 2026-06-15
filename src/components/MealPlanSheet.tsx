@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import FullSheet from './FullSheet'
 import MealPlanView, { type MealPlanViewHandle } from './MealPlanView'
 import GroceryListSheet from './GroceryListSheet'
-import type { UnitSystem } from '../types'
+import type { UnitSystem, MealPrefs } from '../types'
 import type { BadgeDef } from '../utils/badges'
 
 interface MealPlanSheetProps {
@@ -33,6 +33,12 @@ function RefreshIcon() {
 
 export default function MealPlanSheet({ open, onClose, calorieTarget, unit, onBadgesEarned }: MealPlanSheetProps) {
   const [groceryOpen, setGroceryOpen] = useState(false)
+  const [currentBudget, setCurrentBudget] = useState<MealPrefs['budget']>(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem('ronin_meal_prefs') || 'null') as MealPrefs | null
+      return p?.budget ?? 'standard'
+    } catch { return 'standard' }
+  })
   const mealPlanRef = useRef<MealPlanViewHandle>(null)
 
   useEffect(() => {
@@ -66,7 +72,8 @@ export default function MealPlanSheet({ open, onClose, calorieTarget, unit, onBa
           calorieTarget={calorieTarget}
           unit={unit}
           onBadgesEarned={onBadgesEarned}
-          readyFooter={
+          onBudgetChange={setCurrentBudget}
+          readyFooter={currentBudget !== 'fast_food' ? (
             <div style={{ marginTop: '1.25rem', paddingBottom: '0.5rem' }}>
               <button
                 onClick={() => setGroceryOpen(true)}
@@ -75,7 +82,7 @@ export default function MealPlanSheet({ open, onClose, calorieTarget, unit, onBa
                 Grocery List
               </button>
             </div>
-          }
+          ) : null}
         />
       </FullSheet>
       <GroceryListSheet open={groceryOpen} onClose={() => setGroceryOpen(false)} />

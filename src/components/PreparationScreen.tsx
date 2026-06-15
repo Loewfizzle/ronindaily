@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { calculatePlan } from '../utils/calculate'
-import type { UserProfile } from '../types'
+import type { UserProfile, MealPrefs } from '../types'
 import MealPlanView from './MealPlanView'
 import GroceryListView from './GroceryListView'
 
@@ -172,6 +172,12 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
   const [beginning, setBeginning] = useState(false)
   const [dishonorPhase, setDishonorPhase] = useState<'hidden' | 'showing' | 'hiding'>('hidden')
   const [extremeAccepted, setExtremeAccepted] = useState(() => !!localStorage.getItem('ronin_extreme_accepted'))
+  const [mealBudget, setMealBudget] = useState<MealPrefs['budget']>(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem('ronin_meal_prefs') || 'null') as MealPrefs | null
+      return p?.budget ?? 'standard'
+    } catch { return 'standard' }
+  })
   const dishonorTimers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => () => {
@@ -524,11 +530,18 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
               <MealPlanView
                 calorieTarget={calorieTarget}
                 unit={unit}
+                onBudgetChange={setMealBudget}
                 readyFooter={
                   <div style={{ marginTop: '1.5rem' }}>
-                    <button type="button" className="commit-btn" onClick={() => go(3, 'forward')}>
-                      Build Grocery List →
-                    </button>
+                    {mealBudget === 'fast_food' ? (
+                      <button type="button" className="commit-btn" onClick={() => go(4, 'forward')}>
+                        I Am Ready. Continue →
+                      </button>
+                    ) : (
+                      <button type="button" className="commit-btn" onClick={() => go(3, 'forward')}>
+                        Build Grocery List →
+                      </button>
+                    )}
                   </div>
                 }
               />
@@ -651,13 +664,15 @@ export default function PreparationScreen({ onBegin, onReset, onAdjustGoal }: Pr
                         {hasMealPlan ? 'Ready' : 'Not generated'}
                       </span>
                     </div>
-                    {/* Grocery List */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem', paddingTop: '1rem' }}>
-                      <span style={{ fontSize: '0.8rem', letterSpacing: '0.12em', color: 'var(--text-2)', textTransform: 'uppercase', flexShrink: 0 }}>Grocery List</span>
-                      <span style={{ fontSize: '0.95rem', color: hasGrocery ? 'var(--red)' : 'var(--text-3)', textAlign: 'right' }}>
-                        {hasGrocery ? 'Ready' : 'Not generated'}
-                      </span>
-                    </div>
+                    {/* Grocery List — hidden for fast food (no grocery step) */}
+                    {mealBudget !== 'fast_food' && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem', paddingTop: '1rem' }}>
+                        <span style={{ fontSize: '0.8rem', letterSpacing: '0.12em', color: 'var(--text-2)', textTransform: 'uppercase', flexShrink: 0 }}>Grocery List</span>
+                        <span style={{ fontSize: '0.95rem', color: hasGrocery ? 'var(--red)' : 'var(--text-3)', textAlign: 'right' }}>
+                          {hasGrocery ? 'Ready' : 'Not generated'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
