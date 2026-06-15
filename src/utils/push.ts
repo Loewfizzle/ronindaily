@@ -11,6 +11,11 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   return arr.buffer
 }
 
+function localTimezone(): string {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone }
+  catch { return 'America/New_York' }
+}
+
 export async function subscribeToPush(userId: string): Promise<boolean> {
   if (!VAPID_PUBLIC_KEY) return false
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
@@ -27,14 +32,15 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     const auth = sub.getKey('auth')
     if (!key || !auth) return false
 
-    const p256dh = btoa(String.fromCharCode(...new Uint8Array(key)))
+    const p256dh  = btoa(String.fromCharCode(...new Uint8Array(key)))
     const authStr = btoa(String.fromCharCode(...new Uint8Array(auth)))
 
     const { error } = await supabase.from('push_subscriptions').upsert({
-      user_id:  userId,
-      endpoint: sub.endpoint,
+      user_id:   userId,
+      endpoint:  sub.endpoint,
       p256dh,
-      auth: authStr,
+      auth:      authStr,
+      timezone:  localTimezone(),
       is_active: true,
     }, { onConflict: 'user_id' })
 
@@ -61,6 +67,6 @@ export async function hasPushSubscription(userId: string): Promise<boolean> {
 export async function updateNotificationTime(userId: string, time: string): Promise<void> {
   await supabase
     .from('push_subscriptions')
-    .update({ notification_time: time })
+    .update({ notification_time: time, timezone: localTimezone() })
     .eq('user_id', userId)
 }

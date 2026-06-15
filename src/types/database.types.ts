@@ -308,6 +308,7 @@ export type Database = {
           p256dh: string
           auth: string
           notification_time: string
+          timezone: string
           is_active: boolean
           created_at: string
           milestone_notifications_sent: string[]
@@ -319,6 +320,7 @@ export type Database = {
           p256dh: string
           auth: string
           notification_time?: string
+          timezone?: string
           is_active?: boolean
           created_at?: string
           milestone_notifications_sent?: string[]
@@ -330,6 +332,7 @@ export type Database = {
           p256dh?: string
           auth?: string
           notification_time?: string
+          timezone?: string
           is_active?: boolean
           created_at?: string
           milestone_notifications_sent?: string[]
