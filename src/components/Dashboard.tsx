@@ -1911,7 +1911,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange, open }: Food
         ) : (
           <div>
             <textarea
-              placeholder="Describe exactly what you ate (Burger King Whopper, Large fry, large Coke)"
+              placeholder="Describe exactly what you ate and AI will calculate the calories (Burger King Whopper, Large fry, Large Coke)"
               value={cheatInput}
               onChange={e => setCheatInput(e.target.value)}
               rows={2}
