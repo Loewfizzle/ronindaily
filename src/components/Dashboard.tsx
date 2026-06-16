@@ -11,11 +11,12 @@ import PatternSheet from './PatternSheet'
 import WeeklyRecapSheet from './WeeklyRecapSheet'
 import MonthlyRecapSheet from './MonthlyRecapSheet'
 import { calculatePlan, formatMovementItem, getActivityInfo } from '../utils/calculate'
+import { calcMealAllocations } from '../utils/mealAllocations'
 import { detectPatterns } from '../utils/patterns'
 import type { PatternReport } from '../utils/patterns'
 import { checkAndAwardBadges, awardBadge, checkActivityMilestoneBadges, BADGE_KANJI, ACTIVITY_SERIES_TIERS } from '../utils/badges'
 import { supabase } from '../lib/supabase'
-import type { PlanResult, Meal, UnitSystem, MovementItem, MealPlanData, WeeklyRecapCounts } from '../types'
+import type { PlanResult, Meal, UnitSystem, MovementItem, MealPlanData, WeeklyRecapCounts, MealPrefs } from '../types'
 import type { BadgeDef } from '../utils/badges'
 
 interface EarnedBadge {
@@ -853,6 +854,22 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
     meals, movement, movementCal,
   } = plan
 
+  // Build the meal breakdown for FoodDetail, respecting the user's meal selection.
+  // Falls back to plan.meals (hardcoded 4-way split) if no prefs exist.
+  const displayMeals: Meal[] = (() => {
+    try {
+      const prefs = JSON.parse(localStorage.getItem('ronin_meal_prefs') || 'null') as MealPrefs | null
+      if (prefs?.activeMeals && prefs.activeMeals.length > 0) {
+        const allocs = calcMealAllocations(prefs.activeMeals, calorieTarget)
+        const canonical = ['breakfast', 'lunch', 'dinner', 'snacks']
+        return canonical
+          .filter(m => prefs.activeMeals!.includes(m))
+          .map(m => ({ name: m.charAt(0).toUpperCase() + m.slice(1), cal: allocs[m] }))
+      }
+    } catch { /* ignore */ }
+    return meals
+  })()
+
   // progressPct, lastCheckin, showCheckin, savedBest, bestProgress computed above the early return.
 
   const todayCheatCal = cheatEntries.reduce((s, e) => s + e.calories, 0)
@@ -1309,7 +1326,7 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
           </div>
           <div style={{ height: '1px', background: 'var(--red)', marginTop: '1.25rem' }} />
         </div>
-        <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals }} dayNumber={dayNumber} cheatEntries={cheatEntries} onCheatChange={handleCheatChange} open={sheet === 'food'} />
+        <FoodDetail data={{ target: calorieTarget, maintenance, deficit: dailyDeficit, meals: displayMeals }} dayNumber={dayNumber} cheatEntries={cheatEntries} onCheatChange={handleCheatChange} open={sheet === 'food'} />
       </FullSheet>
 
       <FullSheet open={sheet === 'movement'} onClose={() => setSheet(null)} title="Movement">
