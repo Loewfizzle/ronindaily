@@ -1252,6 +1252,9 @@ export default function Dashboard({ onReset, onAdjustGoal, onSignOut, connection
             {/* Dismissed — restore links */}
             {dismissedItems.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', padding: '0.1rem 0 0.25rem', lineHeight: 1.5 }}>
+                  Calories redistributed across your remaining activities.
+                </div>
                 {dismissedItems.map(item => (
                   <button
                     key={item.id}
@@ -1971,12 +1974,6 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange, open }: Food
   )
 }
 
-function getTotalLabel(id: string, type: 'distance' | 'time'): string {
-  if (type === 'time') return 'Total minutes completed'
-  const verbs: Record<string, string> = { walk: 'walked', bike: 'biked', run: 'run' }
-  return `Total miles ${verbs[id] ?? 'covered'}`
-}
-
 function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
   movement: MovementItem[]
   cal: number
@@ -1985,21 +1982,6 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
   onUnlog: (id: string) => void
 }) {
   const [checked, setChecked] = useState<Set<string>>(() => new Set(Object.keys(activityLog)))
-  // totals: confirmed custom amounts (total, not extra). Only set when user explicitly enters via "I did more".
-  const [totals, setTotals] = useState<Record<string, number>>(() => {
-    const result: Record<string, number> = {}
-    for (const [id, amount] of Object.entries(activityLog)) {
-      const item = movement.find(m => m.id === id)
-      if (!item) continue
-      const info = getActivityInfo(id)
-      if (!info) continue
-      const planned = item.cal / info.rate
-      if (Math.abs(amount - planned) > 0.01) result[id] = +amount.toFixed(2)
-    }
-    return result
-  })
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [totalDrafts, setTotalDrafts] = useState<Record<string, string>>({})
 
   const getPlannedAmount = (item: MovementItem): number => {
     const info = getActivityInfo(item.id)
@@ -2009,8 +1991,6 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
   const handleCheck = (item: MovementItem) => {
     if (checked.has(item.id)) {
       setChecked(prev => { const n = new Set(prev); n.delete(item.id); return n })
-      setTotals(prev => { const n = { ...prev }; delete n[item.id]; return n })
-      setExpandedId(prev => prev === item.id ? null : prev)
       onUnlog(item.id)
     } else {
       setChecked(prev => new Set([...prev, item.id]))
@@ -2018,178 +1998,67 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
     }
   }
 
-  const handleTotalConfirm = (item: MovementItem) => {
-    const total = parseFloat(totalDrafts[item.id] ?? '')
-    if (isNaN(total) || total <= 0) return
-    setTotals(prev => ({ ...prev, [item.id]: total }))
-    setExpandedId(null)
-    onLog(item.id, total)
-  }
-
-  const totalSurplusCal = movement.reduce((sum, item) => {
-    const confirmedTotal = totals[item.id]
-    if (confirmedTotal == null) return sum
-    const info = getActivityInfo(item.id)
-    const planned = getPlannedAmount(item)
-    const delta = confirmedTotal - planned
-    if (delta <= 0) return sum
-    return sum + Math.round(delta * (info?.rate ?? 0))
-  }, 0)
-
   const allChecked = movement.length > 0 && movement.every(item => checked.has(item.id))
-  const missionComplete = allChecked && totalSurplusCal === 0
-  const showSurplusLine = totalSurplusCal > 0
-  const showPrompt = !allChecked && checked.size === 0
 
   return (
     <div style={{ overflowX: 'hidden' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {movement.map((item) => (
-          <div key={item.id} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-            <div style={{ width: '1px', height: '1.15rem', background: 'var(--red)', marginTop: '0.15rem', flexShrink: 0 }} />
-            <span style={{ fontSize: '1.05rem', color: 'var(--text)', lineHeight: 1.5 }}>{item.text}</span>
-          </div>
-        ))}
-      </div>
+      {allChecked && (
+        <div style={{
+          borderLeft: '2px solid var(--red-bright)',
+          background: 'var(--elevated)',
+          padding: '0.75rem',
+          marginBottom: '1.25rem',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}>
+          <span style={{
+            fontSize: '1.1rem', color: 'var(--red-bright)',
+            letterSpacing: '0.15em', textTransform: 'uppercase',
+          }}>Mission complete.</span>
+        </div>
+      )}
+      {!allChecked && checked.size === 0 && (
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-3)', marginBottom: '1.25rem' }}>
+          Log your movement below.
+        </div>
+      )}
 
-      <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', overflowX: 'hidden' }}>
-        {/* Summary line */}
-        {missionComplete && (
-          <div style={{
-            borderLeft: '2px solid var(--red-bright)',
-            background: 'var(--elevated)',
-            padding: '0.75rem',
-            marginBottom: '1.25rem',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}>
-            <span style={{
-              fontSize: '1.1rem', color: 'var(--red-bright)',
-              letterSpacing: '0.15em', textTransform: 'uppercase',
-            }}>Mission complete.</span>
-          </div>
-        )}
-        {!missionComplete && showSurplusLine && (
-          <div style={{ fontSize: '0.85rem', color: 'var(--green)', marginBottom: '1.25rem' }}>
-            {totalSurplusCal.toLocaleString()} cal above target today.
-          </div>
-        )}
-        {!missionComplete && showPrompt && (
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-3)', marginBottom: '1.25rem' }}>
-            Log your movement below.
-          </div>
-        )}
-
-        {/* Activity rows */}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         {movement.map((item) => {
-          const isCheckedItem = checked.has(item.id)
-          const info = getActivityInfo(item.id)
-          const unitLabel = info?.type === 'distance' ? 'mi' : 'min'
-          const isExpanded = expandedId === item.id
-          const confirmedTotal = totals[item.id]
-          const planned = getPlannedAmount(item)
-          const plannedDisplay = info?.type === 'distance'
-            ? String(Math.round(planned * 10) / 10)
-            : String(Math.max(5, Math.round(planned / 5) * 5))
-
-          // Per-item note: shown below row after confirming
-          let itemNote: { text: string; color: string } | null = null
-          if (isCheckedItem && confirmedTotal != null) {
-            const delta = confirmedTotal - planned
-            if (delta > 0.01 && info) {
-              itemNote = { text: `+${Math.round(delta * info.rate)} cal surplus`, color: 'var(--green)' }
-            } else if (delta < -0.01) {
-              const shortAmt = Math.round(Math.abs(delta) * 10) / 10
-              itemNote = { text: `${shortAmt} ${unitLabel} short of target.`, color: 'var(--text-2)' }
-            }
-          }
-
+          const isChecked = checked.has(item.id)
           return (
-            <div key={item.id} style={{ marginBottom: '0.75rem', width: '100%', overflowX: 'hidden' }}>
-              {/* Checkbox row */}
+            <button
+              key={item.id}
+              onClick={() => handleCheck(item)}
+              aria-pressed={isChecked}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                minHeight: '44px', width: '100%', boxSizing: 'border-box',
+                paddingTop: '0.35rem', paddingBottom: '0.35rem', paddingRight: '0',
+                paddingLeft: isChecked ? '0.75rem' : '0',
+                borderTop: 'none', borderRight: 'none', borderBottom: 'none',
+                borderLeft: isChecked ? '2px solid var(--red)' : '2px solid transparent',
+                background: 'none', cursor: 'pointer', textAlign: 'left',
+                fontFamily: 'Inter, sans-serif', marginBottom: '0.5rem',
+              }}
+            >
               <div style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem', minHeight: '44px',
-                paddingLeft: isCheckedItem ? '0.75rem' : '0',
-                borderLeft: isCheckedItem ? '2px solid var(--red)' : '2px solid transparent',
-                width: '100%', boxSizing: 'border-box',
+                width: '22px', height: '22px', flexShrink: 0,
+                background: isChecked ? 'var(--red)' : 'none',
+                border: `1px solid ${isChecked ? 'var(--red)' : 'var(--border-mid)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.12s ease',
               }}>
-                <button
-                  onClick={() => handleCheck(item)}
-                  aria-label={isCheckedItem ? 'Uncheck' : 'Check'}
-                  style={{
-                    width: '44px', height: '44px', flexShrink: 0,
-                    background: 'none', border: 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', padding: 0,
-                  }}
-                >
-                  <div style={{
-                    width: '22px', height: '22px',
-                    background: isCheckedItem ? 'var(--red)' : 'none',
-                    border: `1px solid ${isCheckedItem ? 'var(--red)' : 'var(--border-mid)'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.12s ease', flexShrink: 0,
-                  }}>
-                    {isCheckedItem && (
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </div>
-                </button>
-                <span style={{ flex: 1, fontSize: '0.9rem', color: isCheckedItem ? 'var(--text)' : 'var(--text-2)', lineHeight: 1.4, minWidth: 0 }}>
-                  {ACTIVITY_LABEL[item.id] ?? item.id}
-                </span>
-                {isCheckedItem && !isExpanded && (
-                  <button
-                    onClick={() => setExpandedId(item.id)}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', letterSpacing: '0.08em', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', minHeight: '44px', minWidth: '44px', flexShrink: 0 }}
-                  >{confirmedTotal != null ? 'edit' : 'I did more'}</button>
+                {isChecked && (
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 )}
               </div>
-
-              {/* Per-item note (surplus or shortfall) */}
-              {itemNote && !isExpanded && (
-                <div style={{ fontSize: '0.78rem', color: itemNote.color, paddingLeft: '3.5rem', marginTop: '0.2rem' }}>
-                  {itemNote.text}
-                </div>
-              )}
-
-              {/* Inline total input (expanded) */}
-              {isCheckedItem && isExpanded && (
-                <div style={{ marginTop: '0.5rem', paddingLeft: '3.5rem', width: '100%', boxSizing: 'border-box' }}>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-3)', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>
-                    {getTotalLabel(item.id, info?.type ?? 'distance')}
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
-                    <input
-                      className="input-bare"
-                      type="number"
-                      inputMode="decimal"
-                      placeholder={plannedDisplay}
-                      value={totalDrafts[item.id] ?? (confirmedTotal != null ? String(confirmedTotal) : '')}
-                      onChange={e => setTotalDrafts(prev => ({ ...prev, [item.id]: e.target.value }))}
-                      style={{ width: '70px', textAlign: 'right', fontSize: '1rem', padding: '0 0.25rem', flexShrink: 0, minWidth: 0 }}
-                      autoFocus
-                    />
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', flexShrink: 0 }}>{unitLabel}</span>
-                    <button
-                      onClick={() => handleTotalConfirm(item)}
-                      style={{
-                        background: 'none', border: '1px solid var(--border-mid)', color: 'var(--text-2)',
-                        fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase',
-                        cursor: 'pointer', padding: '0 0.75rem', fontFamily: 'Inter, sans-serif',
-                        minHeight: '44px', flexShrink: 0,
-                      }}
-                    >Done</button>
-                    <button
-                      onClick={() => setExpandedId(null)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontFamily: 'Inter, sans-serif', minHeight: '44px', flexShrink: 0 }}
-                    >nevermind</button>
-                  </div>
-                </div>
-              )}
-            </div>
+              <span style={{ fontSize: '1rem', color: isChecked ? 'var(--text)' : 'var(--text-2)', lineHeight: 1.4 }}>
+                {item.text}
+              </span>
+            </button>
           )
         })}
       </div>
