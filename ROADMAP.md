@@ -188,6 +188,26 @@ Each phase ends in something independently verifiable. Never build this as one g
 
 This is a **multi-session build**. Do not attempt to complete more than one phase per session.
 
+### Movement Baseline / Real-Burn Feedback Into the Plan
+
+> ⚠️ **CONCEPT STAGE — discuss before building.**
+
+#### The problem
+
+A user whose prescription says "walk 0.9 miles" but who consistently walks 2.5 miles is generating significantly more burn than the plan assumes. That extra effort does **not** feed into the calorie-target or meal-plan math directly — `calculate.ts` recalculates the plan only from **weight** at the weekly check-in. The surplus shows up indirectly (faster weight loss → next weekly recalc adjusts) but not immediately.
+
+The daily "log actual movement amount" feature that was previously in the app did **not** solve this. It updated the day's displayed burn and cumulative badge totals but never touched the calorie-target or meal-plan recalculation. It gave the impression of mattering to the plan without doing so — which is why it was removed.
+
+#### Better approaches (concept stage)
+
+1. **Adjustable movement baseline** — let the user set their real typical movement once (e.g. "I always walk ~2.5 mi") so the prescription reflects reality from the start. The plan would generate against the baseline burn rather than the sedentary 1.2× TDEE estimate. Simpler and more honest than per-day correction entry.
+
+2. **Wearable-fed weekly recalc** — the planned wearable integration (see *Wearable Sync* above) pulls real daily burn. Feeding those real weekly burn totals into the weekly check-in recalculation makes the plan adjustment accurate and automatic. This is the proper long-term answer; the wearable integration is already designed to support it at the weekly check-in layer (see Phase 4 of that plan).
+
+Discuss and decide which approach to build — or whether both make sense in sequence — before implementing.
+
+---
+
 ### Evolving Completion Rank (完)
 
 **Shipped.** A durable 完 mark appears in the dashboard header when a user completes a mission. It accumulates across Start Over and escalates visually with each completed mission.
