@@ -192,8 +192,10 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   const [mealPlan, setMealPlan]     = useState<MealPlanData | null>(null)
   const [openDay, setOpenDay]       = useState<number | null>(1)
   const [error, setError]           = useState<string | null>(null)
-  const [regenSlots, setRegenSlots]   = useState<Set<string>>(new Set())
-  const [regenErrors, setRegenErrors] = useState<Set<string>>(new Set())
+  const [regenSlots, setRegenSlots]             = useState<Set<string>>(new Set())
+  const [regenErrors, setRegenErrors]           = useState<Set<string>>(new Set())
+  const [rateLimited, setRateLimited]           = useState(false)
+  const [regenRateLimited, setRegenRateLimited] = useState<Set<string>>(new Set())
   const [exportOpen, setExportOpen]   = useState(false)
   const [regenConfirmOpen, setRegenConfirmOpen] = useState(false)
   const [slotToast, setSlotToast]     = useState<{ dayNum: number; slot: MealSlot; fading: boolean } | null>(null)
@@ -222,6 +224,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   const doGenerate = useCallback(async (prefs: MealPrefs) => {
     setScreen('loading')
     setError(null)
+    setRateLimited(false)
     try {
       let userId: string | undefined
       try {
@@ -236,6 +239,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: string }
+        if (res.status === 429) setRateLimited(true)
         throw new Error(d.error || `Server error (${res.status})`)
       }
       const data: MealPlanData = await res.json()
@@ -258,6 +262,7 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   const doRegenerateSlot = useCallback(async (dayNum: number, slot: MealSlot) => {
     const key = `${dayNum}-${slot}`
     setRegenSlots(prev => new Set([...prev, key]))
+    let wasRateLimited = false
     try {
       const prefs = loadSavedPrefs()
       const dayData = mealPlanRef.current?.days.find(d => d.day === dayNum)
@@ -281,7 +286,11 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
           userId: slotUserId,
         }),
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({})) as { error?: string }
+        if (res.status === 429) wasRateLimited = true
+        throw new Error(d.error || `HTTP ${res.status}`)
+      }
       const data = await res.json() as { slot: MealItem[] }
       if (!data.slot?.length) throw new Error('Empty response')
 
@@ -298,8 +307,12 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
         return updated
       })
     } catch {
-      setRegenErrors(prev => new Set([...prev, key]))
-      setTimeout(() => setRegenErrors(prev => { const n = new Set(prev); n.delete(key); return n }), 3000)
+      if (wasRateLimited) {
+        setRegenRateLimited(prev => new Set([...prev, key]))
+      } else {
+        setRegenErrors(prev => new Set([...prev, key]))
+        setTimeout(() => setRegenErrors(prev => { const n = new Set(prev); n.delete(key); return n }), 3000)
+      }
     } finally {
       setRegenSlots(prev => { const n = new Set(prev); n.delete(key); return n })
     }
@@ -653,9 +666,11 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
   if (screen === 'error') return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem 0', gap: '1.25rem' }}>
       <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', textAlign: 'center', lineHeight: 1.65, maxWidth: '280px' }}>
-        {error || 'Failed to generate plan. Check your connection.'}
+        {rateLimited ? 'Daily limit reached. Return tomorrow.' : (error || 'Failed to generate plan. Check your connection.')}
       </div>
-      <button className="commit-btn" onClick={handleRetry} style={{ maxWidth: '180px' }}>Try Again</button>
+      {!rateLimited && (
+        <button className="commit-btn" onClick={handleRetry} style={{ maxWidth: '180px' }}>Try Again</button>
+      )}
       <button onClick={() => setScreen('prefs')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: '0.8rem', letterSpacing: '0.1em', cursor: 'pointer', padding: 0 }}>
         change preferences
       </button>
@@ -747,8 +762,9 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                     const visibleSlots = MEAL_SLOTS.filter(s => (day[s] ?? []).length > 0 || regenSlots.has(`${day.day}-${s}`))
                     return visibleSlots.map((slot: MealSlot, slotIdx: number) => {
                     const slotKey      = `${day.day}-${slot}`
-                    const isSlotRegen  = regenSlots.has(slotKey)
-                    const isSlotError  = regenErrors.has(slotKey)
+                    const isSlotRegen        = regenSlots.has(slotKey)
+                    const isSlotError        = regenErrors.has(slotKey)
+                    const isSlotRateLimited  = regenRateLimited.has(slotKey)
                     const items        = day[slot] ?? []
 
                     return (
@@ -763,12 +779,12 @@ const MealPlanView = forwardRef<MealPlanViewHandle, MealPlanViewProps>(function 
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
                           <div style={{
                             fontSize: '0.75rem', letterSpacing: '0.28em', textTransform: 'uppercase',
-                            color: isSlotError ? 'var(--red-bright)' : 'var(--text)',
+                            color: (isSlotError || isSlotRateLimited) ? 'var(--red-bright)' : 'var(--text)',
                             animation: isSlotRegen ? 'slotPulse 1.2s ease-in-out infinite' : 'none',
                           }}>
-                            {slot}{isSlotError ? ' — failed' : ''}
+                            {slot}{isSlotError ? ' — failed' : isSlotRateLimited ? ' — limit reached' : ''}
                           </div>
-                          {!isSlotRegen && (
+                          {!isSlotRegen && !isSlotRateLimited && (
                             <button
                               onClick={(e) => { e.stopPropagation(); if (!anySlotRegen) handleSlotRegenClick(day.day, slot) }}
                               aria-label={`Regenerate ${slot} for day ${day.day}`}

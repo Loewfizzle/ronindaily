@@ -143,6 +143,7 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
   const [sections, setSections]       = useState<GrocerySection[] | null>(null)
   const [checked, setChecked]         = useState<Set<string>>(new Set())
   const [error, setError]             = useState<string | null>(null)
+  const [rateLimited, setRateLimited] = useState(false)
   const [mealPlan, setMealPlan]       = useState<MealPlanData | null>(null)
   const [openSections, setOpenSections] = useState<Set<string>>(new Set())
   const [exportOpen, setExportOpen]   = useState(false)
@@ -152,6 +153,7 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
   const generate = useCallback(async (plan: MealPlanData) => {
     setStatus('loading')
     setError(null)
+    setRateLimited(false)
     try {
       let userId: string | undefined
       try {
@@ -166,6 +168,7 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({})) as { error?: string }
+        if (res.status === 429) setRateLimited(true)
         throw new Error(d.error || `Server error (${res.status})`)
       }
       const data: GroceryListData = await res.json()
@@ -253,9 +256,9 @@ export default function GroceryListView({ readyFooter }: GroceryListViewProps) {
   if (status === 'error') return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem 0', gap: '1.25rem' }}>
       <div style={{ fontSize: '0.85rem', color: 'var(--text-2)', textAlign: 'center', lineHeight: 1.65, maxWidth: '280px' }}>
-        {error || 'Failed to build grocery list. Check your connection.'}
+        {rateLimited ? 'Daily limit reached. Return tomorrow.' : (error || 'Failed to build grocery list. Check your connection.')}
       </div>
-      {mealPlan && (
+      {!rateLimited && mealPlan && (
         <button className="commit-btn" onClick={() => generate(mealPlan)} style={{ maxWidth: '180px' }}>
           Try Again
         </button>

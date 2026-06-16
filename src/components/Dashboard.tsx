@@ -1709,6 +1709,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange, open }: Food
     | { status: 'loading' }
     | { status: 'result'; calories: number; remaining: number; overBy: number }
     | { status: 'error'; message: string }
+    | { status: 'rateLimited' }
   >({ status: 'idle' })
 
   useEffect(() => {
@@ -1752,7 +1753,11 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange, open }: Food
       })
       const json = await res.json() as { calories?: number; error?: string }
       if (!res.ok || !json.calories) {
-        setCheatState({ status: 'error', message: json.error ?? 'Could not estimate calories.' })
+        if (res.status === 429) {
+          setCheatState({ status: 'rateLimited' })
+        } else {
+          setCheatState({ status: 'error', message: json.error ?? 'Could not estimate calories.' })
+        }
         return
       }
       const calories   = json.calories
@@ -1940,12 +1945,17 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange, open }: Food
                 {cheatState.message}
               </div>
             )}
+            {cheatState.status === 'rateLimited' && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-2)', marginBottom: '0.6rem' }}>
+                Daily limit reached. Return tomorrow.
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button
                 className="commit-btn"
                 onClick={handleCheatSubmit}
-                disabled={cheatState.status === 'loading' || !cheatInput.trim()}
-                style={{ flex: 1, opacity: (!cheatInput.trim() || cheatState.status === 'loading') ? 0.4 : 1 }}
+                disabled={cheatState.status === 'loading' || cheatState.status === 'rateLimited' || !cheatInput.trim()}
+                style={{ flex: 1, opacity: (!cheatInput.trim() || cheatState.status === 'loading' || cheatState.status === 'rateLimited') ? 0.4 : 1 }}
               >
                 {cheatState.status === 'loading' ? 'Estimating…' : 'Submit'}
               </button>
