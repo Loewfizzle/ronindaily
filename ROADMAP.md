@@ -88,25 +88,56 @@ Content:
 
 ### Wearable Sync
 
-> ⚠️ **Critical platform note:** The legacy Fitbit Web API is being deprecated. Google is sunsetting it in September 2026; existing OAuth tokens do not carry over. **Do NOT build against the legacy Fitbit Web API** — it would stop syncing data within months of launch. The replacement is the **Google Health API** (`health.googleapis.com`), which launched in spring 2026 and is registered/managed through Google Cloud Console with Google OAuth2.
+> ✅ **DESIGN FINALIZED, NOT YET BUILT.** The decisions below are settled. No implementation has started. Do not re-litigate these choices during the build — open a new discussion if something material changes.
 
-**Priority order:**
-1. **Google Health API** — covers Fitbit devices AND Google Fit data through a single integration. One OAuth flow, one API, largest user slice. Register in Google Cloud Console; uses Google OAuth2 scopes.
-2. **Garmin** — Garmin Connect API, OAuth. Dedicated fitness-first users with high-quality activity and calorie burn data.
-3. **Whoop** — WHOOP API, OAuth. Whoop users are core target audience: disciplined, data-driven, recovery-obsessed. Strong premium signal.
-4. **Apple Health / Apple Watch** — requires a native iOS wrapper with HealthKit entitlements. Gated behind the App Store build — cannot be done from the PWA.
+#### Architecture
 
-**Primary value:** Replace estimated calorie burn with actual burn from device sensors. This makes the daily deficit real and is the primary justification for building wearables at all (and for gating it behind premium).
+A PWA cannot read a wearable device directly. The data path is always:
 
-#### Sleep Data
+**wearable device → wearable company's cloud → our serverless backend pulls via their API → stored in Supabase → displayed in the app.**
 
-Sleep is **not** a separate integration — it is an additional data type available through the same OAuth connection as activity and calorie burn. The Google Health API (and Garmin, Whoop) exposes sleep alongside heart rate, activity, body weight, and breathing rate through one consent grant. Available sleep data includes: stage breakdown (deep / light / REM / wake) at 30-second granularity, total minutes asleep and awake, time to fall asleep, and a sleep efficiency score.
+We never communicate with the device. Everything goes through the provider's cloud API.
 
-Because the expensive work (OAuth, token storage and refresh, the daily morning pull cron) is shared with activity data, **sleep should be pulled from day one alongside burn data** once the wearable loop exists. Its marginal cost at that point is low.
+**Provider build order:**
+1. **Google Health API** (`health.googleapis.com`) — registered and managed through Google Cloud Console, uses standard Google OAuth2. Covers both Fitbit devices and Google Fit in one integration. The legacy Fitbit Web API is sunset September 2026 and OAuth tokens do not carry over — do not build against it. Google Health API is the replacement and the correct target.
+2. **Garmin** — Garmin Connect API, OAuth.
+3. **Whoop** — WHOOP API, OAuth.
+4. **Apple Health / Apple Watch** — requires a native iOS app with HealthKit entitlements. Deferred to the App Store build; cannot be done from the PWA.
 
-**Design note (concept stage — discuss before building):** Sleep does NOT feed the calorie-deficit math (unlike burn data). So it needs a deliberate, on-brand use rather than being a raw dashboard stat. Ideas to explore: cold accountability-voice framing around recovery (treating recovery as part of the mission, not a luxury); a sleep-consistency streak shown alongside the discipline streak. Do not ship sleep data without a design decision on how it's presented.
+Providers are sequenced one at a time because each has its own OAuth setup, scopes, and API quirks. This is not one "wearables" feature — it is a series of separate integrations.
 
-**Build principle:** Get the burn loop tight first (OAuth → daily pull → replace estimated exercise burn on the dashboard). Sleep is a strong secondary signal layered on once the primary loop works. Do not ship multiple half-built data types.
+**Sleep is not a separate integration.** It rides the same OAuth connection as activity and calorie burn. The Google Health API (and Garmin, Whoop) exposes sleep alongside activity data through one consent grant. Because the expensive work — OAuth, token storage and refresh, the daily cron — is shared, sleep is pulled from day one alongside burn data. Its marginal cost at that point is low.
+
+#### Data Model: Once-Daily Pull (decided)
+
+A dedicated morning cron pulls **yesterday's completed totals**: calories burned, steps, active minutes, and sleep duration/stages.
+
+- **Cron timing:** Fixed run at **11:00 UTC** (≈ 6 AM US Eastern during EDT; note this shifts with daylight saving since Vercel crons are UTC). Chosen to run after the wearable has synced yesterday's data to its cloud and before most users open the app.
+- **Future optimization (not v1):** Piggyback on the existing `send-notifications` cron so each user's wearable data refreshes right before their personal notification time. More elegant, more coupling — keep it a simple separate cron for v1.
+- **Not live / not intraday.** Deliberately rejected. A PWA can't do live device reads, webhook infrastructure is significant complexity, and a calorie-burn target that updates throughout the day conflicts with the app's "the number doesn't negotiate" identity.
+
+#### Display-Only — Does NOT Change the Daily Target (decided)
+
+Real burn data shows **actual-vs-prescribed** progress on the dashboard (e.g. "340 of 400 cal movement target burned"). It replaces the estimated 1.2× TDEE burn figure with real sensor numbers. It does **not** recalculate or move the day's calorie target. The daily mission number is fixed — consistent with the brand.
+
+**Where real data does feed the math:** the weekly check-in / next-week recalculation. `calculate.ts` already recomputes the plan from real weight each week; real weekly burn totals make that weekly adjustment more accurate than the 1.2× sedentary estimate. That is the high-value, low-chaos place to use the data.
+
+#### First-Connect Backfill (decided)
+
+On first OAuth connection, backfill recent history — target ~30 days, capped by each provider's API limits and rate limits. This is a one-time initial-sync path, separate from the daily pull, so the first experience is not empty and the weekly check-in is immediately useful.
+
+#### OAuth / Plumbing (per provider — this is the bulk of the work)
+
+Flow per provider:
+1. User taps "Connect [provider]" in Settings.
+2. Redirected to provider's login / consent screen.
+3. User approves the requested scopes.
+4. Provider returns an auth code to our callback URL.
+5. Backend exchanges the auth code for access + refresh tokens.
+6. Tokens stored **encrypted** in Supabase.
+7. Daily cron uses the stored refresh token to pull data, refreshing tokens as they expire.
+
+This is a **premium feature** per the monetization plan.
 
 ### Evolving Completion Rank (完)
 
