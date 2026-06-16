@@ -1894,14 +1894,14 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange, open }: Food
         ) : (
           <div>
             <textarea
-              placeholder="What did you eat?"
+              placeholder="Describe exactly what you ate (Burger King Whopper, Large fry, large Coke)"
               value={cheatInput}
               onChange={e => setCheatInput(e.target.value)}
               rows={2}
               style={{
                 width: '100%', resize: 'none', marginBottom: '0.6rem', boxSizing: 'border-box',
                 background: 'var(--elevated)', border: '1px solid var(--border-mid)', borderRadius: 0,
-                color: 'var(--text)', fontFamily: 'Inter, sans-serif', fontSize: '0.85rem',
+                color: 'var(--text)', fontFamily: 'Inter, sans-serif', fontSize: '1rem',
                 padding: '0.65rem 0.75rem', lineHeight: 1.5, outline: 'none', minHeight: '64px',
               }}
               autoFocus
@@ -2152,7 +2152,7 @@ function MovementDetail({ movement, cal, activityLog, onLog, onUnlog }: {
                       placeholder={plannedDisplay}
                       value={totalDrafts[item.id] ?? (confirmedTotal != null ? String(confirmedTotal) : '')}
                       onChange={e => setTotalDrafts(prev => ({ ...prev, [item.id]: e.target.value }))}
-                      style={{ width: '70px', textAlign: 'right', fontSize: '0.85rem', padding: '0 0.25rem', flexShrink: 0, minWidth: 0 }}
+                      style={{ width: '70px', textAlign: 'right', fontSize: '1rem', padding: '0 0.25rem', flexShrink: 0, minWidth: 0 }}
                       autoFocus
                     />
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', flexShrink: 0 }}>{unitLabel}</span>
