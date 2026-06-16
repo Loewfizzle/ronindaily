@@ -88,7 +88,7 @@ Content:
 
 ### Wearable Sync
 
-> ✅ **DESIGN FINALIZED, NOT YET BUILT.** The decisions below are settled. No implementation has started. Do not re-litigate these choices during the build — open a new discussion if something material changes.
+> ✅ **DESIGN FINALIZED + PHASED PLAN SET, NOT YET BUILT.** The decisions below are settled. No implementation has started. Do not re-litigate these choices during the build — open a new discussion if something material changes.
 
 #### Architecture
 
@@ -138,6 +138,55 @@ Flow per provider:
 7. Daily cron uses the stored refresh token to pull data, refreshing tokens as they expire.
 
 This is a **premium feature** per the monetization plan.
+
+#### Build Strategy
+
+**Build Google Health as a generic wearable layer, not a Google-specific one-off.** The data pipeline — OAuth flow, encrypted token storage, refresh handling, daily pull cron, backfill path — is built once with a provider abstraction. Burn, steps, active minutes, and sleep are normalized into our own Supabase shape. The dashboard reads from that normalized shape and knows nothing about which provider supplied the data. Garmin and Whoop plug into the same structure at Phase 0 of their own integrations rather than requiring three parallel implementations.
+
+**Cost is front-loaded.** Google Health is roughly 70% of total wearable effort because it builds the shared foundation. Providers 2 and 3 mostly reuse it; their incremental cost is mostly the OAuth wiring and API-specific field mapping, not the core infrastructure.
+
+**Timeline facts to keep straight:**
+- The Google Health API is **live now** (launched spring 2026). There is no waiting for it.
+- The **September 2026 date is only the death of the legacy Fitbit Web API** — a non-issue for us because we never build against the legacy API. Nothing to migrate, no expiration to worry about.
+- Ignore any Fitbit Web API docs, tutorials, or code samples encountered during research; use Google Health API documentation exclusively.
+- The Google Health API is new. Its documentation, client libraries, and community examples are thinner than a mature API. Expect an "early platform" build experience: more reading of raw API specs, fewer Stack Overflow answers, possible rough edges in the docs.
+
+#### Phased Execution Plan
+
+Each phase ends in something independently verifiable. Never build this as one giant diff.
+
+**Phase 0 — Google Cloud setup + verification reconnaissance**
+*Done by the user, not Claude Code — this requires touching the user's Google account.*
+
+- Create a Google Cloud Console project.
+- Enable the Google Health API.
+- Configure the OAuth consent screen (app name, scopes, support email).
+- Generate OAuth client credentials (client ID + secret).
+- Register redirect URIs for local dev and production.
+
+**Critical unknown to resolve in Phase 0:** Google Health scopes cover sensitive health data and likely require Google's verification/review before production use. The app's existing Google OAuth login is already in "Testing" mode. The outcome of Phase 0 is not "wearables work" — it is "we have credentials AND we know whether verification is required and how long it takes." That fact determines whether real health data is immediately usable or gated behind a Google review process that can take days to weeks. **Resolve this before writing any Phase 1 code.**
+
+**Phase 1 — Data foundation**
+- Supabase migration: a normalized, provider-agnostic `wearable_data` table (or similar) to hold daily totals per user: `logged_date`, `provider`, `calories_burned`, `steps`, `active_minutes`, `sleep_minutes`, `sleep_stages` (jsonb).
+- No external dependencies. Fully testable in isolation by inserting mock rows and verifying the schema.
+
+**Phase 2 — OAuth connect flow**
+- "Connect Google Health" button in Settings.
+- Redirect to Google consent screen → user approves scopes → Google returns auth code to our callback URL.
+- Serverless callback handler: exchange auth code for access + refresh tokens, store **encrypted** in Supabase.
+- Refresh token rotation handling.
+- This is the gnarliest code phase. It stands alone so it can be tested in isolation: can a user connect, and do we receive valid, refreshable tokens? Verify before moving to Phase 3.
+
+**Phase 3 — Daily pull cron + first-connect backfill**
+- Daily cron at 11:00 UTC: for each connected user, use the stored refresh token to fetch yesterday's completed totals from the Google Health API and upsert into the normalized table.
+- On first OAuth connect: one-time backfill of ~30 days of history (capped by provider API limits and rate limits), stored into the same normalized table.
+
+**Phase 4 — Dashboard display**
+- Show actual-vs-prescribed burn on the dashboard ("340 of 400 cal movement target burned").
+- Replace the 1.2× TDEE sedentary estimate with real sensor data where available.
+- Wire real weekly burn totals into the weekly check-in recalculation (this is display-only; the daily target does NOT move).
+
+This is a **multi-session build**. Do not attempt to complete more than one phase per session.
 
 ### Evolving Completion Rank (完)
 
