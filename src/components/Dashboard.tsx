@@ -1914,7 +1914,7 @@ function FoodDetail({ data, dayNumber, cheatEntries, onCheatChange, open }: Food
               placeholder="Describe exactly what you ate and AI will calculate the calories (Burger King Whopper, Large fry, Large Coke)"
               value={cheatInput}
               onChange={e => setCheatInput(e.target.value)}
-              rows={2}
+              rows={4}
               style={{
                 width: '100%', resize: 'none', marginBottom: '0.6rem', boxSizing: 'border-box',
                 background: 'var(--elevated)', border: '1px solid var(--border-mid)', borderRadius: 0,
