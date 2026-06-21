@@ -18,6 +18,11 @@ dist-ssr
 # Verification artifacts
 verify-screenshots/
 verify-ui.mjs
+verify-*.mjs
+ss*.cjs
+ss*.png
+dev-out*.txt
+dev-err*.txt
 
 # Editor directories and files
 .vscode/*
